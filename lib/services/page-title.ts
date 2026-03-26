@@ -3,7 +3,8 @@ import { searchPanelService } from "./search-panel";
 import { tradeLocationService } from "./trade-location";
 
 const WOOP_PREFIX_REGEX = /^\((\d+)\) /;
-const TITLE_MUTATION_THROTTLE_MS = 100;
+const TITLE_MUTATION_THROTTLE_MS = 250;
+const TITLE_RECOVERY_MS = 500;
 
 export class PageTitleService {
   private baseSiteTitle: string = "";
@@ -79,8 +80,14 @@ export class PageTitleService {
   }
 
   private onDocumentTitleMutation() {
-    this.lastWoopCount = this.parseWoopCount(document.title);
-    this.updateTitle();
+    const newWoopCount = this.parseWoopCount(document.title);
+    if (newWoopCount !== this.lastWoopCount) {
+      this.lastWoopCount = newWoopCount;
+      this.updateTitle();
+    } else if (this.title && document.title !== this.title && !document.title.startsWith("(")) {
+      // If the site reset the title but there's no new woop, force our title back
+      this.updateTitle();
+    }
   }
 }
 

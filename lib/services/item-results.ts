@@ -105,7 +105,8 @@ export class ItemResultsService {
   }
 
   private enhanceResults() {
-    const results = document.querySelectorAll(".search-results .row:not([bt-enhanced])");
+    // Current trade site uses .result-item, but some pages or versions use .row
+    const results = document.querySelectorAll(".search-results .result-item:not([bt-enhanced]), .search-results .row:not([bt-enhanced]), .result-list .result-item:not([bt-enhanced])");
     results.forEach((row: HTMLElement) => {
       row.setAttribute("bt-enhanced", "true");
       this.injectPinButton(row);
@@ -130,7 +131,8 @@ export class ItemResultsService {
   }
 
   private injectPinButton(row: HTMLElement) {
-    const btns = row.querySelector(".details .btns");
+    // Look for button containers: .btns is classic, .actions or .details .btns are other variants
+    const btns = row.querySelector(".details .btns, .btns, .actions");
     if (!btns) return;
 
     const btn = document.createElement("button");
@@ -142,6 +144,7 @@ export class ItemResultsService {
     };
     
     const wrapper = document.createElement("span");
+    wrapper.className = "bt-pin-wrapper";
     wrapper.appendChild(btn);
     btns.appendChild(wrapper);
   }
@@ -149,11 +152,13 @@ export class ItemResultsService {
   private injectEquivalentPricing(row: HTMLElement) {
     if (!this.chaosRatios) return;
 
-    const priceContainer = row.querySelector(".price") as HTMLElement;
+    const priceContainer = row.querySelector(".price, .details .price") as HTMLElement;
     if (!priceContainer) return;
 
-    const currencyText = row.querySelector('[data-field="price"] .currency-text span')?.textContent;
-    const amountText = row.querySelector('[data-field="price"] > br + span')?.textContent;
+    // Official site structure often has nested spans for currency and amount
+    const currencyText = row.querySelector('[data-field="price"] .currency-text span, [data-field="price"] .currency-icon')?.textContent || 
+                       row.querySelector('.currency-text')?.textContent;
+    const amountText = row.querySelector('[data-field="price"] span:last-child, .price span:last-child')?.textContent;
 
     if (!currencyText || !amountText) return;
 

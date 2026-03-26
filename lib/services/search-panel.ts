@@ -1,8 +1,8 @@
 export class SearchPanelService {
-  private readonly SEARCH_INPUT_SELECTOR = '.search-panel .search-bar .search-left input';
+  private readonly SEARCH_INPUT_SELECTOR = '.search-panel .search-bar .search-left input, .search-panel-content .search-bar input';
   private readonly CATEGORY_INPUT_SELECTOR = '.search-advanced-items .filter-group:nth-of-type(1) .filter-property:nth-of-type(1) input';
   private readonly RARITY_INPUT_SELECTOR = '.search-advanced-items .filter-group:nth-of-type(1) .filter-property:nth-of-type(2) input';
-  private readonly STATS_SELECTOR = '.search-advanced-pane:last-child .filter-group-body .filter:not(.disabled) .filter-title';
+  private readonly STATS_SELECTOR = '.search-advanced-pane:last-child .filter-group-body .filter:not(.disabled) .filter-title, .filter-group-body .filter .filter-title';
 
   recommendTitle() {
     const name = this.getName();
