@@ -2,12 +2,11 @@
   import Header from "./Header.svelte";
   import Bookmarks from "./pages/Bookmarks.svelte";
   import History from "./pages/History.svelte";
-  import PinnedItems from "./pages/PinnedItems.svelte";
   import About from "./pages/About.svelte";
   import logoUrl from "data-base64:~assets/logo.png";
   import { flashMessages } from "../lib/services/flash";
   
-  let currentPage: 'bookmarks' | 'history' | 'pinned' | 'about' = 'bookmarks';
+  let currentPage: 'bookmarks' | 'history' | 'about' = 'bookmarks';
 </script>
 
 <div
@@ -21,12 +20,7 @@
     >
         Bookmarks
     </button>
-    <button 
-        class="nav-item {currentPage === 'pinned' ? 'is-active' : ''}" 
-        on:click={() => currentPage = 'pinned'}
-    >
-        Pinned
-    </button>
+
     <button 
         class="nav-item {currentPage === 'history' ? 'is-active' : ''}" 
         on:click={() => currentPage = 'history'}
@@ -52,8 +46,7 @@
   <main>
     {#if currentPage === 'bookmarks'}
         <Bookmarks />
-    {:else if currentPage === 'pinned'}
-        <PinnedItems />
+
     {:else if currentPage === 'history'}
         <History />
     {:else if currentPage === 'about'}

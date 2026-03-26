@@ -28,10 +28,7 @@
         <p>Jump back into recent trade searches without rebuilding filters from scratch every time.</p>
       </article>
 
-      <article class="feature-card">
-        <h4>Pinned Results</h4>
-        <p>Keep standout listings visible while you compare prices, mods, or socket setups across the page.</p>
-      </article>
+
 
       <article class="feature-card">
         <h4>Trade Enhancements</h4>
