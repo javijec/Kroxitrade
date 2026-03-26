@@ -9,7 +9,6 @@
   
   import Button from "./Button.svelte";
   import LoadingContainer from "./LoadingContainer.svelte";
-  import ContextualMenu from "./ContextualMenu.svelte";
 
   export let folder: BookmarksFolderStruct;
   export let expandedFolderIds: string[];
@@ -160,13 +159,6 @@
     flashMessages.success(`Renamed search to "${newTitle}"`);
   };
 
-  const menuItems = [
-    { label: "Edit Folder", onClick: editFolder },
-    { label: isArchived ? "Restore Folder" : "Archive Folder", onClick: onArchiveEvent },
-    { label: "Delete Folder", onClick: onDeleteEvent },
-    { label: "Export Folder", onClick: exportFolder }
-  ];
-
 </script>
 
 <div class="folder {isExpanded ? 'is-expanded' : ''} {isArchived ? 'is-archived' : ''}">
@@ -179,7 +171,38 @@
     </div>
     
     <div class="header-actions">
-        <ContextualMenu items={menuItems} />
+      <button
+        type="button"
+        class="folder-action"
+        title="Edit folder"
+        aria-label="Edit folder"
+        on:click={() => void editFolder()}>
+        ✎
+      </button>
+      <button
+        type="button"
+        class="folder-action"
+        title={isArchived ? "Restore folder" : "Archive folder"}
+        aria-label={isArchived ? "Restore folder" : "Archive folder"}
+        on:click={onArchiveEvent}>
+        {isArchived ? "↺" : "□"}
+      </button>
+      <button
+        type="button"
+        class="folder-action"
+        title="Export folder"
+        aria-label="Export folder"
+        on:click={exportFolder}>
+        ⇪
+      </button>
+      <button
+        type="button"
+        class="folder-action is-danger"
+        title="Delete folder"
+        aria-label="Delete folder"
+        on:click={onDeleteEvent}>
+        ×
+      </button>
     </div>
   </div>
 
@@ -200,15 +223,63 @@
                 </a>
               </div>
               <div class="trade-actions">
-                  <ContextualMenu items={[
-                    { label: "Edit Search Name", onClick: () => editTrade(trade) },
-                    { label: "Copy URL to Clipboard", onClick: () => copyTrade(trade) },
-                    { label: "Duplicate Trade", onClick: () => duplicateTrade(trade) },
-                    { label: "Move Up", onClick: () => reorderTrade(trade, "up") },
-                    { label: "Move Down", onClick: () => reorderTrade(trade, "down") },
-                    { label: trade.completedAt ? "Uncomplete" : "Complete", onClick: () => toggleTrade(trade) },
-                    { label: "Delete Trade", onClick: () => deleteTrade(trade) }
-                  ]} />
+                <button
+                  type="button"
+                  class="trade-action"
+                  title="Edit search name"
+                  aria-label="Edit search name"
+                  on:click={() => void editTrade(trade)}>
+                  ✎
+                </button>
+                <button
+                  type="button"
+                  class="trade-action"
+                  title="Copy URL"
+                  aria-label="Copy URL"
+                  on:click={() => copyTrade(trade)}>
+                  ⧉
+                </button>
+                <button
+                  type="button"
+                  class="trade-action"
+                  title="Duplicate trade"
+                  aria-label="Duplicate trade"
+                  on:click={() => void duplicateTrade(trade)}>
+                  +
+                </button>
+                <button
+                  type="button"
+                  class="trade-action"
+                  title="Move up"
+                  aria-label="Move up"
+                  on:click={() => void reorderTrade(trade, "up")}>
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  class="trade-action"
+                  title="Move down"
+                  aria-label="Move down"
+                  on:click={() => void reorderTrade(trade, "down")}>
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  class="trade-action"
+                  class:is-active={!!trade.completedAt}
+                  title={trade.completedAt ? "Mark as pending" : "Mark as complete"}
+                  aria-label={trade.completedAt ? "Mark as pending" : "Mark as complete"}
+                  on:click={() => void toggleTrade(trade)}>
+                  ✓
+                </button>
+                <button
+                  type="button"
+                  class="trade-action is-danger"
+                  title="Delete trade"
+                  aria-label="Delete trade"
+                  on:click={() => void deleteTrade(trade)}>
+                  ×
+                </button>
               </div>
             </li>
           {/each}
@@ -249,6 +320,41 @@
 
   .header-label { flex: 1; font-size: 15px; }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .folder-action {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid rgba($white, 0.14);
+    background-color: rgba($black, 0.22);
+    color: rgba($white, 0.88);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+
+    &:hover {
+      background-color: rgba($white, 0.08);
+      border-color: rgba($gold, 0.38);
+      color: $white;
+    }
+
+    &.is-danger:hover {
+      background-color: rgba($red, 0.18);
+      border-color: rgba($red, 0.5);
+      color: #ffd7d7;
+    }
+  }
+
   .trades-list {
     list-style: none;
     padding: 0;
@@ -260,20 +366,78 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     padding: 6px 10px;
     border-bottom: 1px solid rgba($blue-alt, 0.3);
     
     &:hover { background-color: rgba($white, 0.05); }
   }
 
+  .trade-info {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1;
+  }
+
   .trade-link {
     color: $white;
     text-decoration: none;
     font-size: 13px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
     &:hover { text-decoration: underline; }
   }
 
-  .check { color: $green; margin-right: 5px; }
+  .trade-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .trade-action {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid rgba($white, 0.12);
+    background-color: rgba($black, 0.45);
+    color: rgba($white, 0.82);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+
+    &:hover {
+      background-color: rgba($white, 0.08);
+      border-color: rgba($gold, 0.38);
+      color: $white;
+    }
+
+    &.is-active {
+      background-color: rgba($green, 0.18);
+      border-color: rgba($green, 0.5);
+      color: #d7ffd7;
+    }
+
+    &.is-danger:hover {
+      background-color: rgba($red, 0.18);
+      border-color: rgba($red, 0.5);
+      color: #ffd7d7;
+    }
+  }
+
+  .check {
+    color: $green;
+    margin-right: 5px;
+    flex: 0 0 auto;
+  }
 
   .footer-actions { padding: 8px; display: flex; }
 </style>
