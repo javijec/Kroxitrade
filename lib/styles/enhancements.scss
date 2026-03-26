@@ -1,0 +1,50 @@
+@use 'variables' as *;
+
+@keyframes pinned-glow-keyframes {
+  0% { box-shadow: inset 0 0 10px 2px $blue-alt; }
+  25% { box-shadow: inset 0 0 20px 10px $blue-alt; }
+  50% { box-shadow: inset 0 0 10px 2px $blue-alt; }
+  75% { box-shadow: inset 0 0 20px 10px $blue-alt; }
+  100% { box-shadow: inset 0 0 10px 2px $blue-alt; }
+}
+
+.bt-pin-button {
+  min-width: 47px !important;
+  margin-left: 5px !important;
+}
+
+.bt-pinned {
+  box-shadow: inset 0 0 10px 2px $blue-alt !important;
+  border: 1px solid $gold !important;
+}
+
+.bt-pinned-glow {
+  animation: pinned-glow-keyframes 1s ease;
+}
+
+.bt-equivalent-pricing {
+  font-size: 11px;
+  color: $gold;
+  margin-top: 2px;
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 2px 4px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.bt-highlight-stat-filters {
+  background-color: rgba($gold-alt, 0.15) !important;
+  border: 1px solid rgba($gold, 0.3) !important;
+}
+
+.bt-maximum-sockets-warning {
+  min-height: 15px;
+  padding: 2px 4px;
+  border: 1px solid $red;
+  background-color: #000;
+  text-align: center;
+  font-size: 11px;
+  font-weight: bold;
+  color: $white;
+  margin-bottom: 2px;
+}

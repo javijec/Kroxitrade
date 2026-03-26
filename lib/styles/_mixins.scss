@@ -1,0 +1,18 @@
+@keyframes fade-in-keyframes {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@mixin fade-in {
+  animation: fade-in-keyframes 0.2s ease;
+}
+
+@keyframes delayed-fade-in-keyframes {
+  0% { opacity: 0; }
+  25% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@mixin delayed-fade-in {
+  animation: delayed-fade-in-keyframes 0.2s ease forwards;
+}
