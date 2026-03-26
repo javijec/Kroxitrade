@@ -30,11 +30,19 @@ export const getActiveTradeTabTitle = async () => {
 export const openUrlInActiveTab = async (url: string) => {
   const tab = await getActiveTab()
 
+  // Background script / popup script case
   if (typeof chrome !== "undefined" && chrome.tabs?.update && typeof tab?.id === "number") {
     await chrome.tabs.update(tab.id, { url, active: true })
     return
   }
 
+  // Content script case - navigate the current page directly
+  if (typeof window !== "undefined") {
+    window.location.href = url
+    return
+  }
+
+  // Final fallback
   window.open(url, "_blank", "noopener")
 }
 
