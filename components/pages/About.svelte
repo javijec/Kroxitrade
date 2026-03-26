@@ -69,8 +69,8 @@
   .about-page {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 8px 4px 16px;
+    gap: 12px;
+    padding: 2px 2px 20px;
     color: $white;
     width: 100%;
     min-width: 0;
@@ -79,36 +79,40 @@
   }
 
   .hero {
-    padding: 14px 14px 16px;
-    border: 1px solid rgba($gold, 0.22);
-    background:
-      linear-gradient(180deg, rgba($gold, 0.08), rgba($gold, 0.02)),
-      rgba($white, 0.015);
+    padding: 16px 14px;
+    border: 1px solid rgba($gold, 0.2);
+    background: 
+      linear-gradient(135deg, rgba($gold, 0.08), rgba($gold, 0.01)),
+      rgba($black, 0.4);
+    box-shadow: inset 0 0 20px rgba($black, 0.5);
   }
 
   .eyebrow {
-    margin: 0 0 8px;
+    margin: 0 0 6px;
     font-family: $primary-font;
-    font-size: 11px;
-    letter-spacing: 0.16em;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: rgba($gold, 0.9);
+    color: $gold;
+    opacity: 0.85;
   }
 
   h2 {
-    margin: 0 0 10px;
+    margin: 0 0 8px;
     font-family: $primary-font;
-    font-size: 22px;
-    line-height: 1.08;
+    font-size: 20px;
+    line-height: 1.1;
     color: $gold;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
   }
 
   .lead,
   .description {
     margin: 0;
-    font-size: 13px;
-    line-height: 1.55;
-    color: rgba($white, 0.8);
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba($white, 0.85);
     overflow-wrap: anywhere;
   }
 
@@ -116,61 +120,74 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 12px;
-    border: 1px solid rgba($white, 0.08);
-    background-color: rgba($white, 0.02);
+    padding: 12px 10px;
+    background-color: rgba($white, 0.015);
+    border: 1px solid rgba($white, 0.06);
   }
 
   .section-heading {
-    margin: 0;
+    margin: 0 0 2px;
     font-family: $primary-font;
-    font-size: 16px;
-    color: $gold;
+    font-size: 14px;
+    color: rgba($gold, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .feature-list {
     display: grid;
-    gap: 10px;
+    gap: 8px;
   }
 
   .feature-card {
-    padding: 10px;
-    border: 1px solid rgba($white, 0.08);
-    background-color: rgba($black, 0.35);
+    padding: 8px 10px;
+    border: 1px solid rgba($white, 0.06);
+    background: 
+      linear-gradient(90deg, rgba($white, 0.02) 0%, transparent 100%),
+      rgba($white, 0.015);
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba($white, 0.04);
+      border-color: rgba($gold, 0.15);
+    }
 
     h4 {
-      margin: 0 0 6px;
+      margin: 0 0 3px;
       font-family: $primary-font;
       font-size: 13px;
-      color: $white;
+      color: rgba($white, 0.95);
     }
 
     p {
       margin: 0;
       font-size: 12px;
-      line-height: 1.5;
-      color: rgba($white, 0.72);
+      line-height: 1.45;
+      color: rgba($white, 0.65);
       overflow-wrap: anywhere;
     }
   }
 
   .footer {
-    margin-top: 4px;
-    padding-top: 14px;
-    border-top: 1px solid rgba($white, 0.08);
+    margin-top: 8px;
+    padding: 20px 10px;
+    border-top: 1px solid rgba($white, 0.05);
     text-align: center;
+    background-color: rgba($black, 0.2);
   }
 
   .disclaimer {
-    margin: 0 0 6px;
+    margin: 0 0 10px;
     font-size: 11px;
-    line-height: 1.45;
-    color: rgba($white, 0.54);
+    line-height: 1.4;
+    color: rgba($white, 0.4);
+    font-style: italic;
   }
 
   .version {
     margin: 0;
-    font-size: 12px;
-    color: rgba($white, 0.34);
+    font-size: 11px;
+    color: rgba($white, 0.25);
+    font-family: monospace;
   }
 </style>

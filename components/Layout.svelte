@@ -70,7 +70,10 @@
     width: 360px !important;
     min-width: 360px !important;
     max-width: 360px !important;
+    height: 100vh;
     min-height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
     background-color: $poe-black;
     display: flex;
     flex-direction: column;
