@@ -15,6 +15,7 @@
   import { getActiveTradeTabTitle, openUrlInActiveTab } from "../lib/services/active-trade-tab";
   import { tradeLocationService } from "../lib/services/trade-location";
   import { flashMessages } from "../lib/services/flash";
+  import { searchPanelService } from "../lib/services/search-panel";
   import { getTradeUrl } from "../lib/utilities/trade-url";
   import { copyToClipboard } from "../lib/utilities/copy-to-clipboard";
   
@@ -158,7 +159,10 @@
       league: current.league
     });
     const activeTabTitle = await getActiveTradeTabTitle();
-    trade.title = (activeTabTitle || document.title).replace(" - Path of Exile", "").replace(/⚡ /g, "") || "New Trade";
+    trade.title =
+      searchPanelService.recommendTitle() ||
+      (activeTabTitle || document.title).replace(" - Path of Exile", "").replace(/⚡ /g, "") ||
+      "Trade";
     await bookmarksService.persistTrade(trade, folder.id);
     await loadTrades();
     flashMessages.success(`Added "${trade.title}" to folder`);

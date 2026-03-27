@@ -5,16 +5,7 @@ export class SearchPanelService {
   private readonly STATS_SELECTOR = '.search-advanced-pane:last-child .filter-group-body .filter:not(.disabled) .filter-title, .filter-group-body .filter .filter-title';
 
   recommendTitle() {
-    const name = this.getName();
-    if (name) return name;
-
-    const category = this.getCategory();
-    const rarity = this.getRarity();
-
-    if (!category) return '';
-    if (!rarity) return category;
-
-    return `${category} (${rarity})`;
+    return this.getName() || "Trade";
   }
 
   getCategory() {
@@ -23,7 +14,7 @@ export class SearchPanelService {
 
   getName() {
     const value = this._scrapeInputValue(this.SEARCH_INPUT_SELECTOR);
-    return this._ensureSearchPrefix(value);
+    return this._normalizeSearchName(value);
   }
 
   getRarity() {
@@ -52,13 +43,13 @@ export class SearchPanelService {
     return value;
   }
 
-  private _ensureSearchPrefix(value: string | null): string | null {
+  private _normalizeSearchName(value: string | null): string | null {
     if (!value) return null;
 
     const trimmed = value.trim();
     if (!trimmed) return null;
 
-    return trimmed.startsWith("~") ? trimmed : `~${trimmed}`;
+    return trimmed.replace(/^~/, "").trim() || null;
   }
 }
 
