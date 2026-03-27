@@ -1,5 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import archiveIcon from "data-text:lucide-static/icons/archive.svg";
+  import archiveRestoreIcon from "data-text:lucide-static/icons/archive-restore.svg";
+  import chevronsUpIcon from "data-text:lucide-static/icons/chevrons-up.svg";
+  import downloadIcon from "data-text:lucide-static/icons/download.svg";
+  import folderPlusIcon from "data-text:lucide-static/icons/folder-plus.svg";
+  import xIcon from "data-text:lucide-static/icons/x.svg";
   import { bookmarksService } from "../../lib/services/bookmarks";
   import { tradeLocationService } from "../../lib/services/trade-location";
   import { flashMessages } from "../../lib/services/flash";
@@ -147,6 +153,15 @@
       importText = "";
       isImportingText = false;
   };
+
+  const toolbarIcons = {
+    newFolder: folderPlusIcon,
+    import: downloadIcon,
+    cancel: xIcon,
+    collapse: chevronsUpIcon,
+    archive: archiveIcon,
+    active: archiveRestoreIcon
+  };
 </script>
 
 <div class="bookmarks-page">
@@ -154,7 +169,7 @@
     <div class="toolbar-row">
       <div class="toolbar-actions">
         <button class="toolbar-button" type="button" title="New Folder" aria-label="New Folder" on:click={createFolder}>
-          <span class="toolbar-icon">📁</span>
+          <span class="toolbar-icon" aria-hidden="true">{@html toolbarIcons.newFolder}</span>
           <span class="toolbar-label">New</span>
         </button>
         <button
@@ -165,11 +180,13 @@
           aria-label={isImportingText ? "Cancel Import" : "Import Folder"}
           on:click={() => isImportingText = !isImportingText}
         >
-          <span class="toolbar-icon">{isImportingText ? "×" : "↓"}</span>
+          <span class="toolbar-icon" aria-hidden="true">
+            {@html isImportingText ? toolbarIcons.cancel : toolbarIcons.import}
+          </span>
           <span class="toolbar-label">{isImportingText ? "Cancel" : "Import"}</span>
         </button>
         <button class="toolbar-button" type="button" title="Collapse All" aria-label="Collapse All" on:click={collapseAll}>
-          <span class="toolbar-icon">▾</span>
+          <span class="toolbar-icon" aria-hidden="true">{@html toolbarIcons.collapse}</span>
           <span class="toolbar-label">Collapse</span>
         </button>
         <button
@@ -180,7 +197,9 @@
           aria-label={showArchived ? "Show Active" : "Show Archived"}
           on:click={() => showArchived = !showArchived}
         >
-          <span class="toolbar-icon">{showArchived ? "☰" : "🗂"}</span>
+          <span class="toolbar-icon" aria-hidden="true">
+            {@html showArchived ? toolbarIcons.active : toolbarIcons.archive}
+          </span>
           <span class="toolbar-label">{showArchived ? "Active" : "Archive"}</span>
         </button>
       </div>
@@ -285,22 +304,21 @@
   }
 
   .toolbar-button {
-    min-height: 42px;
-    padding: 6px 8px 5px;
+    min-height: 36px;
+    padding: 0 10px;
     border: 1px solid rgba($gold, 0.22);
     border-radius: 4px;
     background: rgba($black, 0.34);
     color: #d7a75f;
     font-family: $primary-font;
-    font-size: 9px;
-    letter-spacing: 0.06em;
+    font-size: 10px;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 7px;
     transition:
       border-color 0.15s ease,
       background 0.15s ease,
@@ -322,12 +340,25 @@
   }
 
   .toolbar-icon {
-    font-size: 12px;
     line-height: 1;
+    opacity: 0.82;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+  }
+
+  .toolbar-icon svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 1.85;
   }
 
   .toolbar-label {
     line-height: 1;
+    white-space: nowrap;
   }
 
   @media (min-width: 520px) {
