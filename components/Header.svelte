@@ -2,6 +2,7 @@
   export let logoUrl: string;
   export let isMinimized: boolean = false;
   export let onToggleMinimize: () => void = () => {};
+  export let sidebarSide: 'left' | 'right' = 'left';
 </script>
 
 <header class="header">
@@ -15,7 +16,13 @@
   
   <div class="toolbar">
     <button class="minimize-toggle" on:click={onToggleMinimize} title={isMinimized ? "Expand Sidebar" : "Minimize Sidebar"}>
-      <span class="chev-icon">{isMinimized ? "▶" : "◀"}</span>
+      <span class="chev-icon">
+        {#if sidebarSide === 'left'}
+          {isMinimized ? "▶" : "◀"}
+        {:else}
+          {isMinimized ? "◀" : "▶"}
+        {/if}
+      </span>
     </button>
   </div>
 </header>

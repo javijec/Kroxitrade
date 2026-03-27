@@ -2,33 +2,65 @@
   import Header from "./Header.svelte";
   import Bookmarks from "./pages/Bookmarks.svelte";
   import History from "./pages/History.svelte";
+  import Settings from "./pages/Settings.svelte";
   import About from "./pages/About.svelte";
   import FinerFilters from "./FinerFilters.svelte";
   import logoUrl from "data-base64:~assets/logo.png";
   import { flashMessages } from "../lib/services/flash";
+  import { settings } from "../lib/services/settings";
+  import { onMount } from "svelte";
   
-  let currentPage: 'bookmarks' | 'history' | 'about' = 'bookmarks';
+  let currentPage: 'bookmarks' | 'history' | 'about' | 'settings' = 'bookmarks';
   let isMinimized = false;
 
   const toggleMinimize = () => {
     isMinimized = !isMinimized;
   };
 
+  onMount(async () => {
+    await settings.load();
+  });
+
   $: {
     if (typeof document !== 'undefined') {
       const root = document.documentElement;
+      const isRight = $settings.sidebarSide === 'right';
+      
       if (isMinimized) {
         root.style.setProperty('--bt-sidebar-width', '40px');
       } else {
         root.style.setProperty('--bt-sidebar-width', '360px');
       }
+
+      // Add classes to body and root to help site adjustments
+      document.body.classList.toggle('is-side-right', isRight);
+      document.body.classList.toggle('is-side-left', !isRight);
+      document.documentElement.classList.toggle('bt-side-right', isRight);
+
+      // Target all possible plasmo host containers and apply direct styles for extra robustness
+      const hosts = document.querySelectorAll('plasmo-csui, #plasmo-shadow-container');
+      hosts.forEach((h: any) => {
+        h.classList.toggle('is-side-right', isRight);
+        h.classList.toggle('is-side-left', !isRight);
+        
+        if (isRight) {
+          h.style.setProperty('left', 'auto', 'important');
+          h.style.setProperty('right', '0', 'important');
+        } else {
+          h.style.setProperty('left', '0', 'important');
+          h.style.setProperty('right', 'auto', 'important');
+        }
+      });
     }
   }
 </script>
 
 <div
-  id="kroxitrade-container" class:is-minimized={isMinimized}>
-  <Header {logoUrl} {isMinimized} onToggleMinimize={toggleMinimize} />
+  id="kroxitrade-container" 
+  class:is-minimized={isMinimized} 
+  class:side-right={$settings.sidebarSide === 'right'}
+>
+  <Header {logoUrl} {isMinimized} onToggleMinimize={toggleMinimize} sidebarSide={$settings.sidebarSide} />
   
   <nav class="main-nav">
     <button 
@@ -43,6 +75,12 @@
         on:click={() => currentPage = 'history'}
     >
         History
+    </button>
+    <button 
+        class="nav-item {currentPage === 'settings' ? 'is-active' : ''}" 
+        on:click={() => currentPage = 'settings'}
+    >
+        Settings
     </button>
     <button 
         class="nav-item {currentPage === 'about' ? 'is-active' : ''}" 
@@ -63,9 +101,10 @@
   <main>
     {#if currentPage === 'bookmarks'}
         <Bookmarks />
-
     {:else if currentPage === 'history'}
         <History />
+    {:else if currentPage === 'settings'}
+        <Settings />
     {:else if currentPage === 'about'}
         <About />
     {/if}
@@ -75,9 +114,14 @@
 </div>
 
 {#if isMinimized}
-  <button class="floating-restore-btn" on:click={toggleMinimize} aria-label="Restore Kroxitrade Panel">
+  <button 
+    class="floating-restore-btn" 
+    class:side-right={$settings.sidebarSide === 'right'}
+    on:click={toggleMinimize} 
+    aria-label="Restore Kroxitrade Panel"
+  >
     <img src={logoUrl} alt="Logo" class="floater-logo" />
-    <span class="chev-icon">▶</span>
+    <span class="chev-icon">{$settings.sidebarSide === 'right' ? "◀" : "▶"}</span>
   </button>
 {/if}
 
@@ -104,6 +148,18 @@
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     pointer-events: auto;
     
+    &.side-right {
+      left: auto;
+      right: 0;
+      border-right: none;
+      border-left: 1px solid rgba($gold, 0.18);
+      box-shadow: -4px 0 12px rgba(0,0,0,0.45);
+      
+      &.is-minimized {
+        transform: translateX(100%);
+      }
+    }
+
     &.is-minimized {
       transform: translateX(-100%);
     }
@@ -129,6 +185,21 @@
     transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
     z-index: 2147483647;
     pointer-events: auto;
+
+    &.side-right {
+      left: auto;
+      right: 0;
+      border-right: 1px solid rgba($gold, 0.3);
+      border-left: none;
+      border-radius: 8px 0 0 8px;
+      padding: 10px 6px 10px 8px;
+      box-shadow: -2px 0 10px rgba($black, 0.5);
+
+      &:hover {
+        padding-right: 12px;
+        padding-left: 8px;
+      }
+    }
 
     &:hover {
       background: rgba($black, 0.8);
