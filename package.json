@@ -1,7 +1,7 @@
 {
   "name": "kroxitrade",
   "displayName": "Kroxitrade",
-  "version": "0.0.42",
+  "version": "0.0.43",
   "description": "A browser extension that enhances the Path of Exile trade site with bookmarks, history and result tools.",
   "author": "JaViJeC",
   "contributors": [

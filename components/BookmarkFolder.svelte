@@ -155,51 +155,69 @@
       });
   };
 
-  const promptForTitle = (label: string, currentTitle: string) => {
-    const nextTitle = prompt(label, currentTitle);
-    if (nextTitle === null) {
-      return null;
-    }
+  let editingFolder = false;
+  let folderEditTitle = "";
 
-    const normalizedTitle = nextTitle.trim();
-    if (!normalizedTitle) {
-      flashMessages.alert("Name can't be empty.");
-      return null;
-    }
-
-    if (normalizedTitle === currentTitle) {
-      return null;
-    }
-
-    return normalizedTitle;
+  const startEditingFolder = () => {
+      folderEditTitle = folder.title;
+      editingFolder = true;
   };
 
-  const editFolder = async () => {
-      const newTitle = promptForTitle("Enter new folder name:", folder.title);
-      if (!newTitle) return;
+  const saveFolderTitle = async () => {
+      editingFolder = false;
+      const newTitle = folderEditTitle.trim();
+      if (!newTitle || newTitle === folder.title) return;
 
       await bookmarksService.renameFolder(folder, newTitle);
       folder.title = newTitle;
       flashMessages.success(`Renamed folder to "${newTitle}"`);
   };
 
-  const editTrade = async (trade: BookmarksTradeStruct) => {
-    if (!folder.id) return;
+  const cancelFolderEdit = () => {
+      editingFolder = false;
+  };
 
-    const newTitle = promptForTitle("Enter new search name:", trade.title);
-    if (!newTitle) return;
+  let editingTradeId: string | null = null;
+  let tradeEditTitle = "";
+
+  const startEditingTrade = (trade: BookmarksTradeStruct) => {
+    if (!trade.id) return;
+    editingTradeId = trade.id;
+    tradeEditTitle = trade.title;
+  };
+
+  const saveTradeTitle = async (trade: BookmarksTradeStruct) => {
+    editingTradeId = null;
+    const newTitle = tradeEditTitle.trim();
+    if (!newTitle || !folder.id || newTitle === trade.title) return;
 
     await bookmarksService.renameTrade(trade, folder.id, newTitle);
     await loadTrades();
     flashMessages.success(`Renamed search to "${newTitle}"`);
   };
 
+  const cancelTradeEdit = () => {
+    editingTradeId = null;
+  };
+
 </script>
 
 <div class="folder {isExpanded ? 'is-expanded' : ''} {isArchived ? 'is-archived' : ''}">
   <div class="header">
-    <div class="expansion-wrapper" on:click={() => onToggleExpansion(folder.id || "")}>
-        <div class="header-label">{folder.title}</div>
+    <div class="expansion-wrapper" on:click={(e) => { if (!editingFolder) onToggleExpansion(folder.id || "")}}>
+        {#if editingFolder}
+          <input 
+            type="text" 
+            class="inline-edit-input" 
+            bind:value={folderEditTitle} 
+            on:blur={saveFolderTitle} 
+            on:keydown={e => { if (e.key === 'Enter') saveFolderTitle(); if (e.key === 'Escape') cancelFolderEdit(); }} 
+            autofocus 
+            on:click|stopPropagation
+          />
+        {:else}
+          <div class="header-label">{folder.title}</div>
+        {/if}
         {#if !isArchived}
             <span class="indicator">{isExpanded ? "▼" : "▶"}</span>
         {/if}
@@ -211,7 +229,7 @@
         class="folder-action"
         title="Edit folder"
         aria-label="Edit folder"
-        on:click={() => void editFolder()}>
+        on:click|stopPropagation={startEditingFolder}>
         ✎
       </button>
       <button
@@ -258,13 +276,25 @@
               <div class="drag-handle" title="Drag to reorder">≡</div>
               <div class="trade-info">
                 {#if trade.completedAt}<span class="check">✓</span>{/if}
-                <a
-                  class="trade-link"
-                  href={getTradeUrl(trade.location.version, trade.location.type, trade.location.slug, trade.location.league || tradeLocationService.current.league || 'Standard')}
-                  on:click|preventDefault={() => void openTrade(trade)}
-                >
-                  {trade.title}
-                </a>
+                {#if editingTradeId === trade.id}
+                  <input 
+                    type="text" 
+                    class="inline-edit-input trade-edit" 
+                    bind:value={tradeEditTitle} 
+                    on:blur={() => saveTradeTitle(trade)} 
+                    on:keydown={e => { if (e.key === 'Enter') saveTradeTitle(trade); if (e.key === 'Escape') cancelTradeEdit(); }} 
+                    autofocus 
+                    on:click|stopPropagation
+                  />
+                {:else}
+                  <a
+                    class="trade-link"
+                    href={getTradeUrl(trade.location.version, trade.location.type, trade.location.slug, trade.location.league || tradeLocationService.current.league || 'Standard')}
+                    on:click|preventDefault={() => void openTrade(trade)}
+                  >
+                    {trade.title}
+                  </a>
+                {/if}
               </div>
               <div class="trade-actions">
                 <button
@@ -272,7 +302,7 @@
                   class="trade-action"
                   title="Edit search name"
                   aria-label="Edit search name"
-                  on:click={() => void editTrade(trade)}>
+                  on:click|stopPropagation={() => startEditingTrade(trade)}>
                   ✎
                 </button>
                 <button
@@ -339,6 +369,29 @@
   }
 
   .header-label { flex: 1; font-size: 15px; }
+
+  .inline-edit-input {
+    flex: 1;
+    background: rgba($black, 0.4);
+    border: 1px solid rgba($gold, 0.5);
+    color: $white;
+    font-family: $primary-font;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    outline: none;
+    margin-right: 8px;
+
+    &:focus {
+      border-color: $gold;
+      box-shadow: 0 0 0 1px rgba($gold, 0.2);
+    }
+  }
+
+  .trade-edit {
+    font-size: 12px;
+    margin-right: 0;
+  }
 
   .header-actions {
     display: flex;
