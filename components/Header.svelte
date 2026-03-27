@@ -1,5 +1,7 @@
 <script lang="ts">
   export let logoUrl: string;
+  export let isMinimized: boolean = false;
+  export let onToggleMinimize: () => void = () => {};
 </script>
 
 <header class="header">
@@ -12,7 +14,9 @@
   </div>
   
   <div class="toolbar">
-    <div class="sidepanel-badge">In Page</div>
+    <button class="minimize-toggle" on:click={onToggleMinimize} title={isMinimized ? "Expand Sidebar" : "Minimize Sidebar"}>
+      <span class="chev-icon">{isMinimized ? "▶" : "◀"}</span>
+    </button>
   </div>
 </header>
 
@@ -69,14 +73,28 @@
     align-items: center;
   }
 
-  .sidepanel-badge {
-    padding: 5px 8px;
-    background-color: rgba($white, 0.04);
+  .minimize-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba($white, 0.04);
     border: 1px solid rgba($white, 0.08);
+    border-radius: 4px;
     color: rgba($white, 0.72);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+    .chev-icon {
+      font-size: 10px;
+      line-height: 1;
+    }
+
+    &:hover {
+      background: rgba($white, 0.1);
+      border-color: rgba($gold, 0.4);
+      color: $gold;
+    }
   }
 </style>

@@ -7,6 +7,7 @@ html.bt-has-kroxitrade-sidebar {
 body.bt-has-kroxitrade-sidebar {
   padding-left: var(--bt-sidebar-width, 360px) !important;
   box-sizing: border-box !important;
+  transition: padding-left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
 }
 
 /* Fix for Path of Exile fixed elements */
@@ -15,6 +16,7 @@ body.bt-has-kroxitrade-sidebar {
 .bt-has-kroxitrade-sidebar .contents > .search-bar {
   left: var(--bt-sidebar-width, 360px) !important;
   width: calc(100% - var(--bt-sidebar-width, 360px)) !important;
+  transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
 }
 
 plasmo-csui {
@@ -22,9 +24,9 @@ plasmo-csui {
   left: 0 !important;
   top: 0 !important;
   z-index: 2147483647 !important;
-  width: var(--bt-sidebar-width, 360px) !important;
-  min-width: var(--bt-sidebar-width, 360px) !important;
-  max-width: var(--bt-sidebar-width, 360px) !important;
+  width: 360px !important;
+  min-width: 360px !important;
+  max-width: 360px !important;
   height: 100vh !important;
 }
 

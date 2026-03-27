@@ -8,11 +8,27 @@
   import { flashMessages } from "../lib/services/flash";
   
   let currentPage: 'bookmarks' | 'history' | 'about' = 'bookmarks';
+  let isMinimized = false;
+
+  const toggleMinimize = () => {
+    isMinimized = !isMinimized;
+  };
+
+  $: {
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      if (isMinimized) {
+        root.style.setProperty('--bt-sidebar-width', '40px');
+      } else {
+        root.style.setProperty('--bt-sidebar-width', '360px');
+      }
+    }
+  }
 </script>
 
 <div
-  id="better-trading-container">
-  <Header {logoUrl} />
+  id="kroxitrade-container" class:is-minimized={isMinimized}>
+  <Header {logoUrl} {isMinimized} onToggleMinimize={toggleMinimize} />
   
   <nav class="main-nav">
     <button 
@@ -62,7 +78,7 @@
   @use "sass:color";
   @use "../lib/styles/variables" as *;
 
-  #better-trading-container {
+  #kroxitrade-container {
     width: 360px !important;
     min-width: 360px !important;
     max-width: 360px !important;
@@ -75,6 +91,11 @@
     flex-direction: column;
     font-family: $default-font;
     color: $white;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    
+    &.is-minimized {
+      transform: translateX(calc(-100% + 40px));
+    }
   }
 
   .main-nav {
