@@ -40,46 +40,65 @@
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    height: 32px;
-    padding: 0 12px;
-    border: 1px solid;
+    height: 28px;
+    padding: 0 14px;
+    border: 1px solid rgba($white, 0.1);
+    background: rgba($white, 0.03);
+    border-radius: 2px;
     outline: none;
     text-decoration: none;
     font-family: $primary-font;
-    font-size: 13px;
-    font-weight: bold;
-    color: $white;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: rgba($white, 0.8);
     cursor: pointer;
-    transition: all 0.2s ease;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
 
-    &.is-blue {
-      border-color: #2b3d4f;
-      background: linear-gradient(to bottom, $blue-alt, $blue);
-      &:hover { 
-          background: linear-gradient(to bottom, color.adjust($blue-alt, $lightness: 10%), $blue-alt);
-          border-color: color.adjust($blue-alt, $lightness: 20%);
-      }
+    &:hover {
+      background: rgba($white, 0.08);
+      color: $white;
+      border-color: rgba($white, 0.3);
     }
 
-    &.is-gold {
-      border-color: color.adjust($gold, $lightness: -20%);
-      background: linear-gradient(to bottom, $gold, color.adjust($gold, $lightness: -15%));
-      color: #fff;
+    &:active {
+      transform: translateY(1px);
+    }
+
+    &.is-blue {
+      border-color: rgba($blue, 0.4);
+      background: rgba($blue, 0.1);
+      color: lighten($blue, 20%);
       &:hover { 
-          background: linear-gradient(to bottom, $gold-alt, $gold);
-          border-color: $gold;
+          background: rgba($blue, 0.2);
+          border-color: rgba($blue, 0.8);
+          box-shadow: 0 0 8px rgba($blue, 0.3);
           color: $white;
       }
     }
 
-    &.is-red {
-      border-color: color.adjust($red, $lightness: -10%);
-      background: linear-gradient(to bottom, $red, color.adjust($red, $lightness: -15%));
+    &.is-gold {
+      border-color: rgba($gold, 0.4);
+      background: rgba($gold, 0.08);
+      color: $gold;
       &:hover { 
-          background: linear-gradient(to bottom, color.adjust($red, $lightness: 5%), $red);
-          border-color: color.adjust($red, $lightness: 10%);
+          background: rgba($gold, 0.15);
+          border-color: $gold;
+          box-shadow: 0 0 8px rgba($gold, 0.2);
+          color: lighten($gold, 20%);
+      }
+    }
+
+    &.is-red {
+      border-color: rgba($red, 0.4);
+      background: rgba($red, 0.08);
+      color: lighten($red, 15%);
+      &:hover { 
+          background: rgba($red, 0.15);
+          border-color: $red;
+          box-shadow: 0 0 8px rgba($red, 0.3);
+          color: $white;
       }
     }
   }
