@@ -1,73 +1,137 @@
 <div align="center">
   <img src="assets/logo.png" alt="Kroxitrade Logo" width="120" />
   <h1>Kroxitrade Companion</h1>
-  <p><em>The Ultimate Premium Extension for Path of Exile Trade</em></p>
+  <p><em>Browser extension for a faster, cleaner Path of Exile Trade workflow</em></p>
 </div>
 
 ---
 
-**Kroxitrade** is a lightning-fast, highly-optimized browser extension designed to sit natively inside the official Path of Exile trade site. Built with modern web technologies (**Plasmo**, **Svelte**, and **TypeScript**), it completely revamps the trading workflow with a cohesive, dark-gold aesthetic that matches the in-game experience.
+**Kroxitrade** is a browser extension that injects a native companion sidebar into the official Path of Exile trade site. It combines bookmark management, search history, search-result enhancements, and quality-of-life trading tools in a single Svelte + TypeScript extension built with Plasmo.
 
-## ✨ Key Features
+The project currently focuses on making recurring trade searches easier to save, revisit, compare, and navigate without leaving the official site.
 
-- 📁 **Advanced Bookmarking & Folders:** Save and organize complex item searches with ease.
-- 🖱️ **Fluid Drag & Drop:** Native HTML5 drag-and-drop system to instantly reorder your nested folders and bookmarks without friction.
-- ✏️ **Seamless Inline Editing:** Rename your folders and searches natively within the UI (no more intrusive browser prompts!).
-- 🔍 **Finer Filters Integration:** Specialized native filters deeply integrated with the Path of Exile API for advanced item scouting.
-- 🌙 **Premium "Wraeclast" Aesthetic:** A carefully crafted dark-mode UI with glassmorphism effects, neon-gold hover states, and smooth Svelte micro-animations.
-- 📐 **Smart Responsive Layout:** The extension panel can be minimized into a sleek floating pill. Using real-time CSS variable injection, the Path of Exile website automatically re-centers and expands to give you 100% of your screen real estate back.
-- 🔔 **Non-Obstructive Notifications:** Elegant floating toast notifications that inform you of actions (savings, deletions, copies) without shifting the page layout.
+## Features
 
----
+### Sidebar workflow
 
-## 🛠️ Architecture & Tech Stack
+- **Integrated trade sidebar:** Kroxitrade mounts directly inside `pathofexile.com/trade`.
+- **Resizable layout:** the sidebar width can be adjusted and persisted locally.
+- **Minimize and restore mode:** collapse the panel into a floating pill to recover screen space.
+- **Left or right docking:** choose which side of the trade site the panel should live on.
+- **Trade-site-aware layout shift:** the page adapts to the sidebar width so the official site remains usable.
 
-The extension leverages a robust modern stack to ensure peak performance:
-- **Plasmo Framework** for streamlined cross-browser MV3 extension architecture.
-- **Svelte 4** for reactive, lightweight, and component-driven UI inside isolated shadow DOMs.
-- **TypeScript** for type-safe domain logic and robust interactions with the PoE API.
-- **Sass (Dart Sass)** for complex theming and dynamic CSS transformations.
+### Bookmarks and folders
 
-### Directory Structure
+- **Version-aware folders:** bookmarks are separated by Path of Exile trade version.
+- **Folder creation and inline organization:** create, rename, expand, collapse, archive, and delete folders in place.
+- **Drag and drop reordering:** reorder folders and searches without leaving the panel.
+- **Per-folder import:** paste a serialized folder string and restore it instantly.
+- **Backup and restore:** export all folders to a `.txt` backup file and restore them later.
+- **Archived view:** switch between active and archived folders without losing saved searches.
+
+### Search history and navigation
+
+- **Automatic trade history:** visited searches are tracked and stored locally.
+- **Active-tab integration:** reopening a saved history entry updates the current trade tab instead of spawning extra tabs.
+- **Version filtering:** history entries are filtered to the currently detected trade version.
+
+### Result enhancements
+
+- **Equivalent pricing:** optionally show chaos and divine equivalents using live `poe.ninja` currency ratios.
+- **Search-stat highlighting:** active stat filters are highlighted in the result list.
+- **Socket breakpoint warnings:** armor results can display max-socket warnings based on item level.
+- **Scroll back to result:** pinned-result navigation can scroll the active result list to a specific item.
+
+### Filter helpers
+
+- **Finer Filters integration:** add or exclude modifiers directly from hovered result stats.
+- **Grouped quick actions:** includes pseudo and explicit presets such as resistance/life, attack weapon, and spell weapon filters.
+- **Regex-friendly search inputs:** native trade-site search inputs automatically get the `~` prefix when appropriate.
+
+### Settings and local persistence
+
+- **Sidebar position preference**
+- **Equivalent pricing visibility toggle**
+- **Persistent sidebar width**
+- **Local browser storage for settings, folders, and history**
+- **Ephemeral caching for `poe.ninja` currency ratios**
+
+## Tech Stack
+
+- **Plasmo** for browser extension structure and MV3 integration
+- **Svelte 4** for the injected UI
+- **TypeScript** for extension and domain logic
+- **Sass** for theming and trade-site layout enhancements
+- **Chrome Extension APIs** for storage, tab coordination, and background requests
+
+## Project Structure
 
 ```text
-📁 assets/          # Extension branding and imagery
-📁 components/      # Svelte UI (Layout, Header, Bookmarks, and floating primitives)
-📁 contents/        # Main content scripts securely injected into the trade site's DOM
-📁 lib/
-  ├── services/    # Business logic (Bookmarks, History, Trade Location, Storage)
-  ├── styles/      # Global SCSS variables, themes, and dynamic site adjustments
-  └── utilities/   # Helpers (Clipboard APIs, URL parsing, ID generation)
+assets/              Branding assets
+components/          Svelte UI components and panel pages
+contents/            Content scripts injected into the trade site
+lib/services/        Bookmarks, trade tracking, settings, result enhancements, poe.ninja
+lib/styles/          Base and enhancement styles for the site and sidebar
+lib/types/           Shared TypeScript models
+lib/utilities/       Small helpers for URLs, IDs, clipboard, dates, and parsing
+scripts/             Build/version helper scripts
+background.ts        Background bridge for poe.ninja requests
+popup.svelte         Extension popup entry
 ```
 
-See `docs/ARCHITECTURE.md` for a deeper dive into the messaging bus and storage mechanics.
+See `docs/ARCHITECTURE.md` for a deeper architectural overview if you want to explore the internal services and messaging flow.
 
----
+## Development
 
-## 🚀 Development Setup
+### Requirements
 
-Want to contribute or customize Kroxitrade for your own needs?
+- Node.js
+- npm
 
-1. **Install Dependencies:**
-   ```bash
-   npm install
-   ```
+### Install dependencies
 
-2. **Run in Development Mode (Hot Reloading):**
-   ```bash
-   npm run dev
-   ```
-   > *Load the generated development build from `build/chrome-mv3-dev` into your browser's extension page.*
+```bash
+npm install
+```
 
-3. **Build across browsers:**
-   ```bash
-   npm run build
-   ```
+### Run development build
 
-## ⚖️ License
+```bash
+npm run dev
+```
 
-This project is licensed under the **MIT License**.
+Load the generated development output from `build/chrome-mv3-dev` in your browser's extensions page.
 
-This software is based on or incorporates materials from [Better Trading](https://github.com/exile-center/better-trading) by Exile Center, which is also licensed under the MIT License.
+### Production build
 
-See the [LICENSE](LICENSE) file for the full license text and copyright notices.
+```bash
+npm run build
+```
+
+This build step also runs the local version bump script before generating the final extension bundle.
+
+### Package the extension
+
+```bash
+npm run package
+```
+
+## Permissions and Integrations
+
+- `storage`: persists folders, settings, history, and cache data
+- `tabs`: detects and updates the active Path of Exile trade tab
+- `https://www.pathofexile.com/*`: injects the sidebar and trade helpers
+- `https://poe.ninja/*`: fetches currency ratios for equivalent pricing
+
+## Credits
+
+This project is based on or incorporates ideas/material from:
+
+- [better-trading](https://github.com/exile-center/better-trading)
+- [poe-trade-plus](https://github.com/KroxiLabs/poe-trade-plus/)
+
+## License
+
+Licensed under the **MIT License**.
+
+See the [LICENSE](LICENSE) file for the full license text and notices.
