@@ -3,6 +3,7 @@
   import Bookmarks from "./pages/Bookmarks.svelte";
   import History from "./pages/History.svelte";
   import About from "./pages/About.svelte";
+  import FinerFilters from "./FinerFilters.svelte";
   import logoUrl from "data-base64:~assets/logo.png";
   import { flashMessages } from "../lib/services/flash";
   
@@ -53,6 +54,8 @@
         <About />
     {/if}
   </main>
+
+  <FinerFilters />
 </div>
 
 <style lang="scss">

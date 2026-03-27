@@ -96,46 +96,7 @@ if (!(window as any).__KROX_STARTED__) {
     prefix: 'explicit.stat_',
   });
 
-  // ---------- floating panel ----------
-  const globalPanel = h(`
-    <div id="finer-search-global">
-      <span id="finer-search-global-title">Add to filters</span>
-      <div class="finer-search-global-toggle-collapsed dnArr"></div>
-      <div class="finer-search-global-body hidden">
-        <div class="finer-search-global-section mods">
-          <span class="finer-search-global-section-title">- Modifiers -</span>
-          <div class="finer-search-global-toggle-collapsed dnArr"></div>
-          <div class="finer-search-global-section-body hidden">
-            ${listModifiers.map(({name,types,prefix}) => `
-              <div class="finer-global-btn" data-type="${types.join(',')}" data-prefix="${prefix}">
-                <span class="finer-global-btn-pm mod-name">${name}</span>
-                <span class="finer-global-btn-pm minus" data-action="global-minus">-</span>
-                <span class="finer-global-btn-pm plus"  data-action="global-plus">+</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-        <div class="finer-search-global-section misc">
-          <span class="finer-search-global-section-title">- Miscellaneous -</span>
-          <div class="finer-search-global-section-body hidden">
-            <div class="finer-global-btn" data-type="">
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>`);
 
-  const injectGlobalPanel = () => {
-    const parent = document.getElementById('trade') || document.body;
-    if (parent && !document.getElementById('finer-search-global')) {
-        console.log("[Krox-MainWorld] Injecting global panel into", parent.tagName, parent.id);
-        parent.appendChild(globalPanel);
-    } else if (!parent) {
-        console.warn("[Krox-MainWorld] Waiting for document body/trade element...");
-        setTimeout(injectGlobalPanel, 1000);
-    }
-  };
-  setTimeout(injectGlobalPanel, 1500);
 
   // ---------- overlay/button templates ----------
   const filteredOverlay = () => h(`<div class="finer-filtered-overlay"></div>`);
@@ -144,10 +105,6 @@ if (!(window as any).__KROX_STARTED__) {
       <span class="btn-finer add" data-action="add-filter"  title="add this mod to your search filters">+</span>
       <span class="btn-finer rm"  data-action="rmv-filter"  title="remove this mod from your search results">-</span>
     </span>`);
-
-  // ---------- state for dragging ----------
-  let draggingEl: any = null;
-  let dragOff: any = null;
 
   // ---------- map ----------
   const modMap: Record<string, string> = {
@@ -204,13 +161,19 @@ if (!(window as any).__KROX_STARTED__) {
 
   // step 1: hover a result row -> check filters
   onEnter('.resultset > .row, .resultset > .result-item, .search-results .result-item, .search-results .row', (e: any, row: HTMLElement) => {
-    console.debug("[Krox-MainWorld] Hovered row:", row.getAttribute('data-id') || row.id);
     if (row.classList.contains('finer-processed')) return;
+    
+    // Check if the vue app exists
+    if (!getApp()) {
+      console.warn("[Krox-MainWorld] Vue 'window.app' not found. Is this PoE 2 Trade?");
+    }
+
     const rowid = row.getAttribute('data-id') || row.id;
-    const mods = Array.from(row.querySelector('.content')?.querySelectorAll('[class*="Mod"]') || []) as HTMLElement[];
+    // Broaden the modifier query selector to support new classes
+    const mods = Array.from(row.querySelectorAll('.content [class*="Mod"], .item-stats .stat-line')) as HTMLElement[];
     const ISGs = ItemSearchGroupsVueItems();
 
-    console.debug(`[Krox-MainWorld] Row has ${mods.length} mods and ${ISGs.length} search groups`);
+    console.debug(`[Krox-MainWorld] Hovered Row -> Found ${mods.length} modifier elements`);
 
     mods.forEach((mod) => {
       const sEl = mod.querySelector('.lc.s') as HTMLElement;
@@ -236,13 +199,14 @@ if (!(window as any).__KROX_STARTED__) {
   });
 
   // step 2: hover a mod -> add/remove finer filter buttons
-  onEnter('.itemBoxContent > .content > div', (e: any, el: HTMLElement) => {
+  onEnter('.itemBoxContent > .content > div, .content [class*="Mod"], .item-stats .stat-line', (e: any, el: HTMLElement) => {
     if (!el.classList.contains('finer-filterable') && !el.classList.contains('finer-filtered')) return;
     if (el.querySelector('#btns-finer')) return;
+    console.debug("[Krox-MainWorld] Attaching hover buttons to modifier:", el);
     const btns = buttonsTemplate();
     if (btns) el.appendChild(btns);
   });
-  onLeave('.itemBoxContent > .content > div', (e: any, el: HTMLElement) => {
+  onLeave('.itemBoxContent > .content > div, .content [class*="Mod"], .item-stats .stat-line', (e: any, el: HTMLElement) => {
     const btns = el.querySelector('#btns-finer');
     if (btns) btns.remove();
   });
@@ -255,67 +219,45 @@ if (!(window as any).__KROX_STARTED__) {
     addOrRemoveFilter(e, false, el);
   });
 
-  // step 4: global panel clicks
-  on('click', '.finer-global-btn [data-action="global-plus"], .finer-global-btn [data-action="global-minus"]', (e: any, btn: HTMLElement) => {
-    addPseudoMods(e, btn);
-  });
-  on('click', '.finer-search-global-toggle-collapsed', (e: any, toggler: HTMLElement) => {
-    toggler.classList.toggle('dnArr');
-    toggler.classList.toggle('upArr');
-    const body = toggler.parentElement?.querySelector('[class*="body"]');
-    if (body) body.classList.toggle('hidden');
-  });
+  // listener for actions dispatched from the Svelte sidebar
+  document.addEventListener('krox-finer-action', (e: any) => {
+    const detail = e.detail;
+    if (!detail) return;
+    
+    if (detail.action === 'global-plus' || detail.action === 'global-minus') {
+        const more = detail.action === 'global-plus';
+        const hashes = (detail.types || '').split(',').filter(Boolean);
+        const prefix = detail.prefix || 'pseudo.pseudo_';
+        
+        const ISG_AND = ItemSearchGroupsVueItems('and')?.find((g: any) => g.index === 0);
+        let reload = false;
 
-  // step 5: drag the floating panel
-  on('mousedown', '#finer-search-global-title', (e: any, title: HTMLElement) => {
-    draggingEl = title.parentElement;
-    if (!draggingEl) return;
-    const rect = draggingEl.getBoundingClientRect();
-    dragOff = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    e.preventDefault();
-  });
-  document.addEventListener('mouseup', () => { draggingEl = null; dragOff = null; });
-  document.addEventListener('mousemove', (e: MouseEvent) => {
-    if (!draggingEl || !dragOff) return;
-    const maxX = window.innerWidth  - draggingEl.offsetWidth;
-    const maxY = window.innerHeight - draggingEl.offsetHeight;
-    const left = Math.max(0, Math.min(e.clientX - dragOff.x, maxX));
-    const top  = Math.max(0, Math.min(e.clientY - dragOff.y, maxY));
-    Object.assign(draggingEl.style, { left: `${left}px`, top: `${top}px`, right: 'auto' });
+        hashes.forEach((hash: string) => {
+          const reHashed = `${prefix}${modMap[hash]}`;
+          const current = ISG_AND?.filters?.find((f: any) => f.id === reHashed);
+          if (current) {
+            const idx = ISG_AND.filters.indexOf(current);
+            const curVal = ISG_AND.state.filters[idx].value || {};
+            const curMin = curVal.min || 0;
+            if (curMin || more) ISG_AND.updateFilter(idx, { min: curMin + (more ? 10 : -10) });
+            else ISG_AND.removeFilter(idx);
+            reload = true;
+          } else if (more && ISG_AND?.selectFilter) {
+            ISG_AND.selectFilter(createFilter(reHashed));
+            reload = true;
+          }
+        });
+
+        if (reload && getGlobalApp()?.save) {
+          getGlobalApp().save(true);
+        }
+    }
   });
 
   const getGlobalApp = () => (window as any).app;
 
   // ---------- interactions ----------
-  function addPseudoMods(e: any, btn: HTMLElement) {
-    const more = btn.classList.contains('plus');
-    const finer = btn.closest('.finer-global-btn') as HTMLElement;
-    const hashes = (finer?.dataset?.type || '').split(',').filter(Boolean);
-    const prefix = finer?.dataset?.prefix || 'pseudo.pseudo_';
 
-    const ISG_AND = ItemSearchGroupsVueItems('and')?.find((g: any) => g.index === 0);
-    let reload = false;
-
-    hashes.forEach((hash) => {
-      const reHashed = `${prefix}${modMap[hash]}`;
-      const current = ISG_AND?.filters?.find((f: any) => f.id === reHashed);
-      if (current) {
-        const idx = ISG_AND.filters.indexOf(current);
-        const curVal = ISG_AND.state.filters[idx].value || {};
-        const curMin = curVal.min || 0;
-        if (curMin || more) ISG_AND.updateFilter(idx, { min: curMin + (more ? 10 : -10) });
-        else ISG_AND.removeFilter(idx);
-        reload = true;
-      } else if (more) {
-        ISG_AND?.selectFilter?.(createFilter(reHashed));
-        reload = true;
-      }
-    });
-
-    if (reload && getGlobalApp()?.save) {
-      getGlobalApp().save(true);
-    }
-  }
 
   function addOrRemoveFilter(e: any, isAnd: boolean, btn: HTMLElement) {
     const filterType = isAnd ? 'and' : 'not';
