@@ -44,12 +44,6 @@
       }
     }));
   }
-
-  function handleCurrencyAction(action: 'currency-plus' | 'currency-minus') {
-    document.dispatchEvent(new CustomEvent('krox-currency-action', {
-      detail: { action }
-    }));
-  }
 </script>
 
 <div class="finer-filters-container">
@@ -71,16 +65,6 @@
             <button class="action-btn plus" on:click={() => handleAction('global-plus', mod.types, mod.prefix)}>+</button>
           </div>
         {/each}
-      </div>
-
-      <div class="section-title mt-10">- MISCELLANEOUS -</div>
-      
-      <div class="modifiers-list">
-        <div class="finer-global-btn">
-          <span class="mod-name">Max Price Limit</span>
-          <button class="action-btn minus" on:click={() => handleCurrencyAction('currency-minus')}>-</button>
-          <button class="action-btn plus" on:click={() => handleCurrencyAction('currency-plus')}>+</button>
-        </div>
       </div>
     </div>
   {/if}
@@ -146,9 +130,6 @@
     letter-spacing: 0.05em;
   }
 
-  .mt-10 {
-    margin-top: 15px;
-  }
 
   .modifiers-list {
     display: flex;

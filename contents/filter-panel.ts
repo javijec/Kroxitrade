@@ -254,6 +254,8 @@ if (!(window as any).__KROX_STARTED__) {
     }
   });
 
+
+
   const getGlobalApp = () => (window as any).app;
 
   // ---------- interactions ----------
