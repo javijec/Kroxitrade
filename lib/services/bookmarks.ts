@@ -194,6 +194,26 @@ export class BookmarksService {
     await this.refresh();
   }
 
+  async moveFolder(folderId: string, newIndex: number, options: { version: TradeSiteVersion; archived: boolean }) {
+    const folders = await this.fetchFolders();
+    const matchingFolders = folders.filter(
+      (folder) => folder.version === options.version && !!folder.archivedAt === options.archived
+    );
+    const currentIndex = matchingFolders.findIndex((folder) => folder.id === folderId);
+    if (currentIndex === -1) return;
+
+    const safeIndex = Math.max(0, Math.min(newIndex, matchingFolders.length - 1));
+    if (currentIndex === safeIndex) return;
+
+    const reorderedFolders = [...matchingFolders];
+    const [movedFolder] = reorderedFolders.splice(currentIndex, 1);
+    reorderedFolders.splice(safeIndex, 0, movedFolder);
+
+    const updatedFolders = this.partiallyReorderFolders(folders, reorderedFolders);
+    await this.persistFolders(updatedFolders);
+    await this.refresh();
+  }
+
   // ─── LOGIC ────────────────────────────────────────────────
 
   async toggleTradeCompletion(trade: BookmarksTradeStruct, folderId: string) {

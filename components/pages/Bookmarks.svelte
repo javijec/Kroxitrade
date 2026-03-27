@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { flip } from "svelte/animate";
   import { onMount } from "svelte";
   import archiveIcon from "data-text:lucide-static/icons/archive.svg";
   import archiveRestoreIcon from "data-text:lucide-static/icons/archive-restore.svg";
@@ -25,6 +26,8 @@
   
   let isImportingText = false;
   let importText = "";
+  let draggedFolderId: string | null = null;
+  let dragOverFolderId: string | null = null;
 
   $: currentLocation = tradeLocationService.locationStore;
   $: displayedFolders = $bookmarksService.filter((folder) => {
@@ -99,6 +102,50 @@
 
   const collapseAll = () => {
       expandedFolderIds = [];
+  };
+
+  const handleFolderDragStart = (event: DragEvent, folderId: string) => {
+    draggedFolderId = folderId;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", folderId);
+    }
+  };
+
+  const handleFolderDragEnter = (event: DragEvent, folderId: string) => {
+    event.preventDefault();
+    if (draggedFolderId && draggedFolderId !== folderId) {
+      dragOverFolderId = folderId;
+    }
+  };
+
+  const handleFolderDrop = async (event: DragEvent, folderId: string) => {
+    event.preventDefault();
+    if (!draggedFolderId || draggedFolderId === folderId) {
+      draggedFolderId = null;
+      dragOverFolderId = null;
+      return;
+    }
+
+    const targetIndex = displayedFolders.findIndex((folder) => folder.id === folderId);
+    if (targetIndex === -1) {
+      draggedFolderId = null;
+      dragOverFolderId = null;
+      return;
+    }
+
+    await bookmarksService.moveFolder(draggedFolderId, targetIndex, {
+      version: $currentLocation.version,
+      archived: showArchived
+    });
+
+    draggedFolderId = null;
+    dragOverFolderId = null;
+  };
+
+  const handleFolderDragEnd = () => {
+    draggedFolderId = null;
+    dragOverFolderId = null;
   };
 
   const exportToFile = async () => {
@@ -235,13 +282,21 @@
   <LoadingContainer {isLoading}>
     <div class="folders-list">
       {#each displayedFolders as folder (folder.id)}
-        <BookmarkFolder 
-            {folder} 
-            {expandedFolderIds} 
-            onToggleExpansion={toggleExpansion} 
-            onArchiveEvent={() => toggleArchive(folder)}
-            onDeleteEvent={() => deleteFolder(folder)}
-        />
+        <div class="folder-shell" animate:flip={{ duration: 180 }}>
+          <BookmarkFolder 
+              {folder} 
+              {expandedFolderIds} 
+              onToggleExpansion={toggleExpansion}
+              onArchiveEvent={() => toggleArchive(folder)}
+              onDeleteEvent={() => deleteFolder(folder)}
+              onFolderDragStart={handleFolderDragStart}
+              onFolderDragEnter={handleFolderDragEnter}
+              onFolderDrop={handleFolderDrop}
+              onFolderDragEnd={handleFolderDragEnd}
+              isFolderDragging={draggedFolderId === folder.id}
+              isFolderDragOver={dragOverFolderId === folder.id}
+          />
+        </div>
       {/each}
     </div>
   </LoadingContainer>
@@ -435,6 +490,10 @@
     margin: 2px 0;
     width: 100%;
     min-width: 0;
+  }
+
+  .folder-shell {
+    will-change: transform;
   }
 
   .import-text-area {

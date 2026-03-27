@@ -1,9 +1,12 @@
 <script lang="ts">
+  import { flip } from "svelte/animate";
+  import { slide } from "svelte/transition";
   import archiveIcon from "data-text:lucide-static/icons/archive.svg";
   import archiveRestoreIcon from "data-text:lucide-static/icons/archive-restore.svg";
   import checkIcon from "data-text:lucide-static/icons/check.svg";
   import copyIcon from "data-text:lucide-static/icons/copy.svg";
   import editIcon from "data-text:lucide-static/icons/pencil.svg";
+  import gripVerticalIcon from "data-text:lucide-static/icons/grip-vertical.svg";
   import replaceIcon from "data-text:lucide-static/icons/refresh-cw.svg";
   import trashIcon from "data-text:lucide-static/icons/trash-2.svg";
   import uploadIcon from "data-text:lucide-static/icons/upload.svg";
@@ -23,6 +26,12 @@
   export let onToggleExpansion: (id: string) => void;
   export let onArchiveEvent: () => void;
   export let onDeleteEvent: () => void;
+  export let onFolderDragStart: (event: DragEvent, id: string) => void = () => {};
+  export let onFolderDragEnter: (event: DragEvent, id: string) => void = () => {};
+  export let onFolderDrop: (event: DragEvent, id: string) => void = () => {};
+  export let onFolderDragEnd: () => void = () => {};
+  export let isFolderDragging = false;
+  export let isFolderDragOver = false;
 
   let trades: BookmarksTradeStruct[] = [];
   let isLoading = false;
@@ -238,6 +247,7 @@
     check: normalizeIcon(checkIcon),
     copy: normalizeIcon(copyIcon),
     edit: normalizeIcon(editIcon),
+    grip: normalizeIcon(gripVerticalIcon),
     replace: normalizeIcon(replaceIcon),
     trash: normalizeIcon(trashIcon),
     upload: normalizeIcon(uploadIcon)
@@ -273,8 +283,21 @@
 
 </script>
 
-<div class="folder {isExpanded ? 'is-expanded' : ''} {isArchived ? 'is-archived' : ''}">
+<div
+  class="folder {isExpanded ? 'is-expanded' : ''} {isArchived ? 'is-archived' : ''}"
+  class:is-folder-dragging={isFolderDragging}
+  class:is-folder-drag-over={isFolderDragOver}
+  draggable="true"
+  on:dragstart={(e) => onFolderDragStart(e, folder.id || "")}
+  on:dragenter={(e) => onFolderDragEnter(e, folder.id || "")}
+  on:dragover|preventDefault
+  on:drop|preventDefault={(e) => onFolderDrop(e, folder.id || "")}
+  on:dragend={onFolderDragEnd}
+>
   <div class="header">
+    <div class="folder-drag-handle" title="Drag to reorder folder" aria-hidden="true">
+      <span class="action-icon">{@html icons.grip}</span>
+    </div>
     <button 
         type="button"
         class="expansion-wrapper" 
@@ -339,11 +362,12 @@
   </div>
 
   {#if isExpanded}
-    <div class="trades-content">
+    <div class="trades-content" transition:slide={{ duration: 180 }}>
       <LoadingContainer {isLoading} size="small">
         <ul class="trades-list">
           {#each trades as trade, i (trade.id)}
             <li class="trade-item"
+                animate:flip={{ duration: 180 }}
                 class:is-completed={!!trade.completedAt}
                 class:is-dragging={draggedIndex === i}
                 class:is-drag-over={dragOverIndex === i}
@@ -449,8 +473,22 @@
     box-shadow:
       inset 0 1px 0 rgba($white, 0.02),
       0 8px 18px rgba(0, 0, 0, 0.18);
+    transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
 
     &.is-archived { opacity: 0.72; }
+
+    &.is-folder-dragging {
+      opacity: 0.45;
+      transform: scale(0.985);
+    }
+
+    &.is-folder-drag-over {
+      border-color: rgba($gold, 0.34);
+      box-shadow:
+        inset 0 1px 0 rgba($white, 0.02),
+        0 0 0 1px rgba($gold, 0.2),
+        0 10px 22px rgba(0, 0, 0, 0.24);
+    }
   }
 
   .header {
@@ -464,6 +502,20 @@
     color: $white;
     font-family: $primary-font;
     border-bottom: 1px solid rgba($gold, 0.1);
+  }
+
+  .folder-drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 20px;
+    color: rgba($gold-alt, 0.46);
+    cursor: grab;
+    user-select: none;
+
+    &:active {
+      cursor: grabbing;
+    }
   }
 
   .expansion-wrapper {
@@ -616,8 +668,9 @@
     }
     
     &.is-drag-over {
-      border-bottom: 2px solid $gold;
+      border-color: rgba($gold, 0.42);
       background-color: rgba($gold, 0.15);
+      box-shadow: 0 0 0 1px rgba($gold, 0.18);
     }
   }
 
