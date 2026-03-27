@@ -74,11 +74,21 @@
   <FinerFilters />
 </div>
 
+{#if isMinimized}
+  <button class="floating-restore-btn" on:click={toggleMinimize} aria-label="Restore Kroxitrade Panel">
+    <img src={logoUrl} alt="Logo" class="floater-logo" />
+    <span class="chev-icon">▶</span>
+  </button>
+{/if}
+
 <style lang="scss">
   @use "sass:color";
   @use "../lib/styles/variables" as *;
 
   #kroxitrade-container {
+    position: absolute;
+    left: 0;
+    top: 0;
     width: 360px !important;
     min-width: 360px !important;
     max-width: 360px !important;
@@ -92,9 +102,51 @@
     font-family: $default-font;
     color: $white;
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    pointer-events: auto;
     
     &.is-minimized {
-      transform: translateX(calc(-100% + 40px));
+      transform: translateX(-100%);
+    }
+  }
+
+  .floating-restore-btn {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba($black, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba($gold, 0.3);
+    border-left: none;
+    padding: 10px 8px 10px 6px;
+    border-radius: 0 8px 8px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 2px 0 10px rgba($black, 0.5);
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 2147483647;
+    pointer-events: auto;
+
+    &:hover {
+      background: rgba($black, 0.8);
+      border-color: $gold;
+      box-shadow: 4px 0 15px rgba($gold, 0.15);
+      padding-left: 8px; /* slight peek effect */
+    }
+
+    .floater-logo {
+      width: 22px;
+      height: auto;
+      pointer-events: none;
+      filter: drop-shadow(0 0 2px rgba($black, 0.8));
+    }
+
+    .chev-icon {
+      color: $gold;
+      font-size: 11px;
     }
   }
 
