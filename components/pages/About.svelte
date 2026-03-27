@@ -56,6 +56,7 @@
 
   <div class="footer">
     <p class="disclaimer">Kroxitrade is an independent community project and is not affiliated with Grinding Gear Games.</p>
+    <p class="author">Created by <strong>JaViJeC</strong></p>
     <p class="version">Version {appVersion}</p>
   </div>
 </div>
@@ -179,6 +180,17 @@
     line-height: 1.4;
     color: rgba($white, 0.4);
     font-style: italic;
+  }
+
+  .author {
+    margin: 0 0 4px;
+    font-size: 13px;
+    color: rgba($white, 0.7);
+    
+    strong {
+      color: $gold;
+      text-shadow: 0 0 8px rgba($gold, 0.3);
+    }
   }
 
   .version {
