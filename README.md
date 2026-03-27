@@ -65,4 +65,9 @@ Want to contribute or customize Kroxitrade for your own needs?
    ```
 
 ## ⚖️ License
-Personal project. Built by exiles, for exiles.
+
+This project is licensed under the **MIT License**.
+
+This software is based on or incorporates materials from [Better Trading](https://github.com/exile-center/better-trading) by Exile Center, which is also licensed under the MIT License.
+
+See the [LICENSE](LICENSE) file for the full license text and copyright notices.
