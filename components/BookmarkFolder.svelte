@@ -70,10 +70,45 @@
     flashMessages.success(`Duplicated ${trade.title}`);
   };
 
-  const reorderTrade = async (trade: BookmarksTradeStruct, direction: "up" | "down") => {
-    if (!folder.id || !trade.id) return;
-    await bookmarksService.reorderTrade(trade.id, folder.id, direction);
-    await loadTrades();
+  let draggedIndex: number | null = null;
+  let dragOverIndex: number | null = null;
+
+  const handleDragStart = (e: DragEvent, index: number) => {
+    draggedIndex = index;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", index.toString());
+    }
+  };
+
+  const handleDragEnter = (e: DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex !== null && draggedIndex !== index) {
+      dragOverIndex = index;
+    }
+  };
+
+  const handleDrop = async (e: DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex !== null && draggedIndex !== index && folder.id) {
+      const trade = trades[draggedIndex];
+      if (trade && trade.id) {
+        // Optimistic UI update
+        const moved = trades.splice(draggedIndex, 1)[0];
+        trades.splice(index, 0, moved);
+        trades = [...trades];
+        // Background sync
+        await bookmarksService.moveTrade(trade.id, folder.id, index);
+        await loadTrades();
+      }
+    }
+    draggedIndex = null;
+    dragOverIndex = null;
+  };
+
+  const handleDragEnd = () => {
+    draggedIndex = null;
+    dragOverIndex = null;
   };
 
   const createTradeFromCurrent = async () => {
@@ -210,8 +245,17 @@
     <div class="trades-content">
       <LoadingContainer {isLoading} size="small">
         <ul class="trades-list">
-          {#each trades as trade}
-            <li class="trade-item">
+          {#each trades as trade, i (trade.id)}
+            <li class="trade-item"
+                class:is-dragging={draggedIndex === i}
+                class:is-drag-over={dragOverIndex === i}
+                draggable="true"
+                on:dragstart={(e) => handleDragStart(e, i)}
+                on:dragenter={(e) => handleDragEnter(e, i)}
+                on:dragover|preventDefault
+                on:drop|preventDefault={(e) => handleDrop(e, i)}
+                on:dragend={handleDragEnd}>
+              <div class="drag-handle" title="Drag to reorder">≡</div>
               <div class="trade-info">
                 {#if trade.completedAt}<span class="check">✓</span>{/if}
                 <a
@@ -238,23 +282,6 @@
                   aria-label="Copy URL"
                   on:click={() => copyTrade(trade)}>
                   ⧉
-                </button>
-
-                <button
-                  type="button"
-                  class="trade-action"
-                  title="Move up"
-                  aria-label="Move up"
-                  on:click={() => void reorderTrade(trade, "up")}>
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  class="trade-action"
-                  title="Move down"
-                  aria-label="Move down"
-                  on:click={() => void reorderTrade(trade, "down")}>
-                  ↓
                 </button>
                 <button
                   type="button"
@@ -362,8 +389,37 @@
     gap: 8px;
     padding: 6px 10px;
     border-bottom: 1px solid rgba($blue-alt, 0.3);
+    transition: background-color 0.2s, border-color 0.2s, opacity 0.2s;
     
     &:hover { background-color: rgba($white, 0.05); }
+
+    &.is-dragging {
+      opacity: 0.3;
+      background-color: rgba($gold, 0.1);
+    }
+    
+    &.is-drag-over {
+      border-bottom: 2px solid $gold;
+      background-color: rgba($gold, 0.15);
+    }
+  }
+
+  .drag-handle {
+    cursor: grab;
+    color: rgba($white, 0.3);
+    font-size: 16px;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 4px;
+    
+    &:hover {
+        color: $gold;
+    }
+    &:active {
+        cursor: grabbing;
+    }
   }
 
   .trade-info {

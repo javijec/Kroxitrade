@@ -178,6 +178,22 @@ export class BookmarksService {
     await this.refresh();
   }
 
+  async moveTrade(tradeId: string, folderId: string, newIndex: number) {
+    const trades = await this.fetchTradesByFolderId(folderId);
+    const index = trades.findIndex(t => t.id === tradeId);
+    if (index === -1) return;
+    
+    const safeIndex = Math.max(0, Math.min(newIndex, trades.length - 1));
+    if (index === safeIndex) return;
+
+    const updated = [...trades];
+    const [movedElement] = updated.splice(index, 1);
+    updated.splice(safeIndex, 0, movedElement);
+    
+    await this.persistTrades(updated, folderId);
+    await this.refresh();
+  }
+
   // ─── LOGIC ────────────────────────────────────────────────
 
   async toggleTradeCompletion(trade: BookmarksTradeStruct, folderId: string) {
