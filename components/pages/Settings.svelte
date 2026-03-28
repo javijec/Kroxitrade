@@ -202,15 +202,15 @@
     align-items: center;
     width: 100%;
     min-height: 34px;
-    border: 1px solid rgba($blue, 0.28);
+    border: 1px solid rgba($gold, 0.18);
     border-radius: 3px;
-    background: rgba($blue, 0.08);
-    color: color.adjust($blue, $lightness: 20%);
+    background: rgba($white, 0.03);
+    color: rgba($white, 0.82);
     transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 
     &:hover {
-      background: rgba($blue, 0.16);
-      border-color: rgba($blue, 0.55);
+      background: rgba($gold, 0.07);
+      border-color: rgba($gold, 0.34);
       color: $white;
     }
   }
@@ -229,6 +229,7 @@
     min-width: 0;
     padding: 0 34px 0 10px;
     cursor: pointer;
+    background-color: rgba($white, 0.03);
     font-family: $primary-font;
     font-size: 11px;
     font-weight: 600;
@@ -240,7 +241,13 @@
       border-color: rgba($gold, 0.45);
       background: rgba($gold, 0.08);
       color: $gold;
+      box-shadow: 0 0 0 1px rgba($gold, 0.14);
     }
+  }
+
+  .language-select option {
+    background: #14110d;
+    color: #e9d8b3;
   }
 
   .language-select-wrap::after {
@@ -250,7 +257,7 @@
     top: 50%;
     transform: translateY(-50%);
     pointer-events: none;
-    color: rgba($white, 0.55);
+    color: rgba($gold, 0.72);
     font-size: 11px;
   }
 

@@ -63,13 +63,15 @@ export class ItemResultsService {
 
 
   private async fetchRatios() {
-    const league = tradeLocationService.current.league;
-    console.log("[Kroxitrade] Current league detected:", league);
-    if (league) {
-        this.chaosRatios = await poeNinjaService.fetchChaosRatiosFor(league);
-    } else {
-        console.warn("[Kroxitrade] No league detected, skipping poe.ninja ratios.");
+    const { league, type, slug } = tradeLocationService.current;
+
+    if (!league || !type || !slug) {
+      this.chaosRatios = null;
+      return;
     }
+
+    console.log("[Kroxitrade] Current league detected:", league);
+    this.chaosRatios = await poeNinjaService.fetchChaosRatiosFor(league);
   }
 
   private injectEquivalentPricing(row: HTMLElement) {
