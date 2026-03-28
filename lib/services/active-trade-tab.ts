@@ -1,4 +1,4 @@
-const TRADE_URL_PATTERN = /^https:\/\/www\.pathofexile\.com\/trade(?:\/|$)/i
+const TRADE_URL_PATTERN = /^https:\/\/(?:[^./]+\.)?pathofexile\.com\/trade(?:\/|$)/i
 
 const getActiveTab = async () => {
   if (typeof chrome === "undefined" || !chrome.tabs?.query) {

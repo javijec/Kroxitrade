@@ -1,7 +1,7 @@
 {
   "name": "kroxitrade",
   "displayName": "Kroxitrade",
-  "version": "1.0.23",
+  "version": "1.0.32",
   "license": "MIT",
   "description": "A browser extension that enhances the Path of Exile trade site with bookmarks, history and result tools.",
   "author": "JaViJeC",
@@ -40,7 +40,7 @@
       "tabs"
     ],
     "host_permissions": [
-      "https://www.pathofexile.com/*",
+      "https://*.pathofexile.com/*",
       "https://poe.ninja/*"
     ]
   }

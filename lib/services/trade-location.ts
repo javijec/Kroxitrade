@@ -14,6 +14,7 @@ const BASE_URL = "https://www.pathofexile.com";
 const HISTORY_KEY = "trade-history";
 const MAX_HISTORY = 50;
 const TRADE_REALMS = ["xbox", "sony", "poe2"];
+const PATHOFEXILE_HOSTNAME_PATTERN = /(?:^|\.)pathofexile\.com$/i;
 
 export class TradeLocationService {
   private lastLocation: ExactTradeLocationStruct | null = null;
@@ -220,7 +221,7 @@ export class TradeLocationService {
       return this.emptyLocation();
     }
 
-    if (url.hostname !== "www.pathofexile.com" || !url.pathname.startsWith("/trade")) {
+    if (!PATHOFEXILE_HOSTNAME_PATTERN.test(url.hostname) || !url.pathname.startsWith("/trade")) {
       return this.emptyLocation();
     }
 
