@@ -43,7 +43,9 @@ export const openUrlInActiveTab = async (url: string) => {
   }
 
   // Final fallback
-  window.open(url, "_blank", "noopener")
+  if (typeof globalThis.open === "function") {
+    globalThis.open(url, "_blank", "noopener")
+  }
 }
 
 export const sendMessageToActiveTradeTab = async <T>(message: unknown) => {

@@ -3,6 +3,7 @@
   import Layout from "~components/Layout.svelte"
   import cssText from "data-text:~lib/styles/base.scss"
   import enhancementsCss from "data-text:~lib/styles/enhancements.scss"
+  import { bulkSellersService } from "~lib/services/bulk-sellers"
   import { pageTitleService } from "~lib/services/page-title"
   import { itemResultsService } from "~lib/services/item-results"
   import { onMount } from "svelte"
@@ -39,6 +40,7 @@
 
     pageTitleService.initialize()
     void itemResultsService.initialize()
+    bulkSellersService.initialize()
 
     const handleMessage = (request: { query?: string; itemId?: string }) => {
       if (request.query !== "scroll-to-item" || !request.itemId) {

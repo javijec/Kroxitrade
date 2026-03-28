@@ -1,6 +1,7 @@
 <script lang="ts">
   import Header from "./Header.svelte";
   import Bookmarks from "./pages/Bookmarks.svelte";
+  import BulkSellers from "./pages/BulkSellers.svelte";
   import History from "./pages/History.svelte";
   import Settings from "./pages/Settings.svelte";
   import About from "./pages/About.svelte";
@@ -10,7 +11,7 @@
   import { settings } from "../lib/services/settings";
   import { onDestroy, onMount } from "svelte";
   
-  let currentPage: 'bookmarks' | 'history' | 'about' | 'settings' = 'bookmarks';
+  let currentPage: 'bookmarks' | 'bulk' | 'history' | 'about' | 'settings' = 'bookmarks';
   let isMinimized = false;
   let isResizing = false;
   let liveSidebarWidth: number | null = null;
@@ -145,6 +146,13 @@
     </button>
 
     <button 
+        class="nav-item {currentPage === 'bulk' ? 'is-active' : ''}" 
+        on:click={() => currentPage = 'bulk'}
+    >
+        Bulk
+    </button>
+
+    <button 
         class="nav-item {currentPage === 'history' ? 'is-active' : ''}" 
         on:click={() => currentPage = 'history'}
     >
@@ -179,6 +187,8 @@
   <main>
     {#if currentPage === 'bookmarks'}
         <Bookmarks />
+    {:else if currentPage === 'bulk'}
+        <BulkSellers />
     {:else if currentPage === 'history'}
         <History />
     {:else if currentPage === 'settings'}
