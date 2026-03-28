@@ -102,12 +102,33 @@
 }
 
 /* Scrollbar styling */
-#better-trading-container *::-webkit-scrollbar {
-  width: 6px;
+#kroxitrade-container,
+#kroxitrade-container * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba($gold, 0.24) rgba($white, 0.03);
 }
-#better-trading-container *::-webkit-scrollbar-thumb {
-  background: #3a3a5a;
-  border-radius: 3px;
+
+#kroxitrade-container *::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+#kroxitrade-container *::-webkit-scrollbar-track {
+  background: rgba($white, 0.03);
+}
+
+#kroxitrade-container *::-webkit-scrollbar-thumb {
+  background: rgba($gold, 0.24);
+  border-radius: 999px;
+  border: 1px solid rgba($black, 0.35);
+}
+
+#kroxitrade-container *::-webkit-scrollbar-thumb:hover {
+  background: rgba($gold, 0.36);
+}
+
+#kroxitrade-container *::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .flash-messages {

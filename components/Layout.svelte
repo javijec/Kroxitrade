@@ -455,6 +455,30 @@
     padding: 12px 10px 10px;
     background-color: $poe-black;
     box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: rgba($gold, 0.22) rgba($white, 0.04);
+  }
+
+  main::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  main::-webkit-scrollbar-track {
+    background: rgba($white, 0.04);
+  }
+
+  main::-webkit-scrollbar-thumb {
+    background: rgba($gold, 0.22);
+    border-radius: 999px;
+    border: 1px solid rgba($black, 0.45);
+  }
+
+  main::-webkit-scrollbar-thumb:hover {
+    background: rgba($gold, 0.34);
+  }
+
+  main::-webkit-scrollbar-corner {
+    background: transparent;
   }
 
   .floating-restore-btn {
