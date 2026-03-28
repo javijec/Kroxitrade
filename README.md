@@ -1,12 +1,12 @@
 <div align="center">
-  <img src="assets/logo.png" alt="Kroxitrade Logo" width="120" />
-  <h1>Kroxitrade Companion</h1>
+  <img src="assets/logo.png" alt="Poe Trade Plus Logo" width="120" />
+  <h1>Poe Trade Plus Companion</h1>
   <p><em>Browser extension for a faster, cleaner Path of Exile Trade workflow</em></p>
 </div>
 
 ---
 
-**Kroxitrade** is a browser extension that injects a native companion sidebar into the official Path of Exile trade site. It combines bookmark management, search history, search-result enhancements, and quality-of-life trading tools in a single Svelte + TypeScript extension built with Plasmo.
+**Poe Trade Plus** is a browser extension that injects a native companion sidebar into the official Path of Exile trade site. It combines bookmark management, search history, search-result enhancements, and quality-of-life trading tools in a single Svelte + TypeScript extension built with Plasmo.
 
 The project currently focuses on making recurring trade searches easier to save, revisit, compare, and navigate without leaving the official site.
 
@@ -14,7 +14,7 @@ The project currently focuses on making recurring trade searches easier to save,
 
 ### Sidebar workflow
 
-- **Integrated trade sidebar:** Kroxitrade mounts directly inside `pathofexile.com/trade`.
+- **Integrated trade sidebar:** Poe Trade Plus mounts directly inside `pathofexile.com/trade`.
 - **Resizable layout:** the sidebar width can be adjusted and persisted locally.
 - **Minimize and restore mode:** collapse the panel into a floating pill to recover screen space.
 - **Left or right docking:** choose which side of the trade site the panel should live on.
@@ -110,11 +110,15 @@ npm run build
 
 This build step also runs the local version bump script before generating the final extension bundle.
 
+The unpacked production extension is generated in `build/chrome-mv3-prod`.
+
 ### Package the extension
 
 ```bash
 npm run package
 ```
+
+This command creates a zip file in `build/` such as `Poe Trade Plus-1.0.58.zip`, using the contents of `build/chrome-mv3-prod`.
 
 ## Permissions and Integrations
 

@@ -1,4 +1,4 @@
-# Kroxitrade Launch Features
+# Poe Trade Plus Launch Features
 
 ## 🧭 Core Panel
 
@@ -76,11 +76,11 @@
 4. Enable `Developer mode` in the top right corner.
 5. Click `Load unpacked`.
 6. Select the extracted extension folder.
-7. Open the official Path of Exile trade site and start using Kroxitrade.
+7. Open the official Path of Exile trade site and start using Poe Trade Plus.
 
 ---
 
-# Funciones de Lanzamiento de Kroxitrade
+# Funciones de Lanzamiento de Poe Trade Plus
 
 ## 🧭 Panel Principal
 
@@ -158,4 +158,4 @@
 4. Activá `Modo de desarrollador` en la esquina superior derecha.
 5. Hacé click en `Cargar descomprimida`.
 6. Seleccioná la carpeta extraída de la extensión.
-7. Abrí el sitio oficial de trade de Path of Exile y empezá a usar Kroxitrade.
+7. Abrí el sitio oficial de trade de Path of Exile y empezá a usar Poe Trade Plus.

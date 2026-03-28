@@ -33,7 +33,7 @@ export class ItemResultsService {
   private showEquivalentPricing = false;
   private unsubscribeSettings: (() => void) | null = null;
   async initialize() {
-    console.log("[Kroxitrade] Initializing ItemResultsService...");
+    console.log("[Poe Trade Plus] Initializing ItemResultsService...");
     if (window.location.protocol === "chrome-extension:") {
       return;
     }
@@ -51,9 +51,9 @@ export class ItemResultsService {
     
     try {
       await this.fetchRatios();
-      console.log("[Kroxitrade] Ratios loaded successfully:", this.chaosRatios ? "YES" : "NO");
+      console.log("[Poe Trade Plus] Ratios loaded successfully:", this.chaosRatios ? "YES" : "NO");
     } catch (e) {
-      console.error("[Kroxitrade] Failed to fetch ratios from poe.ninja:", e);
+      console.error("[Poe Trade Plus] Failed to fetch ratios from poe.ninja:", e);
     }
 
     this.prepareHighlighting();
@@ -70,7 +70,7 @@ export class ItemResultsService {
       return;
     }
 
-    console.log("[Kroxitrade] Current league detected:", league);
+    console.log("[Poe Trade Plus] Current league detected:", league);
     this.chaosRatios = await poeNinjaService.fetchChaosRatiosFor(league);
   }
 
@@ -82,7 +82,7 @@ export class ItemResultsService {
     // Busca explícitamente el div con class "price" como pidió el usuario
     const priceContainer = row.querySelector("div.price, .details .price") as HTMLElement;
     if (!priceContainer) {
-        console.debug("[Kroxitrade] Skipping pricing injection - Missing priceContainer for row", row);
+        console.debug("[Poe Trade Plus] Skipping pricing injection - Missing priceContainer for row", row);
         return;
     }
 
@@ -108,7 +108,7 @@ export class ItemResultsService {
     const amount = parseFloat(amountText);
 
     if (!currencyText || isNaN(amount)) {
-        console.debug("[Kroxitrade] Skipping pricing injection - Missing details:", { currency: currencyText, amount: amountText, html: priceContainer.innerHTML });
+        console.debug("[Poe Trade Plus] Skipping pricing injection - Missing details:", { currency: currencyText, amount: amountText, html: priceContainer.innerHTML });
         return;
     }
 
@@ -159,7 +159,7 @@ export class ItemResultsService {
         const chaosEquiv = Math.round(amount * ratio);
         this.appendEquivHtml(priceContainer, [{ amount: chaosEquiv, slug: this.CHAOS_SLUG }]);
     } else {
-        console.debug(`[Kroxitrade] Could not determine equivalence for ${amountText} ${currencyText} (slug: ${slug})`);
+        console.debug(`[Poe Trade Plus] Could not determine equivalence for ${amountText} ${currencyText} (slug: ${slug})`);
     }
   }
 
@@ -222,7 +222,7 @@ export class ItemResultsService {
 
     const target = document.querySelector(".search-results, .resultset, .results");
     if (target) {
-      console.log(`[Kroxitrade] Attached observer to container: ${target.className}`);
+      console.log(`[Poe Trade Plus] Attached observer to container: ${target.className}`);
       observer.observe(target, { childList: true, subtree: true });
       this.enhanceResults();
     } else {
@@ -240,7 +240,7 @@ export class ItemResultsService {
     const results = document.querySelectorAll(".search-results .result-item:not([bt-enhanced]), .search-results .row:not([bt-enhanced]), .result-list .result-item:not([bt-enhanced]), .row:not([bt-enhanced])");
     
     if (results.length > 0) {
-        console.log(`[Kroxitrade] Enhancing ${results.length} new results...`);
+        console.log(`[Poe Trade Plus] Enhancing ${results.length} new results...`);
     }
 
     results.forEach((row: HTMLElement) => {

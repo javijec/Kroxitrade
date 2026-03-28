@@ -12,7 +12,17 @@
   const EXTENSION_WIDTH = "360px"
 
   export const config: PlasmoCSConfig = {
-    matches: ["https://*.pathofexile.com/trade*"]
+    matches: [
+      "https://www.pathofexile.com/trade*",
+      "https://br.pathofexile.com/trade*",
+      "https://ru.pathofexile.com/trade*",
+      "https://th.pathofexile.com/trade*",
+      "https://de.pathofexile.com/trade*",
+      "https://fr.pathofexile.com/trade*",
+      "https://es.pathofexile.com/trade*",
+      "https://jp.pathofexile.com/trade*",
+      "https://poe.game.daum.net/trade*"
+    ]
   }
 
   export const getStyle: PlasmoGetStyle = () => {

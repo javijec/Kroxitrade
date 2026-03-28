@@ -26,7 +26,7 @@
 </script>
 
 <svelte:head>
-  <title>Kroxitrade</title>
+  <title>Poe Trade Plus</title>
 </svelte:head>
 
 <div class="popup-shell">

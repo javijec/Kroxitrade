@@ -1,9 +1,9 @@
 {
-  "name": "kroxitrade",
-  "displayName": "Kroxitrade",
+  "name": "poe-trade-plus",
+  "displayName": "Poe Trade Plus",
   "version": "1.0.55",
   "license": "MIT",
-  "description": "A browser extension that enhances the Path of Exile trade site with bookmarks, history and result tools.",
+  "description": "Poe Trade Plus enhances the Path of Exile trade site with bookmarks, history and result tools.",
   "author": "KroxiLabs",
   "contributors": [
     "louisgv",
@@ -11,8 +11,10 @@
   ],
   "scripts": {
     "dev": "plasmo dev",
+    "build": "npm run build:chrome",
     "build:chrome": "node scripts/bump-version.cjs && plasmo build",
     "build:firefox": "npx plasmo build --target=firefox-mv2",
+    "package": "npm run package:chrome",
     "package:chrome": "npm run build:chrome && node scripts/archive-build.cjs",
     "package:firefox": "npm run build:firefox && node scripts/archive-build.cjs firefox-mv2-prod"
   },
@@ -42,7 +44,15 @@
       "tabs"
     ],
     "host_permissions": [
-      "https://*.pathofexile.com/*",
+      "https://www.pathofexile.com/*",
+      "https://br.pathofexile.com/*",
+      "https://ru.pathofexile.com/*",
+      "https://th.pathofexile.com/*",
+      "https://de.pathofexile.com/*",
+      "https://fr.pathofexile.com/*",
+      "https://es.pathofexile.com/*",
+      "https://jp.pathofexile.com/*",
+      "https://poe.game.daum.net/*",
       "https://poe.ninja/*"
     ]
   }

@@ -155,7 +155,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `kroxitrade-backup-${new Date().toISOString().slice(0,10)}.txt`;
+      a.download = `poe-trade-plus-backup-${new Date().toISOString().slice(0,10)}.txt`;
       a.click();
       URL.revokeObjectURL(url);
       flashMessages.success(translate($languageStore, "bookmarks.exported"));

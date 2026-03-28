@@ -8,9 +8,9 @@
 
 <header class="header">
   <div class="brand">
-    <img class="logo" src={logoUrl} alt="Kroxitrade" />
+    <img class="logo" src={logoUrl} alt="Poe Trade Plus" />
     <div class="brand-copy">
-      <h1>Kroxitrade</h1>
+      <h1>Poe Trade Plus</h1>
       <div class="subtitle">{translate($languageStore, "header.subtitle")}</div>
     </div>
   </div>

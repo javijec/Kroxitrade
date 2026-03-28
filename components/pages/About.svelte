@@ -6,7 +6,7 @@
 <section class="about-page">
   <header class="hero">
     <div class="eyebrow">{translate($languageStore, "about.eyebrow")}</div>
-    <h1>Kroxitrade</h1>
+    <h1>Poe Trade Plus</h1>
     <p>
       {translate($languageStore, "about.description")}
     </p>
@@ -14,7 +14,7 @@
 
   <footer class="about-footer">
     <p class="about-footer__credit">
-      {translate($languageStore, "about.github")} <a href="https://github.com/KroxiLabs/Kroxitrade" target="_blank" rel="noreferrer"><strong>Kroxitrade</strong></a>
+      {translate($languageStore, "about.github")} <a href="https://github.com/KroxiLabs/poe-trade-plus" target="_blank" rel="noreferrer"><strong>Poe Trade Plus</strong></a>
     </p>
     <p class="about-footer__meta">{translate($languageStore, "about.version", { version })}</p>
   </footer>
