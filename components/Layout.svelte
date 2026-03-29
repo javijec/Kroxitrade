@@ -11,7 +11,7 @@
   import Settings from "./pages/Settings.svelte";
   import About from "./pages/About.svelte";
   import FinerFilters from "./FinerFilters.svelte";
-  import logoUrl from "data-base64:~assets/logo.png";
+  import logoUrl from "data-base64:~assets/logo.webp";
   import { flashMessages } from "../lib/services/flash";
   import { languageStore, translate } from "../lib/services/i18n";
   import { settings } from "../lib/services/settings";

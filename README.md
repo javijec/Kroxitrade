@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo.png" alt="Poe Trade Plus Logo" width="120" />
+  <img src="assets/logo.webp" alt="Poe Trade Plus Logo" width="120" />
   <h1>Poe Trade Plus Companion</h1>
   <p><em>Browser extension for a faster, cleaner Path of Exile Trade workflow</em></p>
 </div>
