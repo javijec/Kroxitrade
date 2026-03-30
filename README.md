@@ -134,6 +134,10 @@ This project is based on or incorporates ideas/material from:
 - [better-trading](https://github.com/exile-center/better-trading)
 - [poe-trade-plus](https://github.com/KroxiLabs/poe-trade-plus/)
 
+## Privacy policy
+
+We do not save nor require any data from the end user, if this extension ever uses data from a user will be saved LOCALLY and we won't have any way whatsoever to access it.
+
 ## License
 
 Licensed under the **MIT License**.
