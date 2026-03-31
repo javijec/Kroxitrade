@@ -2,6 +2,7 @@ import { writable } from "svelte/store";
 import { getActiveTradeTab } from "./active-trade-tab";
 import { storageService } from "./storage";
 import { searchPanelService } from "./search-panel";
+import { hasValidExtensionContext, isExtensionContextInvalidatedError } from "../utilities/extension-context";
 import { uniqueId } from "../utilities/unique-id";
 import type { 
   TradeLocationStruct, 
@@ -74,7 +75,7 @@ export class TradeLocationService {
   private async startActiveTabTracking() {
     await this.refreshFromActiveTab();
 
-    if (typeof chrome === "undefined" || !chrome.tabs) {
+    if (!hasValidExtensionContext() || !chrome.tabs) {
       return;
     }
 
@@ -84,14 +85,26 @@ export class TradeLocationService {
           void this.refreshFromActiveTab();
         }
       };
-      chrome.tabs.onUpdated.addListener(this.activeTabUpdatedHandler);
+      try {
+        chrome.tabs.onUpdated.addListener(this.activeTabUpdatedHandler);
+      } catch (error) {
+        if (!isExtensionContextInvalidatedError(error)) {
+          console.warn("[Poe Trade Plus] Failed to subscribe to tab updates", error);
+        }
+      }
     }
 
     if (!this.activeTabActivatedHandler && chrome.tabs.onActivated) {
       this.activeTabActivatedHandler = () => {
         void this.refreshFromActiveTab();
       };
-      chrome.tabs.onActivated.addListener(this.activeTabActivatedHandler);
+      try {
+        chrome.tabs.onActivated.addListener(this.activeTabActivatedHandler);
+      } catch (error) {
+        if (!isExtensionContextInvalidatedError(error)) {
+          console.warn("[Poe Trade Plus] Failed to subscribe to tab activation", error);
+        }
+      }
     }
 
     if (!this.focusHandler) {
@@ -144,7 +157,7 @@ export class TradeLocationService {
   private async maybeLogHistory(location: ExactTradeLocationStruct) {
     if (!location.slug || !location.type || !location.league) return;
     
-    const history = await this.fetchHistory();
+    const history = await this.fetchHistory(location.version);
     if (history[0] && this.isEqual(history[0], location)) return;
 
     history.unshift({
@@ -154,15 +167,42 @@ export class TradeLocationService {
       createdAt: new Date().toISOString()
     } as TradeLocationHistoryStruct);
 
-    await storageService.setValue(HISTORY_KEY, history.slice(0, MAX_HISTORY));
+    await storageService.setValue(this.getHistoryStorageKey(location.version), history.slice(0, MAX_HISTORY));
   }
 
-  async fetchHistory(): Promise<TradeLocationHistoryStruct[]> {
-    return (await storageService.getValue<TradeLocationHistoryStruct[]>(HISTORY_KEY)) || [];
+  async fetchHistory(version: TradeSiteVersion = this.current.version): Promise<TradeLocationHistoryStruct[]> {
+    const historyKey = this.getHistoryStorageKey(version);
+    const scopedHistory = await storageService.getValue<TradeLocationHistoryStruct[]>(historyKey);
+
+    if (scopedHistory) {
+      return scopedHistory;
+    }
+
+    const legacyHistory = (await storageService.getValue<TradeLocationHistoryStruct[]>(HISTORY_KEY)) || [];
+    const migratedHistory = legacyHistory.filter(entry => entry.version === version).slice(0, MAX_HISTORY);
+
+    if (migratedHistory.length > 0) {
+      await storageService.setValue(historyKey, migratedHistory);
+    }
+
+    return migratedHistory;
   }
 
-  async clearHistoryEntries() {
-    await storageService.deleteValue(HISTORY_KEY);
+  async clearHistoryEntries(version: TradeSiteVersion = this.current.version) {
+    await storageService.deleteValue(this.getHistoryStorageKey(version));
+
+    const legacyHistory = await storageService.getValue<TradeLocationHistoryStruct[]>(HISTORY_KEY);
+    if (!legacyHistory) {
+      return;
+    }
+
+    const remainingLegacyHistory = legacyHistory.filter(entry => entry.version !== version);
+    if (remainingLegacyHistory.length === 0) {
+      await storageService.deleteValue(HISTORY_KEY);
+      return;
+    }
+
+    await storageService.setValue(HISTORY_KEY, remainingLegacyHistory);
   }
 
   getTradeUrl(version: TradeSiteVersion, type: string, slug: string, league: string) {
@@ -206,6 +246,10 @@ export class TradeLocationService {
 
   private parseCurrentPath(): ExactTradeLocationStruct {
     return this.parseUrl(window.location.href);
+  }
+
+  private getHistoryStorageKey(version: TradeSiteVersion) {
+    return `${HISTORY_KEY}-poe${version}`;
   }
 
   private parseUrl(urlString: string | null): ExactTradeLocationStruct {

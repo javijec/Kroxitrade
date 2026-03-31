@@ -1,7 +1,7 @@
 {
   "name": "poe-trade-plus",
   "displayName": "Poe Trade Plus",
-  "version": "1.0.57",
+  "version": "1.0.60",
   "license": "MIT",
   "description": "Poe Trade Plus enhances the Path of Exile trade site with bookmarks, history and result tools.",
   "author": "KroxiLabs",
@@ -11,11 +11,9 @@
   ],
   "scripts": {
     "dev": "plasmo dev",
-    "build": "npm run build:chrome",
-    "build:chrome": "node scripts/bump-version.cjs && plasmo build",
+    "build:chrome": "plasmo build",
     "build:firefox": "npx plasmo build --target=firefox-mv2",
-    "package": "npm run package:chrome",
-    "package:chrome": "npx plasmo build && node scripts/archive-build.cjs",
+    "package:chrome": "node scripts/bump-version.cjs && npx plasmo build && node scripts/archive-build.cjs",
     "package:firefox": "npx plasmo build --target=firefox-mv2 && node scripts/archive-build.cjs firefox-mv2-prod"
   },
   "dependencies": {

@@ -7,9 +7,11 @@
   import { pageTitleService } from "~lib/services/page-title"
   import { itemResultsService } from "~lib/services/item-results"
   import { settings } from "~lib/services/settings"
+  import { hasValidExtensionContext, isExtensionContextInvalidatedError } from "~lib/utilities/extension-context"
   import { onMount } from "svelte"
 
   const EXTENSION_WIDTH = "360px"
+  export let anchor: HTMLElement | undefined
 
   export const config: PlasmoCSConfig = {
     matches: [
@@ -81,12 +83,28 @@
       window.setTimeout(() => el.classList.remove("bt-pinned-glow"), 2000)
     }
 
-    chrome.runtime.onMessage.addListener(handleMessage)
+    if (hasValidExtensionContext()) {
+      try {
+        chrome.runtime.onMessage.addListener(handleMessage)
+      } catch (error) {
+        if (!isExtensionContextInvalidatedError(error)) {
+          console.warn("[Poe Trade Plus] Failed to attach runtime listener", error)
+        }
+      }
+    }
 
     return () => {
       unsubscribeSettings()
       bulkSellersService.teardown()
-      chrome.runtime.onMessage.removeListener(handleMessage)
+      if (hasValidExtensionContext()) {
+        try {
+          chrome.runtime.onMessage.removeListener(handleMessage)
+        } catch (error) {
+          if (!isExtensionContextInvalidatedError(error)) {
+            console.warn("[Poe Trade Plus] Failed to detach runtime listener", error)
+          }
+        }
+      }
       document.documentElement.style.removeProperty("--bt-sidebar-width")
       document.documentElement.classList.remove("bt-has-kroxitrade-sidebar")
       document.body.classList.remove("bt-has-kroxitrade-sidebar")

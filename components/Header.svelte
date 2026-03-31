@@ -69,7 +69,7 @@
   }
 
   .logo {
-    height: 22px;
+    height: 64px;
     width: auto;
     flex: 0 0 auto;
   }

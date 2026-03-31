@@ -11,16 +11,21 @@
   import Settings from "./pages/Settings.svelte";
   import About from "./pages/About.svelte";
   import FinerFilters from "./FinerFilters.svelte";
-  import logoUrl from "data-base64:~assets/logo.png";
+  import logoUrl from "data-base64:~assets/logo.webp";
   import { flashMessages } from "../lib/services/flash";
   import { languageStore, translate } from "../lib/services/i18n";
   import { settings } from "../lib/services/settings";
+  import { storageService } from "../lib/services/storage";
+  import { tradeLocationService } from "../lib/services/trade-location";
   import { onDestroy, onMount } from "svelte";
   
+  const MINIMIZED_STORAGE_KEY = "layout-minimized";
+
   let currentPage: 'bookmarks' | 'bulk' | 'history' | 'about' | 'settings' = 'bookmarks';
   let isMinimized = false;
   let isResizing = false;
   let liveSidebarWidth: number | null = null;
+  let loadedMinimizedStateKey: string | null = null;
 
   const MIN_SIDEBAR_WIDTH = 300;
   const MAX_SIDEBAR_WIDTH = 560;
@@ -52,6 +57,15 @@
 
   const toggleMinimize = () => {
     isMinimized = !isMinimized;
+  };
+
+  const loadMinimizedState = (storageKey: string) => {
+    isMinimized = storageService.getLocalValue(storageKey) === "true";
+    loadedMinimizedStateKey = storageKey;
+  };
+
+  const persistMinimizedState = (storageKey: string, minimized: boolean) => {
+    storageService.setLocalValue(storageKey, minimized ? "true" : "false");
   };
 
   const updateSidebarWidthCssVar = () => {
@@ -100,6 +114,7 @@
 
   onMount(async () => {
     await settings.load();
+    tradeLocationService.startPolling();
 
     window.addEventListener('mousemove', handleResizeMove);
     window.addEventListener('mouseup', stopResize);
@@ -114,6 +129,15 @@
 
   $: if (!$settings.showBulkSellers && currentPage === 'bulk') {
     currentPage = 'bookmarks';
+  }
+
+  $: currentLocation = tradeLocationService.locationStore;
+  $: minimizedStorageKey = `${MINIMIZED_STORAGE_KEY}-${$currentLocation.version}`;
+  $: if (minimizedStorageKey && loadedMinimizedStateKey !== minimizedStorageKey) {
+    loadMinimizedState(minimizedStorageKey);
+  }
+  $: if (loadedMinimizedStateKey === minimizedStorageKey) {
+    persistMinimizedState(minimizedStorageKey, isMinimized);
   }
 
   $: {
@@ -199,11 +223,12 @@
         <span class="nav-item__label">{translate($languageStore, "layout.nav.settings")}</span>
     </button>
     <button 
-        class="nav-item {currentPage === 'about' ? 'is-active' : ''}" 
+        class="nav-item nav-item--icon-only {currentPage === 'about' ? 'is-active' : ''}" 
+        title={translate($languageStore, "layout.nav.about")}
+        aria-label={translate($languageStore, "layout.nav.about")}
         on:click={() => currentPage = 'about'}
     >
         <span class="nav-item__icon" aria-hidden="true">{@html navIcons.about}</span>
-        <span class="nav-item__label">{translate($languageStore, "layout.nav.about")}</span>
     </button>
   </nav>
 
@@ -474,6 +499,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .nav-item--icon-only {
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .flash-messages {

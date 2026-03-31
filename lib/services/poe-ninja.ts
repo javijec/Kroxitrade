@@ -1,5 +1,6 @@
 import { slugify } from "../utilities/slugify";
 import { dateDelta } from "../utilities/date-delta";
+import { hasValidExtensionContext, isExtensionContextInvalidatedError } from "../utilities/extension-context";
 import { storageService } from "./storage";
 
 export interface PoeNinjaCurrenciesPayloadLine {
@@ -28,7 +29,21 @@ export class PoeNinjaService {
     if (cached) return cached;
 
     const uri = `${URIS.currencies}&league=${league}`;
-    const response = await chrome.runtime.sendMessage({ query: "poe-ninja", resource: uri });
+    if (!hasValidExtensionContext()) {
+      throw new Error("Extension context invalidated");
+    }
+
+    let response: PoeNinjaCurrenciesPayload | null = null;
+
+    try {
+      response = await chrome.runtime.sendMessage({ query: "poe-ninja", resource: uri });
+    } catch (error) {
+      if (isExtensionContextInvalidatedError(error)) {
+        throw new Error("Extension context invalidated");
+      }
+
+      throw error;
+    }
     
     if (!response) throw new Error("Failed to fetch from poe.ninja via background");
 

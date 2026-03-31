@@ -1,3 +1,5 @@
+import { hasValidExtensionContext, isExtensionContextInvalidatedError } from "../utilities/extension-context";
+
 interface StoragePayload {
   value: any;
   expiresAt: string | null;
@@ -41,12 +43,19 @@ export class StorageService {
   }
 
   private async read(key: string): Promise<StoragePayload | null> {
-    if (typeof chrome === "undefined" || !chrome.storage?.local) {
+    if (!hasValidExtensionContext() || !chrome.storage?.local) {
         console.warn("Storage not available");
         return null;
     }
-    const result = await chrome.storage.local.get([key]);
-    return result[key] || null;
+    try {
+      const result = await chrome.storage.local.get([key]);
+      return result[key] || null;
+    } catch (error) {
+      if (!isExtensionContextInvalidatedError(error)) {
+        console.warn("Storage read failed", error);
+      }
+      return null;
+    }
   }
 
   async deleteValue(key: string, league: string | null = null) {
@@ -66,13 +75,25 @@ export class StorageService {
   }
 
   private async write(key: string, value: StoragePayload): Promise<void> {
-    if (typeof chrome === "undefined" || !chrome.storage?.local) return;
-    await chrome.storage.local.set({ [key]: value });
+    if (!hasValidExtensionContext() || !chrome.storage?.local) return;
+    try {
+      await chrome.storage.local.set({ [key]: value });
+    } catch (error) {
+      if (!isExtensionContextInvalidatedError(error)) {
+        console.warn("Storage write failed", error);
+      }
+    }
   }
 
   private async remove(keys: string | string[]): Promise<void> {
-    if (typeof chrome === "undefined" || !chrome.storage?.local) return;
-    await chrome.storage.local.remove(keys);
+    if (!hasValidExtensionContext() || !chrome.storage?.local) return;
+    try {
+      await chrome.storage.local.remove(keys);
+    } catch (error) {
+      if (!isExtensionContextInvalidatedError(error)) {
+        console.warn("Storage remove failed", error);
+      }
+    }
   }
 }
 

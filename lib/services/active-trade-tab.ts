@@ -1,16 +1,25 @@
+import { hasValidExtensionContext, isExtensionContextInvalidatedError } from "../utilities/extension-context"
+
 const TRADE_URL_PATTERN = /^https:\/\/(?:[^./]+\.)?pathofexile\.com\/trade(?:\/|$)/i
 
 const getActiveTab = async () => {
-  if (typeof chrome === "undefined" || !chrome.tabs?.query) {
+  if (!hasValidExtensionContext() || !chrome.tabs?.query) {
     return null
   }
 
-  const [tab] = await chrome.tabs.query({
-    active: true,
-    currentWindow: true
-  })
+  try {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true
+    })
 
-  return tab ?? null
+    return tab ?? null
+  } catch (error) {
+    if (!isExtensionContextInvalidatedError(error)) {
+      console.warn("[Poe Trade Plus] Failed to query active tab", error)
+    }
+    return null
+  }
 }
 
 export const getActiveTradeTab = async () => {
@@ -31,9 +40,15 @@ export const openUrlInActiveTab = async (url: string) => {
   const tab = await getActiveTab()
 
   // Background script / popup script case
-  if (typeof chrome !== "undefined" && chrome.tabs?.update && typeof tab?.id === "number") {
-    await chrome.tabs.update(tab.id, { url, active: true })
-    return
+  if (hasValidExtensionContext() && chrome.tabs?.update && typeof tab?.id === "number") {
+    try {
+      await chrome.tabs.update(tab.id, { url, active: true })
+      return
+    } catch (error) {
+      if (!isExtensionContextInvalidatedError(error)) {
+        console.warn("[Poe Trade Plus] Failed to update active tab", error)
+      }
+    }
   }
 
   // Content script case - navigate the current page directly
@@ -51,13 +66,16 @@ export const openUrlInActiveTab = async (url: string) => {
 export const sendMessageToActiveTradeTab = async <T>(message: unknown) => {
   const tab = await getActiveTradeTab()
 
-  if (!tab?.id || typeof chrome === "undefined" || !chrome.tabs?.sendMessage) {
+  if (!tab?.id || !hasValidExtensionContext() || !chrome.tabs?.sendMessage) {
     return null
   }
 
   try {
     return await chrome.tabs.sendMessage(tab.id, message) as T
-  } catch {
+  } catch (error) {
+    if (!isExtensionContextInvalidatedError(error)) {
+      console.warn("[Poe Trade Plus] Failed to send message to active trade tab", error)
+    }
     return null
   }
 }
