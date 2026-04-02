@@ -1,88 +1,97 @@
 <script lang="ts">
-  import { flip } from "svelte/animate";
-  import { slide } from "svelte/transition";
-  import archiveIcon from "data-text:lucide-static/icons/archive.svg";
-  import archiveRestoreIcon from "data-text:lucide-static/icons/archive-restore.svg";
-  import checkIcon from "data-text:lucide-static/icons/check.svg";
-  import copyIcon from "data-text:lucide-static/icons/copy.svg";
-  import editIcon from "data-text:lucide-static/icons/pencil.svg";
-  import gripVerticalIcon from "data-text:lucide-static/icons/grip-vertical.svg";
-  import replaceIcon from "data-text:lucide-static/icons/refresh-cw.svg";
-  import trashIcon from "data-text:lucide-static/icons/trash-2.svg";
-  import uploadIcon from "data-text:lucide-static/icons/upload.svg";
-  import { languageStore, translate } from "../lib/services/i18n";
-  import type { BookmarksFolderStruct, BookmarksTradeStruct } from "../lib/types/bookmarks";
-  import { bookmarksService } from "../lib/services/bookmarks";
-  import { getActiveTradeTabTitle, openUrlInActiveTab } from "../lib/services/active-trade-tab";
-  import { tradeLocationService } from "../lib/services/trade-location";
-  import { flashMessages } from "../lib/services/flash";
-  import { searchPanelService } from "../lib/services/search-panel";
-  import { getTradeUrl } from "../lib/utilities/trade-url";
-  import { copyToClipboard } from "../lib/utilities/copy-to-clipboard";
-  
-  import Button from "./Button.svelte";
-  import LoadingContainer from "./LoadingContainer.svelte";
+  import archiveRestoreIcon from "data-text:lucide-static/icons/archive-restore.svg"
+  import archiveIcon from "data-text:lucide-static/icons/archive.svg"
+  import checkIcon from "data-text:lucide-static/icons/check.svg"
+  import copyIcon from "data-text:lucide-static/icons/copy.svg"
+  import gripVerticalIcon from "data-text:lucide-static/icons/grip-vertical.svg"
+  import editIcon from "data-text:lucide-static/icons/pencil.svg"
+  import replaceIcon from "data-text:lucide-static/icons/refresh-cw.svg"
+  import trashIcon from "data-text:lucide-static/icons/trash-2.svg"
+  import uploadIcon from "data-text:lucide-static/icons/upload.svg"
+  import { flip } from "svelte/animate"
+  import { slide } from "svelte/transition"
 
-  export let folder: BookmarksFolderStruct;
-  export let expandedFolderIds: string[];
-  export let onToggleExpansion: (id: string) => void;
-  export let onArchiveEvent: () => void;
-  export let onDeleteEvent: () => void;
-  export let onFolderDragStart: (event: DragEvent, id: string) => void = () => {};
-  export let onFolderDragEnter: (event: DragEvent, id: string) => void = () => {};
-  export let onFolderDrop: (event: DragEvent, id: string) => void = () => {};
-  export let onFolderDragEnd: () => void = () => {};
-  export let isFolderDragging = false;
-  export let isFolderDragOver = false;
+  import {
+    getActiveTradeTabTitle,
+    openUrlInActiveTab
+  } from "../lib/services/active-trade-tab"
+  import { bookmarksService } from "../lib/services/bookmarks"
+  import { flashMessages } from "../lib/services/flash"
+  import { languageStore, translate } from "../lib/services/i18n"
+  import { searchPanelService } from "../lib/services/search-panel"
+  import { tradeLocationService } from "../lib/services/trade-location"
+  import type {
+    BookmarksFolderStruct,
+    BookmarksTradeStruct
+  } from "../lib/types/bookmarks"
+  import { copyToClipboard } from "../lib/utilities/copy-to-clipboard"
+  import { getTradeUrl } from "../lib/utilities/trade-url"
+  import Button from "./Button.svelte"
+  import LoadingContainer from "./LoadingContainer.svelte"
 
-  let trades: BookmarksTradeStruct[] = [];
-  let isLoading = false;
-  let hasLoadedTrades = false;
+  export let folder: BookmarksFolderStruct
+  export let expandedFolderIds: string[]
+  export let onToggleExpansion: (id: string) => void
+  export let onArchiveEvent: () => void
+  export let onDeleteEvent: () => void
+  export let onFolderDragStart: (
+    event: DragEvent,
+    id: string
+  ) => void = () => {}
+  export let onFolderDragEnter: (
+    event: DragEvent,
+    id: string
+  ) => void = () => {}
+  export let onFolderDrop: (event: DragEvent, id: string) => void = () => {}
+  export let onFolderDragEnd: () => void = () => {}
+  export let isFolderDragging = false
+  export let isFolderDragOver = false
 
-  $: isExpanded = expandedFolderIds.includes(folder.id || "");
-  $: isArchived = !!folder.archivedAt;
+  let trades: BookmarksTradeStruct[] = []
+  let isLoading = false
+  let hasLoadedTrades = false
+
+  $: isExpanded = expandedFolderIds.includes(folder.id || "")
+  $: isArchived = !!folder.archivedAt
   $: if (!isExpanded) {
-    hasLoadedTrades = false;
+    hasLoadedTrades = false
   }
   $: if (isExpanded && !hasLoadedTrades && !isLoading) {
-    void loadTrades();
+    void loadTrades()
   }
   const loadTrades = async () => {
-    if (!folder.id) return;
-    isLoading = true;
-    trades = await bookmarksService.fetchTradesByFolderId(folder.id);
-    hasLoadedTrades = true;
-    isLoading = false;
-  };
+    if (!folder.id) return
+    isLoading = true
+    trades = await bookmarksService.fetchTradesByFolderId(folder.id)
+    hasLoadedTrades = true
+    isLoading = false
+  }
 
   const formatTradeMeta = (trade: BookmarksTradeStruct) => {
-    const meta: string[] = [];
-    const league = trade.location.league || tradeLocationService.current.league || "Standard";
+    const meta: string[] = []
+    const league =
+      trade.location.league || tradeLocationService.current.league || "Standard"
 
-    meta.push(formatLeagueLabel(league));
+    meta.push(formatLeagueLabel(league))
 
-    if (trade.location.type) {
-      meta.push(trade.location.type);
-    }
-
-    return meta.join(translate($languageStore, "folder.metaSeparator"));
-  };
+    return meta.join(translate($languageStore, "folder.metaSeparator"))
+  }
 
   const formatLeagueLabel = (league: string) => {
-    const normalizedLeague = league.replace(/^(poe2|xbox|sony)\//i, "");
+    const normalizedLeague = league.replace(/^(poe2|xbox|sony)\//i, "")
 
     try {
-      return decodeURIComponent(normalizedLeague);
+      return decodeURIComponent(normalizedLeague)
     } catch {
-      return normalizedLeague.replace(/%20/g, " ");
+      return normalizedLeague.replace(/%20/g, " ")
     }
-  };
+  }
 
   const toggleTrade = async (trade: BookmarksTradeStruct) => {
-    if (!folder.id) return;
-    await bookmarksService.toggleTradeCompletion(trade, folder.id);
-    await loadTrades();
-  };
+    if (!folder.id) return
+    await bookmarksService.toggleTradeCompletion(trade, folder.id)
+    await loadTrades()
+  }
 
   const copyTrade = (trade: BookmarksTradeStruct) => {
     const url = getTradeUrl(
@@ -90,94 +99,108 @@
       trade.location.type,
       trade.location.slug,
       trade.location.league || tradeLocationService.current.league || "Standard"
-    );
-    void copyToClipboard(url).then(() => {
-      flashMessages.success(translate($languageStore, "folder.copiedTrade", { title: trade.title }));
-    }).catch(() => {
-      flashMessages.alert(translate($languageStore, "folder.copyTradeError"));
-    });
-  };
+    )
+    void copyToClipboard(url)
+      .then(() => {
+        flashMessages.success(
+          translate($languageStore, "folder.copiedTrade", {
+            title: trade.title
+          })
+        )
+      })
+      .catch(() => {
+        flashMessages.alert(translate($languageStore, "folder.copyTradeError"))
+      })
+  }
 
   const deleteTrade = async (trade: BookmarksTradeStruct) => {
-    if (!folder.id || !trade.id) return;
-    await bookmarksService.deleteTrade(trade.id, folder.id);
-    await loadTrades();
-  };
+    if (!folder.id || !trade.id) return
+    await bookmarksService.deleteTrade(trade.id, folder.id)
+    await loadTrades()
+  }
 
   const duplicateTrade = async (trade: BookmarksTradeStruct) => {
-    if (!folder.id) return;
-    await bookmarksService.duplicateTrade(trade, folder.id);
-    await loadTrades();
-    flashMessages.success(translate($languageStore, "folder.duplicatedTrade", { title: trade.title }));
-  };
+    if (!folder.id) return
+    await bookmarksService.duplicateTrade(trade, folder.id)
+    await loadTrades()
+    flashMessages.success(
+      translate($languageStore, "folder.duplicatedTrade", {
+        title: trade.title
+      })
+    )
+  }
 
-  let draggedIndex: number | null = null;
-  let dragOverIndex: number | null = null;
+  let draggedIndex: number | null = null
+  let dragOverIndex: number | null = null
 
   const handleDragStart = (e: DragEvent, index: number) => {
-    draggedIndex = index;
+    draggedIndex = index
     if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", index.toString());
+      e.dataTransfer.effectAllowed = "move"
+      e.dataTransfer.setData("text/plain", index.toString())
     }
-  };
+  }
 
   const handleDragEnter = (e: DragEvent, index: number) => {
-    e.preventDefault();
+    e.preventDefault()
     if (draggedIndex !== null && draggedIndex !== index) {
-      dragOverIndex = index;
+      dragOverIndex = index
     }
-  };
+  }
 
   const handleDrop = async (e: DragEvent, index: number) => {
-    e.preventDefault();
+    e.preventDefault()
     if (draggedIndex !== null && draggedIndex !== index && folder.id) {
-      const trade = trades[draggedIndex];
+      const trade = trades[draggedIndex]
       if (trade && trade.id) {
         // Optimistic UI update
-        const moved = trades.splice(draggedIndex, 1)[0];
-        trades.splice(index, 0, moved);
-        trades = [...trades];
+        const moved = trades.splice(draggedIndex, 1)[0]
+        trades.splice(index, 0, moved)
+        trades = [...trades]
         // Background sync
-        await bookmarksService.moveTrade(trade.id, folder.id, index);
-        await loadTrades();
+        await bookmarksService.moveTrade(trade.id, folder.id, index)
+        await loadTrades()
       }
     }
-    draggedIndex = null;
-    dragOverIndex = null;
-  };
+    draggedIndex = null
+    dragOverIndex = null
+  }
 
   const handleDragEnd = () => {
-    draggedIndex = null;
-    dragOverIndex = null;
-  };
+    draggedIndex = null
+    dragOverIndex = null
+  }
 
   const createTradeFromCurrent = async () => {
-    if (!folder.id) return;
-    const current = tradeLocationService.current;
+    if (!folder.id) return
+    const current = tradeLocationService.current
     if (!current.slug) {
-        flashMessages.alert(translate($languageStore, "folder.invalidTradePage"));
-        return;
+      flashMessages.alert(translate($languageStore, "folder.invalidTradePage"))
+      return
     }
     if (!current.type) {
-        flashMessages.alert(translate($languageStore, "folder.missingTradeType"));
-        return;
+      flashMessages.alert(translate($languageStore, "folder.missingTradeType"))
+      return
     }
     const trade = bookmarksService.initializeTradeStructFrom({
       version: current.version,
       type: current.type,
       slug: current.slug,
       league: current.league
-    });
-    const activeTabTitle = await getActiveTradeTabTitle();
+    })
+    const activeTabTitle = await getActiveTradeTabTitle()
     trade.title =
       searchPanelService.recommendTitle() ||
-      (activeTabTitle || document.title).replace(" - Path of Exile", "").replace(/⚡ /g, "") ||
-      "Trade";
-    await bookmarksService.persistTrade(trade, folder.id);
-    await loadTrades();
-    flashMessages.success(translate($languageStore, "folder.addedToFolder", { title: trade.title }));
-  };
+      (activeTabTitle || document.title)
+        .replace(" - Path of Exile", "")
+        .replace(/⚡ /g, "") ||
+      "Trade"
+    await bookmarksService.persistTrade(trade, folder.id)
+    await loadTrades()
+    flashMessages.success(
+      translate($languageStore, "folder.addedToFolder", { title: trade.title })
+    )
+  }
 
   const openTrade = async (trade: BookmarksTradeStruct) => {
     await openUrlInActiveTab(
@@ -185,64 +208,72 @@
         trade.location.version,
         trade.location.type,
         trade.location.slug,
-        trade.location.league || tradeLocationService.current.league || "Standard"
+        trade.location.league ||
+          tradeLocationService.current.league ||
+          "Standard"
       )
-    );
-  };
+    )
+  }
 
   const exportFolder = () => {
-      const serialized = bookmarksService.serializeFolder(folder, trades);
-      void copyToClipboard(serialized).then(() => {
-        flashMessages.success(translate($languageStore, "folder.copiedFolder"));
-      }).catch(() => {
-        flashMessages.alert(translate($languageStore, "folder.copyFolderError"));
-      });
-  };
+    const serialized = bookmarksService.serializeFolder(folder, trades)
+    void copyToClipboard(serialized)
+      .then(() => {
+        flashMessages.success(translate($languageStore, "folder.copiedFolder"))
+      })
+      .catch(() => {
+        flashMessages.alert(translate($languageStore, "folder.copyFolderError"))
+      })
+  }
 
-  let editingFolder = false;
-  let folderEditTitle = "";
+  let editingFolder = false
+  let folderEditTitle = ""
 
   const startEditingFolder = () => {
-      folderEditTitle = folder.title;
-      editingFolder = true;
-  };
+    folderEditTitle = folder.title
+    editingFolder = true
+  }
 
   const saveFolderTitle = async () => {
-      editingFolder = false;
-      const newTitle = folderEditTitle.trim();
-      if (!newTitle || newTitle === folder.title) return;
+    editingFolder = false
+    const newTitle = folderEditTitle.trim()
+    if (!newTitle || newTitle === folder.title) return
 
-      await bookmarksService.renameFolder(folder, newTitle);
-      folder.title = newTitle;
-      flashMessages.success(translate($languageStore, "folder.renamedFolder", { title: newTitle }));
-  };
+    await bookmarksService.renameFolder(folder, newTitle)
+    folder.title = newTitle
+    flashMessages.success(
+      translate($languageStore, "folder.renamedFolder", { title: newTitle })
+    )
+  }
 
   const cancelFolderEdit = () => {
-      editingFolder = false;
-  };
+    editingFolder = false
+  }
 
-  let editingTradeId: string | null = null;
-  let tradeEditTitle = "";
+  let editingTradeId: string | null = null
+  let tradeEditTitle = ""
 
   const startEditingTrade = (trade: BookmarksTradeStruct) => {
-    if (!trade.id) return;
-    editingTradeId = trade.id;
-    tradeEditTitle = trade.title;
-  };
+    if (!trade.id) return
+    editingTradeId = trade.id
+    tradeEditTitle = trade.title
+  }
 
   const saveTradeTitle = async (trade: BookmarksTradeStruct) => {
-    editingTradeId = null;
-    const newTitle = tradeEditTitle.trim();
-    if (!newTitle || !folder.id || newTitle === trade.title) return;
+    editingTradeId = null
+    const newTitle = tradeEditTitle.trim()
+    if (!newTitle || !folder.id || newTitle === trade.title) return
 
-    await bookmarksService.renameTrade(trade, folder.id, newTitle);
-    await loadTrades();
-    flashMessages.success(translate($languageStore, "folder.renamedSearch", { title: newTitle }));
-  };
+    await bookmarksService.renameTrade(trade, folder.id, newTitle)
+    await loadTrades()
+    flashMessages.success(
+      translate($languageStore, "folder.renamedSearch", { title: newTitle })
+    )
+  }
 
   const cancelTradeEdit = () => {
-    editingTradeId = null;
-  };
+    editingTradeId = null
+  }
 
   const normalizeIcon = (svg: string) =>
     svg.replace(/<svg\b([^>]*)>/, (_match, attrs) => {
@@ -251,10 +282,10 @@
         .replace(/\swidth="[^"]*"/g, "")
         .replace(/\sheight="[^"]*"/g, "")
         .replace(/\sviewBox="[^"]*"/g, "")
-        .trim();
+        .trim()
 
-      return `<svg ${nextAttrs} viewBox="-2 -2 28 28" class="bookmark-folder-icon">`;
-    });
+      return `<svg ${nextAttrs} viewBox="-2 -2 28 28" class="bookmark-folder-icon">`
+    })
 
   const icons = {
     archive: normalizeIcon(archiveIcon),
@@ -266,19 +297,19 @@
     replace: normalizeIcon(replaceIcon),
     trash: normalizeIcon(trashIcon),
     upload: normalizeIcon(uploadIcon)
-  };
+  }
 
   const replaceSearchWithCurrent = async (trade: BookmarksTradeStruct) => {
-    if (!folder.id || !trade.id) return;
-    
-    const current = tradeLocationService.current;
+    if (!folder.id || !trade.id) return
+
+    const current = tradeLocationService.current
     if (!current.slug) {
-        flashMessages.alert(translate($languageStore, "folder.invalidTradePage"));
-        return;
+      flashMessages.alert(translate($languageStore, "folder.invalidTradePage"))
+      return
     }
     if (!current.type) {
-        flashMessages.alert(translate($languageStore, "folder.missingTradeType"));
-        return;
+      flashMessages.alert(translate($languageStore, "folder.missingTradeType"))
+      return
     }
 
     const updatedTrade: BookmarksTradeStruct = {
@@ -289,18 +320,23 @@
         slug: current.slug,
         league: current.league
       }
-    };
+    }
 
-    await bookmarksService.persistTrade(updatedTrade, folder.id);
-    await loadTrades();
-    flashMessages.success(translate($languageStore, "folder.updatedSearchLocation", { title: trade.title }));
-  };
-
+    await bookmarksService.persistTrade(updatedTrade, folder.id)
+    await loadTrades()
+    flashMessages.success(
+      translate($languageStore, "folder.updatedSearchLocation", {
+        title: trade.title
+      })
+    )
+  }
 </script>
 
 <div
   role="region"
-  class="folder {isExpanded ? 'is-expanded' : ''} {isArchived ? 'is-archived' : ''}"
+  class="folder {isExpanded ? 'is-expanded' : ''} {isArchived
+    ? 'is-archived'
+    : ''}"
   class:is-folder-dragging={isFolderDragging}
   class:is-folder-drag-over={isFolderDragOver}
   draggable="true"
@@ -308,38 +344,45 @@
   on:dragenter={(e) => onFolderDragEnter(e, folder.id || "")}
   on:dragover|preventDefault
   on:drop|preventDefault={(e) => onFolderDrop(e, folder.id || "")}
-  on:dragend={onFolderDragEnd}
->
+  on:dragend={onFolderDragEnd}>
   <div class="header">
-    <div class="folder-drag-handle" title={translate($languageStore, "folder.dragReorder")} aria-hidden="true" role="button">
+    <div
+      class="folder-drag-handle"
+      title={translate($languageStore, "folder.dragReorder")}
+      aria-hidden="true"
+      role="button">
       <span class="action-icon">{@html icons.grip}</span>
     </div>
-    <button 
-        type="button"
-        class="expansion-wrapper" 
-        on:click={(e) => { e.stopPropagation(); if (!editingFolder) onToggleExpansion(folder.id || "")}}
-        aria-expanded={isExpanded}
-        aria-label={`${isExpanded ? translate($languageStore, "folder.collapse") : translate($languageStore, "folder.expand")} ${folder.title}`}
-    >
-        {#if editingFolder}
-          <input 
-            type="text" 
-            class="inline-edit-input" 
-            bind:value={folderEditTitle} 
-            on:blur={saveFolderTitle} 
-            on:keydown={e => { if (e.key === 'Enter') saveFolderTitle(); if (e.key === 'Escape') cancelFolderEdit(); }} 
-            on:click|stopPropagation
-          />
-        {:else}
-          <div class="header-copy">
-            <div class="header-label">{folder.title}</div>
-          </div>
-        {/if}
-        {#if !isArchived}
-            <span class="indicator">{isExpanded ? "▼" : "▶"}</span>
-        {/if}
+    <button
+      type="button"
+      class="expansion-wrapper"
+      on:click={(e) => {
+        e.stopPropagation()
+        if (!editingFolder) onToggleExpansion(folder.id || "")
+      }}
+      aria-expanded={isExpanded}
+      aria-label={`${isExpanded ? translate($languageStore, "folder.collapse") : translate($languageStore, "folder.expand")} ${folder.title}`}>
+      {#if editingFolder}
+        <input
+          type="text"
+          class="inline-edit-input"
+          bind:value={folderEditTitle}
+          on:blur={saveFolderTitle}
+          on:keydown={(e) => {
+            if (e.key === "Enter") saveFolderTitle()
+            if (e.key === "Escape") cancelFolderEdit()
+          }}
+          on:click|stopPropagation />
+      {:else}
+        <div class="header-copy">
+          <div class="header-label">{folder.title}</div>
+        </div>
+      {/if}
+      {#if !isArchived}
+        <span class="indicator">{isExpanded ? "▼" : "▶"}</span>
+      {/if}
     </button>
-    
+
     <div class="header-actions">
       <button
         type="button"
@@ -352,10 +395,15 @@
       <button
         type="button"
         class="folder-action"
-        title={isArchived ? translate($languageStore, "folder.restoreFolder") : translate($languageStore, "folder.archiveFolder")}
-        aria-label={isArchived ? translate($languageStore, "folder.restoreFolder") : translate($languageStore, "folder.archiveFolder")}
+        title={isArchived
+          ? translate($languageStore, "folder.restoreFolder")
+          : translate($languageStore, "folder.archiveFolder")}
+        aria-label={isArchived
+          ? translate($languageStore, "folder.restoreFolder")
+          : translate($languageStore, "folder.archiveFolder")}
         on:click={onArchiveEvent}>
-        <span class="action-icon" aria-hidden="true">{@html isArchived ? icons.restore : icons.archive}</span>
+        <span class="action-icon" aria-hidden="true"
+          >{@html isArchived ? icons.restore : icons.archive}</span>
       </button>
       <button
         type="button"
@@ -381,93 +429,131 @@
       <LoadingContainer {isLoading} size="small">
         <ul class="trades-list">
           {#each trades as trade, i (trade.id)}
-            <li class="trade-item"
-                animate:flip={{ duration: 180 }}
-                class:is-completed={!!trade.completedAt}
-                class:is-dragging={draggedIndex === i}
-                class:is-drag-over={dragOverIndex === i}
-                draggable="true"
-                on:dragstart={(e) => handleDragStart(e, i)}
-                on:dragenter={(e) => handleDragEnter(e, i)}
-                on:dragover|preventDefault
-                on:drop|preventDefault={(e) => handleDrop(e, i)}
-                on:dragend={handleDragEnd}>
-              <div class="drag-handle" title={translate($languageStore, "folder.dragTrade")}>≡</div>
-              <div class="trade-info">
-                {#if trade.completedAt}<span class="check">✓</span>{/if}
-                {#if editingTradeId === trade.id}
-                  <input 
-                    type="text" 
-                    class="inline-edit-input trade-edit" 
-                    bind:value={tradeEditTitle} 
-                    on:blur={() => saveTradeTitle(trade)} 
-                    on:keydown={e => { if (e.key === 'Enter') saveTradeTitle(trade); if (e.key === 'Escape') cancelTradeEdit(); }} 
-                    on:click|stopPropagation
-                  />
-                {:else}
-                  <div class="trade-copy">
-                    <a
-                      class="trade-link"
-                      href={getTradeUrl(trade.location.version, trade.location.type, trade.location.slug, trade.location.league || tradeLocationService.current.league || 'Standard')}
-                      title={trade.title}
-                      on:click|preventDefault={() => void openTrade(trade)}
-                    >
-                      {trade.title}
-                    </a>
-                    <div class="trade-meta">
-                      {formatTradeMeta(trade)}
-                    </div>
-                  </div>
-                {/if}
+            <li
+              class="trade-item"
+              animate:flip={{ duration: 180 }}
+              class:is-completed={!!trade.completedAt}
+              class:is-dragging={draggedIndex === i}
+              class:is-drag-over={dragOverIndex === i}
+              draggable="true"
+              on:dragstart={(e) => handleDragStart(e, i)}
+              on:dragenter={(e) => handleDragEnter(e, i)}
+              on:dragover|preventDefault
+              on:drop|preventDefault={(e) => handleDrop(e, i)}
+              on:dragend={handleDragEnd}>
+              <div
+                class="drag-handle"
+                title={translate($languageStore, "folder.dragTrade")}>
+                ≡
               </div>
-              <div class="trade-actions">
-                <button
-                  type="button"
-                  class="trade-action"
-                  title={translate($languageStore, "folder.editSearchName")}
-                  aria-label={translate($languageStore, "folder.editSearchName")}
-                  on:click|stopPropagation={() => startEditingTrade(trade)}>
-                  <span class="action-icon" aria-hidden="true">{@html icons.edit}</span>
-                </button>
-                <button
-                  type="button"
-                  class="trade-action"
-                  title={translate($languageStore, "folder.replaceCurrentSearch")}
-                  aria-label={translate($languageStore, "folder.replaceCurrentSearch")}
-                  on:click={() => void replaceSearchWithCurrent(trade)}>
-                  <span class="action-icon" aria-hidden="true">{@html icons.replace}</span>
-                </button>
-                <button
-                  type="button"
-                  class="trade-action"
-                  title={translate($languageStore, "folder.copyUrl")}
-                  aria-label={translate($languageStore, "folder.copyUrl")}
-                  on:click={() => copyTrade(trade)}>
-                  <span class="action-icon" aria-hidden="true">{@html icons.copy}</span>
-                </button>
-                <button
-                  type="button"
-                  class="trade-action"
-                  class:is-active={!!trade.completedAt}
-                  title={trade.completedAt ? translate($languageStore, "folder.markPending") : translate($languageStore, "folder.markComplete")}
-                  aria-label={trade.completedAt ? translate($languageStore, "folder.markPending") : translate($languageStore, "folder.markComplete")}
-                  on:click={() => void toggleTrade(trade)}>
-                  <span class="action-icon" aria-hidden="true">{@html icons.check}</span>
-                </button>
-                <button
-                  type="button"
-                  class="trade-action is-danger"
-                  title={translate($languageStore, "folder.deleteTrade")}
-                  aria-label={translate($languageStore, "folder.deleteTrade")}
-                  on:click={() => void deleteTrade(trade)}>
-                  <span class="action-icon" aria-hidden="true">{@html icons.trash}</span>
-                </button>
+              <div class="trade-content">
+                <div class="trade-top">
+                  {#if editingTradeId === trade.id}
+                    <input
+                      type="text"
+                      class="inline-edit-input trade-edit"
+                      bind:value={tradeEditTitle}
+                      on:blur={() => saveTradeTitle(trade)}
+                      on:keydown={(e) => {
+                        if (e.key === "Enter") saveTradeTitle(trade)
+                        if (e.key === "Escape") cancelTradeEdit()
+                      }}
+                      on:click|stopPropagation />
+                  {:else}
+                    <div class="trade-copy">
+                      <a
+                        class="trade-link"
+                        href={getTradeUrl(
+                          trade.location.version,
+                          trade.location.type,
+                          trade.location.slug,
+                          trade.location.league ||
+                            tradeLocationService.current.league ||
+                            "Standard"
+                        )}
+                        title={trade.title}
+                        on:click|preventDefault={() => void openTrade(trade)}>
+                        {trade.title}
+                      </a>
+                    </div>
+                  {/if}
+                </div>
+                <div class="trade-bottom">
+                  <div class="trade-meta">{formatTradeMeta(trade)}</div>
+                  <div class="trade-actions">
+                    <button
+                      type="button"
+                      class="trade-action"
+                      title={translate($languageStore, "folder.editSearchName")}
+                      aria-label={translate(
+                        $languageStore,
+                        "folder.editSearchName"
+                      )}
+                      on:click|stopPropagation={() => startEditingTrade(trade)}>
+                      <span class="action-icon" aria-hidden="true"
+                        >{@html icons.edit}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="trade-action"
+                      title={translate(
+                        $languageStore,
+                        "folder.replaceCurrentSearch"
+                      )}
+                      aria-label={translate(
+                        $languageStore,
+                        "folder.replaceCurrentSearch"
+                      )}
+                      on:click={() => void replaceSearchWithCurrent(trade)}>
+                      <span class="action-icon" aria-hidden="true"
+                        >{@html icons.replace}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="trade-action"
+                      title={translate($languageStore, "folder.copyUrl")}
+                      aria-label={translate($languageStore, "folder.copyUrl")}
+                      on:click={() => copyTrade(trade)}>
+                      <span class="action-icon" aria-hidden="true"
+                        >{@html icons.copy}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="trade-action"
+                      class:is-active={!!trade.completedAt}
+                      title={trade.completedAt
+                        ? translate($languageStore, "folder.markPending")
+                        : translate($languageStore, "folder.markComplete")}
+                      aria-label={trade.completedAt
+                        ? translate($languageStore, "folder.markPending")
+                        : translate($languageStore, "folder.markComplete")}
+                      on:click={() => void toggleTrade(trade)}>
+                      <span class="action-icon" aria-hidden="true"
+                        >{@html icons.check}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="trade-action is-danger"
+                      title={translate($languageStore, "folder.deleteTrade")}
+                      aria-label={translate(
+                        $languageStore,
+                        "folder.deleteTrade"
+                      )}
+                      on:click={() => void deleteTrade(trade)}>
+                      <span class="action-icon" aria-hidden="true"
+                        >{@html icons.trash}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </li>
           {/each}
         </ul>
         <div class="footer-actions">
-            <Button label={translate($languageStore, "folder.saveCurrentSearch")} theme="gold" onClick={createTradeFromCurrent} />
+          <Button
+            label={translate($languageStore, "folder.saveCurrentSearch")}
+            theme="gold"
+            onClick={createTradeFromCurrent} />
         </div>
       </LoadingContainer>
     </div>
@@ -482,15 +568,20 @@
     border: 1px solid rgba($gold, 0.12);
     border-radius: 8px;
     overflow: hidden;
-    background:
-      linear-gradient(180deg, rgba($gold, 0.035), rgba($gold, 0.015)),
+    background: linear-gradient(180deg, rgba($gold, 0.035), rgba($gold, 0.015)),
       rgba($black, 0.4);
     box-shadow:
       inset 0 1px 0 rgba($white, 0.02),
       0 8px 18px rgba(0, 0, 0, 0.18);
-    transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+    transition:
+      transform 0.18s ease,
+      border-color 0.18s ease,
+      background-color 0.18s ease,
+      box-shadow 0.18s ease;
 
-    &.is-archived { opacity: 0.72; }
+    &.is-archived {
+      opacity: 0.72;
+    }
 
     &.is-folder-dragging {
       opacity: 0.45;
@@ -510,8 +601,11 @@
     display: flex;
     align-items: stretch;
     gap: 8px;
-    background:
-      linear-gradient(180deg, rgba($blue-alt, 0.92), rgba($blue, 0.96)),
+    background: linear-gradient(
+        180deg,
+        rgba($blue-alt, 0.92),
+        rgba($blue, 0.96)
+      ),
       $blue;
     padding: 8px 10px;
     color: $white;
@@ -610,7 +704,10 @@
     font-size: 12px;
     line-height: 1;
     cursor: pointer;
-    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease;
 
     &:hover {
       background-color: rgba($white, 0.08);
@@ -641,7 +738,7 @@
     min-height: 13px;
     display: block;
     overflow: visible;
-    stroke-width: 1.7;
+    stroke-width: 1.6;
   }
 
   .trades-list {
@@ -651,8 +748,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background:
-      linear-gradient(180deg, rgba($white, 0.015), rgba($white, 0)),
+    background: linear-gradient(180deg, rgba($white, 0.015), rgba($white, 0)),
       rgba($black, 0.36);
   }
 
@@ -664,8 +760,12 @@
     border: 1px solid rgba($white, 0.06);
     border-radius: 6px;
     background: rgba($black, 0.34);
-    transition: background-color 0.2s, border-color 0.2s, opacity 0.2s, transform 0.2s;
-    
+    transition:
+      background-color 0.2s,
+      border-color 0.2s,
+      opacity 0.2s,
+      transform 0.2s;
+
     &:hover {
       background-color: rgba($white, 0.05);
       border-color: rgba($gold, 0.16);
@@ -681,7 +781,7 @@
       background: rgba($green, 0.14);
       border-color: rgba($green, 0.28);
     }
-    
+
     &.is-drag-over {
       border-color: rgba($gold, 0.42);
       background-color: rgba($gold, 0.15);
@@ -699,21 +799,37 @@
     justify-content: center;
     width: 16px;
     flex: 0 0 16px;
-    
+
     &:hover {
-        color: $gold;
+      color: $gold;
     }
     &:active {
-        cursor: grabbing;
+      cursor: grabbing;
     }
   }
 
-  .trade-info {
+  .trade-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .trade-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .trade-bottom {
     display: flex;
     align-items: center;
-    min-width: 0;
-    flex: 1;
-    gap: 6px;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
   }
 
   .trade-copy {
@@ -727,13 +843,16 @@
     color: $white;
     text-decoration: none;
     font-size: 13px;
-    line-height: 1.15;
+    line-height: 1.2;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    display: block;
 
-    &:hover { text-decoration: underline; }
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   .trade-meta {
@@ -749,15 +868,14 @@
   .trade-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-    padding-left: 8px;
-    border-left: 1px solid rgba($white, 0.05);
+    gap: 3px;
+    padding: 0;
+    margin: 0;
   }
 
   .trade-action {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -765,10 +883,13 @@
     border: 1px solid rgba($white, 0.12);
     background-color: rgba($black, 0.45);
     color: rgba($white, 0.82);
-    font-size: 12px;
+    font-size: 10px;
     line-height: 1;
     cursor: pointer;
-    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease;
 
     &:hover {
       background-color: rgba($white, 0.08);
