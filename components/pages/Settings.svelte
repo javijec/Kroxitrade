@@ -13,7 +13,7 @@
   import flagRU from "data-base64:../../assets/RU.png";
   import flagTH from "data-base64:../../assets/TH.png";
 
-  const DEFAULT_SIDEBAR_WIDTH = 360;
+  const DEFAULT_SIDEBAR_WIDTH = 450;
   const languages: Array<{ code: AppLanguage; label: string; flag: string }> = [
     { code: "en", label: "English", flag: flagGB },
     { code: "es", label: "Español", flag: flagES },

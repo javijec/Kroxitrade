@@ -34,7 +34,7 @@
   const clampSidebarWidth = (value: number) =>
     Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, Math.round(value)));
 
-  const getExpandedSidebarWidth = () => clampSidebarWidth($settings.sidebarWidth || 360);
+  const getExpandedSidebarWidth = () => clampSidebarWidth($settings.sidebarWidth || 450);
   const getRenderedSidebarWidth = () => clampSidebarWidth(liveSidebarWidth ?? getExpandedSidebarWidth());
   const normalizeNavIcon = (svg: string) =>
     svg

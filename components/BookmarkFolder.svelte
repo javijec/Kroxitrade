@@ -303,7 +303,6 @@
   class:is-folder-dragging={isFolderDragging}
   class:is-folder-drag-over={isFolderDragOver}
   draggable="true"
-  role="group"
   on:dragstart={(e) => onFolderDragStart(e, folder.id || "")}
   on:dragenter={(e) => onFolderDragEnter(e, folder.id || "")}
   on:dragover|preventDefault
