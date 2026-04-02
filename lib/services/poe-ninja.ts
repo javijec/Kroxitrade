@@ -20,7 +20,7 @@ const URIS = {
   currencies: "/data/currencyoverview?type=Currency"
 };
 
-const RATIOS_CACHE_DURATION = 3600000; // 1 hour
+const RATIOS_CACHE_DURATION = 900000; // 15 minutes
 const RATIOS_CACHE_KEY = "poe-ninja-chaos-ratios-cache";
 
 export class PoeNinjaService {

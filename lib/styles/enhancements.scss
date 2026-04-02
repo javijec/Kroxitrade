@@ -103,6 +103,10 @@ plasmo-csui {
 
 .bt-equivalent-pricings-equivalent {
   font-weight: normal;
+
+  &.is-hidden {
+    display: none;
+  }
 }
 
 .bt-equivalent-label {
