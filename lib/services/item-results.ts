@@ -32,6 +32,15 @@ export class ItemResultsService {
   private readonly DIVINE_ICON_URL = "https://web.poecdn.com/image/Art/2DItems/Currency/CurrencyModValues.png?scale=1&w=1&h=1";
   private showEquivalentPricing = false;
   private unsubscribeSettings: (() => void) | null = null;
+  private unsubscribeLocation: (() => void) | null = null;
+  private readonly postSearchRefreshDelays = [80, 220, 500, 900];
+  private searchRefreshTimers: number[] = [];
+  private readonly handleDocumentClick = (event: MouseEvent) => {
+    const target = event.target as Element | null;
+    if (!target?.closest(".btn.search-btn")) return;
+    this.schedulePostSearchRefresh();
+  };
+
   async initialize() {
     console.log("[Poe Trade Plus] Initializing ItemResultsService...");
     if (window.location.protocol === "chrome-extension:") {
@@ -48,6 +57,10 @@ export class ItemResultsService {
         this.refreshEquivalentPricing();
       }
     });
+    this.unsubscribeLocation?.();
+    this.unsubscribeLocation = tradeLocationService.onChange(() => {
+      void this.handleLocationChange();
+    });
     
     try {
       await this.fetchRatios();
@@ -58,6 +71,18 @@ export class ItemResultsService {
 
     this.prepareHighlighting();
     this.startObserving();
+    document.addEventListener("click", this.handleDocumentClick, true);
+  }
+
+  private async handleLocationChange() {
+    try {
+      await this.fetchRatios();
+    } catch (e) {
+      console.error("[Poe Trade Plus] Failed to refresh ratios after location change:", e);
+    }
+
+    this.schedulePostSearchRefresh();
+    this.refreshEquivalentPricing();
   }
 
 
@@ -97,6 +122,8 @@ export class ItemResultsService {
     for (const node of leafNodes) {
         // Ignorar el nombre de la moneda
         if (node.classList?.contains("currency-text") || node.closest('.currency-text')) continue;
+        // Ignorar nuestro propio bloque equivalente para no reparsear valores inyectados.
+        if (node.classList?.contains("bt-equivalent-pricings-equivalent") || node.closest('.bt-equivalent-pricings-equivalent')) continue;
         
         const text = node.textContent?.trim() || "";
         const match = text.match(/[0-9]+(\.[0-9]+)?/);
@@ -216,8 +243,11 @@ export class ItemResultsService {
   }
 
   private syncEquivalentVisibility(element: HTMLElement) {
-    element.classList.toggle("is-hidden", !this.showEquivalentPricing);
-    element.setAttribute("aria-hidden", String(!this.showEquivalentPricing));
+    const isHidden = !this.showEquivalentPricing;
+    element.classList.toggle("is-hidden", isHidden);
+    element.toggleAttribute("hidden", isHidden);
+    element.style.display = isHidden ? "none" : "block";
+    element.setAttribute("aria-hidden", String(isHidden));
   }
 
   private prepareHighlighting() {
@@ -248,19 +278,34 @@ export class ItemResultsService {
     }
   }
 
+  private schedulePostSearchRefresh() {
+    this.searchRefreshTimers.forEach((timer) => window.clearTimeout(timer));
+    this.searchRefreshTimers = this.postSearchRefreshDelays.map((delay) =>
+      window.setTimeout(() => this.enhanceResults(), delay)
+    );
+  }
+
   private enhanceResults() {
-    // Current trade site uses .result-item, but some pages or versions use .row
-    const results = document.querySelectorAll(".search-results .result-item:not([bt-enhanced]), .search-results .row:not([bt-enhanced]), .result-list .result-item:not([bt-enhanced]), .row:not([bt-enhanced])");
-    
+    // Current trade site uses .result-item, but some pages or versions use .row.
+    // Re-run equivalent pricing on every visible result because the trade site can recycle DOM nodes between searches.
+    const results = document.querySelectorAll(".search-results .result-item, .search-results .row, .result-list .result-item, .row");
+    const newResults = Array.from(results).filter((row) => !row.hasAttribute("bt-enhanced"));
+
     if (results.length > 0) {
-        console.log(`[Poe Trade Plus] Enhancing ${results.length} new results...`);
+        console.log(`[Poe Trade Plus] Refreshing ${results.length} results (${newResults.length} new rows)...`);
     }
 
-    results.forEach((row: HTMLElement) => {
-      row.setAttribute("bt-enhanced", "true");
-      this.injectEquivalentPricing(row);
-      this.highlightStats(row);
-      this.checkMaximumSockets(row);
+    results.forEach((row: Element) => {
+      const typedRow = row as HTMLElement;
+      this.injectEquivalentPricing(typedRow);
+
+      if (typedRow.hasAttribute("bt-enhanced")) {
+        return;
+      }
+
+      typedRow.setAttribute("bt-enhanced", "true");
+      this.highlightStats(typedRow);
+      this.checkMaximumSockets(typedRow);
     });
   }
 
