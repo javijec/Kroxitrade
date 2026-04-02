@@ -299,6 +299,7 @@
 </script>
 
 <div
+  role="region"
   class="folder {isExpanded ? 'is-expanded' : ''} {isArchived ? 'is-archived' : ''}"
   class:is-folder-dragging={isFolderDragging}
   class:is-folder-drag-over={isFolderDragOver}
@@ -310,7 +311,7 @@
   on:dragend={onFolderDragEnd}
 >
   <div class="header">
-    <div class="folder-drag-handle" title={translate($languageStore, "folder.dragReorder")} aria-hidden="true">
+    <div class="folder-drag-handle" title={translate($languageStore, "folder.dragReorder")} aria-hidden="true" role="button">
       <span class="action-icon">{@html icons.grip}</span>
     </div>
     <button 
@@ -327,7 +328,6 @@
             bind:value={folderEditTitle} 
             on:blur={saveFolderTitle} 
             on:keydown={e => { if (e.key === 'Enter') saveFolderTitle(); if (e.key === 'Escape') cancelFolderEdit(); }} 
-            autofocus 
             on:click|stopPropagation
           />
         {:else}
@@ -402,7 +402,6 @@
                     bind:value={tradeEditTitle} 
                     on:blur={() => saveTradeTitle(trade)} 
                     on:keydown={e => { if (e.key === 'Enter') saveTradeTitle(trade); if (e.key === 'Escape') cancelTradeEdit(); }} 
-                    autofocus 
                     on:click|stopPropagation
                   />
                 {:else}
