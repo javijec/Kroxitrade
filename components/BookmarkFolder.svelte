@@ -11,6 +11,7 @@
   import { flashMessages } from "../lib/services/flash"
   import { languageStore, translate } from "../lib/services/i18n"
   import { searchPanelService } from "../lib/services/search-panel"
+  import { settings } from "../lib/services/settings"
   import { tradeLocationService } from "../lib/services/trade-location"
   import type {
     BookmarksFolderStruct,
@@ -447,19 +448,34 @@
                       </a>
                     </div>
                   {/if}
+
+                  {#if $settings.compactActionsMenu}
+                    <div class="trade-actions trade-actions--compact">
+                      <TradeActionsMenu
+                        {trade}
+                        compactText={formatTradeMeta(trade)}
+                        onEdit={() => startEditingTrade(trade)}
+                        onReplace={() => void replaceSearchWithCurrent(trade)}
+                        onCopy={() => copyTrade(trade)}
+                        onToggle={() => void toggleTrade(trade)}
+                        onDelete={() => void deleteTrade(trade)} />
+                    </div>
+                  {/if}
                 </div>
-                <div class="trade-bottom">
-                  <div class="trade-meta">{formatTradeMeta(trade)}</div>
-                  <div class="trade-actions">
-                    <TradeActionsMenu
-                      {trade}
-                      onEdit={() => startEditingTrade(trade)}
-                      onReplace={() => void replaceSearchWithCurrent(trade)}
-                      onCopy={() => copyTrade(trade)}
-                      onToggle={() => void toggleTrade(trade)}
-                      onDelete={() => void deleteTrade(trade)} />
+                {#if !$settings.compactActionsMenu}
+                  <div class="trade-bottom">
+                    <div class="trade-meta">{formatTradeMeta(trade)}</div>
+                    <div class="trade-actions">
+                      <TradeActionsMenu
+                        {trade}
+                        onEdit={() => startEditingTrade(trade)}
+                        onReplace={() => void replaceSearchWithCurrent(trade)}
+                        onCopy={() => copyTrade(trade)}
+                        onToggle={() => void toggleTrade(trade)}
+                        onDelete={() => void deleteTrade(trade)} />
+                    </div>
                   </div>
-                </div>
+                {/if}
               </div>
             </li>
           {/each}
@@ -734,7 +750,7 @@
 
   .trade-top {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 8px;
   }
@@ -742,7 +758,7 @@
   .trade-bottom {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 8px;
     width: 100%;
   }
@@ -771,6 +787,8 @@
   }
 
   .trade-meta {
+    min-width: 0;
+    flex: 1;
     font-size: 10px;
     line-height: 1.2;
     color: rgba($gold-alt, 0.52);
@@ -784,8 +802,14 @@
     display: flex;
     align-items: center;
     gap: 3px;
+    min-width: 0;
+    flex-shrink: 0;
     padding: 0;
     margin: 0;
+  }
+
+  .trade-actions--compact {
+    margin-left: auto;
   }
 
   .trade-action {

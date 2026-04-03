@@ -17,6 +17,7 @@
   export let onCopy: () => void;
   export let onToggle: () => void;
   export let onDelete: () => void;
+  export let compactText = "";
 
   const icons = {
     edit: editIcon,
@@ -79,6 +80,7 @@
 
 <ActionsMenu
   {actions}
+  {compactText}
   primaryActionIds={PRIMARY_ACTION_IDS}
   compactMode={$settings.compactActionsMenu}
   translate={(key) => translate($languageStore, key)}
