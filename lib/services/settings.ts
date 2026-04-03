@@ -10,6 +10,7 @@ export interface AppSettings {
   showBulkSellers: boolean;
   sidebarWidth: number;
   language: AppLanguage;
+  compactActionsMenu: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -18,6 +19,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   showBulkSellers: false,
   sidebarWidth: 360,
   language: 'en',
+  compactActionsMenu: false
 };
 
 let currentSettings: AppSettings = DEFAULT_SETTINGS;
@@ -80,6 +82,13 @@ export const settings = {
       const next = { ...s, language };
       save(next);
       setLanguage(language);
+      return next;
+    });
+  },
+  async updateCompactActionsMenu(compactActionsMenu: boolean) {
+    update(s => {
+      const next = { ...s, compactActionsMenu };
+      save(next);
       return next;
     });
   }

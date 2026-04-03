@@ -65,33 +65,33 @@ export class BookmarksService {
 
   async fetchTradeByLocation(location: PartialBookmarksTradeLocation): Promise<BookmarksTradeStruct | null> {
     const folders = await this.fetchFolders();
-    const foldersWithTrades = await Promise.all(
-      folders.map(async (folder) => ({
-        ...folder,
-        trades: await this.fetchTradesByFolderId(folder.id!),
-      }))
+
+    const unarchivedFolders = folders.filter(f => !f.archivedAt);
+    const archivedFolders = folders.filter(f => f.archivedAt);
+
+    const matchLocation = (t: BookmarksTradeStruct) =>
+      t.location.version === location.version &&
+      t.location.slug === location.slug &&
+      t.location.type === location.type &&
+      (t.location.league === null || t.location.league === location.league);
+
+    const unarchivedResults = await Promise.all(
+      unarchivedFolders.map(f => this.fetchTradesByFolderId(f.id!))
     );
-    
-    let matches = foldersWithTrades
-      .map(f => ({
-        ...f,
-        trades: f.trades.filter(
-          t => t.location.version === location.version &&
-               t.location.slug === location.slug &&
-               t.location.type === location.type &&
-               (t.location.league === null || t.location.league === location.league)
-        ),
-      }))
-      .filter(f => f.trades.length > 0);
+    for (const trades of unarchivedResults) {
+      const match = trades.find(matchLocation);
+      if (match) return match;
+    }
 
-    if (matches.length === 0) return null;
+    const archivedResults = await Promise.all(
+      archivedFolders.map(f => this.fetchTradesByFolderId(f.id!))
+    );
+    for (const trades of archivedResults) {
+      const match = trades.find(matchLocation);
+      if (match) return match;
+    }
 
-    const unarchivedMatches = matches.filter(m => !m.archivedAt);
-    if (unarchivedMatches.length > 0) matches = unarchivedMatches;
-
-    const matchingTrades = matches.flatMap(m => m.trades);
-    matchingTrades.sort((a, b) => (a.title < b.title ? -1 : a.title > b.title ? 1 : 0));
-    return matchingTrades[0];
+    return null;
   }
 
   async persistFolder(folder: BookmarksFolderStruct, options?: { moveToEnd?: boolean }): Promise<string> {
@@ -158,6 +158,23 @@ export class BookmarksService {
 
   async renameFolder(folder: BookmarksFolderStruct, title: string) {
     return this.persistFolder({ ...folder, title });
+  }
+
+  async duplicateFolder(folder: BookmarksFolderStruct) {
+    if (!folder.id) throw new Error("Cannot duplicate a folder without an id");
+    const newFolder = {
+      ...folder,
+      id: undefined,
+      title: `${folder.title} (copy)`
+    };
+    const newFolderId = await this.persistFolder(newFolder);
+    const trades = await this.fetchTradesByFolderId(folder.id);
+    const duplicatedTrades = trades.map(trade => {
+      const { id, ...tradeWithoutId } = trade;
+      return { ...tradeWithoutId, id: undefined };
+    });
+    await this.persistTrades(duplicatedTrades, newFolderId);
+    await this.refresh();
   }
 
   async renameTrade(trade: BookmarksTradeStruct, folderId: string, title: string) {

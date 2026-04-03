@@ -505,9 +505,6 @@
     min-width: 0;
   }
 
-  .folder-shell {
-    will-change: transform;
-  }
 
   .import-text-area {
       display: flex;

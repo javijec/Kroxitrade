@@ -53,6 +53,10 @@
     await settings.updateBulkSellersVisibility(showBulkSellers);
   }
 
+  async function handleCompactActionsMenuChange(compactActionsMenu: boolean) {
+    await settings.updateCompactActionsMenu(compactActionsMenu);
+  }
+
   async function handleSidebarWidthReset() {
     await settings.updateSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
   }
@@ -211,6 +215,26 @@
         theme={$settings.showBulkSellers ? 'gold' : 'blue'}
         class="side-btn"
         onClick={() => handleBulkSellersChange(true)}
+      />
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h3 class="section-title">{translate($languageStore, "settings.compactActionsTitle")}</h3>
+    <p class="section-description">{translate($languageStore, "settings.compactActionsDescription")}</p>
+
+    <div class="side-selector">
+      <Button
+        label={translate($languageStore, "settings.hidden")}
+        theme={$settings.compactActionsMenu ? 'blue' : 'gold'}
+        class="side-btn"
+        onClick={() => handleCompactActionsMenuChange(false)}
+      />
+      <Button
+        label={translate($languageStore, "settings.visible")}
+        theme={$settings.compactActionsMenu ? 'gold' : 'blue'}
+        class="side-btn"
+        onClick={() => handleCompactActionsMenuChange(true)}
       />
     </div>
   </section>
