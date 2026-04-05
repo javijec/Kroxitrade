@@ -1,6 +1,6 @@
 <script lang="ts">
   import { flip } from "svelte/animate";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import archiveIcon from "data-text:lucide-static/icons/archive.svg";
   import archiveRestoreIcon from "data-text:lucide-static/icons/archive-restore.svg";
   import chevronsUpIcon from "data-text:lucide-static/icons/chevrons-up.svg";
@@ -46,15 +46,27 @@
   let draggedFolderId: string | null = null;
   let dragOverFolderId: string | null = null;
   let folderPendingDelete: BookmarksFolderStruct | null = null;
+  let toolbarStickyEl: HTMLDivElement | null = null;
+  let toolbarRenderKey = 0;
+  let toolbarRepairFrame = 0;
+  let toolbarRepairTimeouts: number[] = [];
+  let toolbarRepairAttempts = 0;
 
   $: currentLocation = tradeLocationService.locationStore;
-  $: displayedFolders = $bookmarksService.filter((folder) => {
-    const matchesArchive = !!folder.archivedAt === showArchived;
-    const matchesVersion = folder.version === $currentLocation.version;
-    return matchesArchive && matchesVersion;
-  });
-  $: expandedFoldersStorageKey = `${EXPANDED_FOLDERS_STORAGE_KEY}-${$currentLocation.version}`;
-  $: validFolderIds = new Set($bookmarksService.map((folder) => folder.id).filter(Boolean));
+  $: currentVersion = $currentLocation.version;
+  $: versionFolders = $bookmarksService.filter(
+    (folder) => folder.version === currentVersion
+  );
+  $: displayedFolders = versionFolders.filter(
+    (folder) => !!folder.archivedAt === showArchived
+  );
+  $: displayedFolderIndexById = new Map(
+    displayedFolders.map((folder, index) => [folder.id, index])
+  );
+  $: expandedFoldersStorageKey = `${EXPANDED_FOLDERS_STORAGE_KEY}-${currentVersion}`;
+  $: validFolderIds = new Set(
+    versionFolders.map((folder) => folder.id).filter(Boolean)
+  );
   $: tutorialTargetFolderId = tutorialStep === "save-search"
     ? tutorialFolderId || displayedFolders[0]?.id || null
     : null;
@@ -73,10 +85,6 @@
   $: if (loadedExpandedStateKey === expandedFoldersStorageKey) {
     persistExpandedState(expandedFoldersStorageKey, expandedFolderIds);
   }
-
-  onMount(async () => {
-    tradeLocationService.startPolling();
-  });
 
   const loadExpandedState = (storageKey: string) => {
     const raw = storageService.getLocalValue(storageKey);
@@ -107,7 +115,7 @@
     const newFolder: BookmarksFolderStruct = {
       title: translate($languageStore, "bookmarks.newFolder"),
       icon: null,
-      version: $currentLocation.version,
+      version: currentVersion,
       archivedAt: null
     };
     const folderId = await bookmarksService.persistFolder(newFolder);
@@ -163,7 +171,7 @@
       return;
     }
 
-    const targetIndex = displayedFolders.findIndex((folder) => folder.id === folderId);
+    const targetIndex = displayedFolderIndexById.get(folderId) ?? -1;
     if (targetIndex === -1) {
       draggedFolderId = null;
       dragOverFolderId = null;
@@ -171,7 +179,7 @@
     }
 
     await bookmarksService.moveFolder(draggedFolderId, targetIndex, {
-      version: $currentLocation.version,
+      version: currentVersion,
       archived: showArchived
     });
 
@@ -258,62 +266,138 @@
     archive: normalizeToolbarIcon(archiveIcon),
     active: normalizeToolbarIcon(archiveRestoreIcon)
   };
+
+  const clearToolbarRepairTimers = () => {
+    if (toolbarRepairFrame) {
+      window.cancelAnimationFrame(toolbarRepairFrame);
+      toolbarRepairFrame = 0;
+    }
+
+    for (const timeoutId of toolbarRepairTimeouts) {
+      window.clearTimeout(timeoutId);
+    }
+    toolbarRepairTimeouts = [];
+  };
+
+  const isToolbarVisible = () => {
+    if (!toolbarStickyEl || !toolbarStickyEl.isConnected) {
+      return false;
+    }
+
+    const rect = toolbarStickyEl.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  };
+
+  const repairToolbarIfNeeded = async () => {
+    toolbarRepairFrame = window.requestAnimationFrame(async () => {
+      toolbarRepairFrame = 0;
+      await tick();
+
+      if (isToolbarVisible()) {
+        toolbarRepairAttempts = 0;
+        return;
+      }
+
+      if (toolbarRepairAttempts >= 2) {
+        return;
+      }
+
+      toolbarRepairAttempts += 1;
+      toolbarRenderKey += 1;
+    });
+  };
+
+  onMount(() => {
+    const queueRepairCheck = (delay = 0) => {
+      const timeoutId = window.setTimeout(() => {
+        toolbarRepairTimeouts = toolbarRepairTimeouts.filter((id) => id !== timeoutId);
+        void repairToolbarIfNeeded();
+      }, delay);
+
+      toolbarRepairTimeouts = [...toolbarRepairTimeouts, timeoutId];
+    };
+
+    queueRepairCheck(0);
+    queueRepairCheck(180);
+
+    const handlePageShow = () => {
+      queueRepairCheck(0);
+      queueRepairCheck(180);
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("load", handlePageShow);
+
+    return () => {
+      clearToolbarRepairTimers();
+      window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("load", handlePageShow);
+    };
+  });
+
+  onDestroy(() => {
+    clearToolbarRepairTimers();
+  });
 </script>
 
 <div class="bookmarks-page" data-tutorial="bookmarks-panel">
-  <section class="toolbar-panel" data-tutorial="bookmarks-toolbar">
-    <div class="toolbar-row">
-      <div class="toolbar-actions">
-        <button class="toolbar-button" data-tutorial="new-folder" type="button" title={translate($languageStore, "bookmarks.toolbar.newFolderTitle")} aria-label={translate($languageStore, "bookmarks.toolbar.newFolderTitle")} on:click={createFolder}>
-          <span class="toolbar-icon" aria-hidden="true">{@html toolbarIcons.newFolder}</span>
-          <span class="toolbar-label">{translate($languageStore, "bookmarks.toolbar.new")}</span>
-        </button>
-        <button
-          class:active={isImportingText}
-          class="toolbar-button"
-          type="button"
-          title={isImportingText ? translate($languageStore, "bookmarks.toolbar.cancelImport") : translate($languageStore, "bookmarks.toolbar.importFolder")}
-          aria-label={isImportingText ? translate($languageStore, "bookmarks.toolbar.cancelImport") : translate($languageStore, "bookmarks.toolbar.importFolder")}
-          on:click={() => isImportingText = !isImportingText}
-        >
-          <span class="toolbar-icon" aria-hidden="true">
-            {@html isImportingText ? toolbarIcons.cancel : toolbarIcons.import}
-          </span>
-          <span class="toolbar-label">{isImportingText ? translate($languageStore, "bookmarks.toolbar.cancel") : translate($languageStore, "bookmarks.toolbar.import")}</span>
-        </button>
-        <button class="toolbar-button" type="button" title={translate($languageStore, "bookmarks.toolbar.collapseAll")} aria-label={translate($languageStore, "bookmarks.toolbar.collapseAll")} on:click={collapseAll}>
-          <span class="toolbar-icon" aria-hidden="true">{@html toolbarIcons.collapse}</span>
-          <span class="toolbar-label">{translate($languageStore, "bookmarks.toolbar.collapse")}</span>
-        </button>
-        <button
-          class:active={showArchived}
-          class="toolbar-button"
-          type="button"
-          title={showArchived ? translate($languageStore, "bookmarks.toolbar.showActive") : translate($languageStore, "bookmarks.toolbar.showArchived")}
-          aria-label={showArchived ? translate($languageStore, "bookmarks.toolbar.showActive") : translate($languageStore, "bookmarks.toolbar.showArchived")}
-          on:click={() => showArchived = !showArchived}
-        >
-          <span class="toolbar-icon" aria-hidden="true">
-            {@html showArchived ? toolbarIcons.active : toolbarIcons.archive}
-          </span>
-          <span class="toolbar-label">{showArchived ? translate($languageStore, "bookmarks.toolbar.active") : translate($languageStore, "bookmarks.toolbar.archive")}</span>
-        </button>
-      </div>
-    </div>
-
-    {#if isImportingText}
-      <div class="import-text-area">
-        <textarea 
-          bind:value={importText} 
-          placeholder={translate($languageStore, "bookmarks.importPlaceholder")}
-          autofocus
-        ></textarea>
-        <div class="import-actions">
-          <Button label={translate($languageStore, "bookmarks.confirmImport")} theme="gold" onClick={processTextImport} />
+  {#key toolbarRenderKey}
+    <div class="toolbar-sticky" data-tutorial="bookmarks-toolbar" bind:this={toolbarStickyEl}>
+      <section class="toolbar-panel">
+        <div class="toolbar-row">
+          <div class="toolbar-actions">
+            <button class="toolbar-button" data-tutorial="new-folder" type="button" title={translate($languageStore, "bookmarks.toolbar.newFolderTitle")} aria-label={translate($languageStore, "bookmarks.toolbar.newFolderTitle")} on:click={createFolder}>
+              <span class="toolbar-icon" aria-hidden="true">{@html toolbarIcons.newFolder}</span>
+              <span class="toolbar-label">{translate($languageStore, "bookmarks.toolbar.new")}</span>
+            </button>
+            <button
+              class:active={isImportingText}
+              class="toolbar-button"
+              type="button"
+              title={isImportingText ? translate($languageStore, "bookmarks.toolbar.cancelImport") : translate($languageStore, "bookmarks.toolbar.importFolder")}
+              aria-label={isImportingText ? translate($languageStore, "bookmarks.toolbar.cancelImport") : translate($languageStore, "bookmarks.toolbar.importFolder")}
+              on:click={() => isImportingText = !isImportingText}
+            >
+              <span class="toolbar-icon" aria-hidden="true">
+                {@html isImportingText ? toolbarIcons.cancel : toolbarIcons.import}
+              </span>
+              <span class="toolbar-label">{isImportingText ? translate($languageStore, "bookmarks.toolbar.cancel") : translate($languageStore, "bookmarks.toolbar.import")}</span>
+            </button>
+            <button class="toolbar-button" type="button" title={translate($languageStore, "bookmarks.toolbar.collapseAll")} aria-label={translate($languageStore, "bookmarks.toolbar.collapseAll")} on:click={collapseAll}>
+              <span class="toolbar-icon" aria-hidden="true">{@html toolbarIcons.collapse}</span>
+              <span class="toolbar-label">{translate($languageStore, "bookmarks.toolbar.collapse")}</span>
+            </button>
+            <button
+              class:active={showArchived}
+              class="toolbar-button"
+              type="button"
+              title={showArchived ? translate($languageStore, "bookmarks.toolbar.showActive") : translate($languageStore, "bookmarks.toolbar.showArchived")}
+              aria-label={showArchived ? translate($languageStore, "bookmarks.toolbar.showActive") : translate($languageStore, "bookmarks.toolbar.showArchived")}
+              on:click={() => showArchived = !showArchived}
+            >
+              <span class="toolbar-icon" aria-hidden="true">
+                {@html showArchived ? toolbarIcons.active : toolbarIcons.archive}
+              </span>
+              <span class="toolbar-label">{showArchived ? translate($languageStore, "bookmarks.toolbar.active") : translate($languageStore, "bookmarks.toolbar.archive")}</span>
+            </button>
+          </div>
         </div>
-      </div>
-    {/if}
-  </section>
+
+        {#if isImportingText}
+          <div class="import-text-area">
+            <textarea 
+              bind:value={importText} 
+              placeholder={translate($languageStore, "bookmarks.importPlaceholder")}
+              autofocus
+            ></textarea>
+            <div class="import-actions">
+              <Button label={translate($languageStore, "bookmarks.confirmImport")} theme="gold" onClick={processTextImport} />
+            </div>
+          </div>
+        {/if}
+      </section>
+    </div>
+  {/key}
 
   <LoadingContainer {isLoading}>
     <div class="folders-list">
@@ -321,7 +405,7 @@
         <div class="folder-shell" animate:flip={{ duration: 180 }}>
           <BookmarkFolder 
               {folder} 
-              {expandedFolderIds} 
+              isExpanded={expandedFolderIds.includes(folder.id || "")}
               isTutorialSaveTarget={tutorialStep === "save-search" && folder.id === tutorialTargetFolderId}
               onToggleExpansion={toggleExpansion}
               onArchiveEvent={() => toggleArchive(folder)}
@@ -380,6 +464,7 @@
   .action-section {
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
     padding: 12px;
     background: linear-gradient(180deg, rgba($gold, 0.05), transparent);
     border: 1px solid rgba($gold, 0.1);
@@ -387,17 +472,26 @@
     margin: 0 4px;
   }
 
-  .toolbar-panel {
+  .toolbar-sticky {
     position: sticky;
     top: 0;
     z-index: 3;
+    flex: 0 0 auto;
+    min-width: 0;
+    isolation: isolate;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .toolbar-panel {
     gap: 10px;
     padding: 10px 12px;
     background:
       linear-gradient(180deg, rgba($gold, 0.08), rgba($gold, 0.02)),
       rgba($black, 0.5);
     border-color: rgba($gold, 0.14);
-    backdrop-filter: blur(8px);
+    min-width: 0;
+    box-shadow: inset 0 1px 0 rgba($white, 0.03);
   }
 
   .backup-section {
@@ -416,6 +510,11 @@
 
   .toolbar-row {
     display: block;
+  }
+
+  .bookmarks-page :global(.loading-container) {
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .toolbar-actions {

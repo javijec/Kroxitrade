@@ -19,11 +19,20 @@
   @use "../lib/styles/variables" as *;
   @use "../lib/styles/mixins" as *;
 
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
   .loader {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
+    flex: 0 0 auto;
     margin: 10px 0;
     font-size: 25px;
     color: $white;
@@ -44,8 +53,12 @@
   }
 
   .content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
     @include fade-in;
     width: 100%;
-    height: 100%;
+    min-width: 0;
+    min-height: 0;
   }
 </style>

@@ -21,6 +21,7 @@ export class TradeLocationService {
   private lastLocation: ExactTradeLocationStruct | null = null;
   private listeners = new Set<(event: { old: ExactTradeLocationStruct, new: ExactTradeLocationStruct }) => void>();
   private pollingTimer: ReturnType<typeof setInterval> | null = null;
+  private activeTabTrackingStarted = false;
   private focusHandler: (() => void) | null = null;
   private blurHandler: (() => void) | null = null;
   private activeTabUpdatedHandler: ((tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => void) | null = null;
@@ -43,6 +44,10 @@ export class TradeLocationService {
 
   startPolling(interval: number = 1000) {
     if (this.isExtensionUi()) {
+      if (this.activeTabTrackingStarted) {
+        return;
+      }
+      this.activeTabTrackingStarted = true;
       void this.startActiveTabTracking();
       return;
     }

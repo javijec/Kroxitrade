@@ -28,7 +28,7 @@
   import TradeActionsMenu from "./TradeActionsMenu.svelte"
 
   export let folder: BookmarksFolderStruct
-  export let expandedFolderIds: string[]
+  export let isExpanded = false
   export let onToggleExpansion: (id: string) => void
   export let onArchiveEvent: () => void
   export let onDeleteEvent: () => void
@@ -51,26 +51,42 @@
   let hasLoadedTrades = false
   let isDuplicating = false
   let tradePendingDelete: BookmarksTradeStruct | null = null
+  let currentFolderId: string | null = folder.id || null
+  let loadRequestId = 0
 
-  $: isExpanded = expandedFolderIds.includes(folder.id || "")
   $: isArchived = !!folder.archivedAt
-  $: if (!isExpanded) {
+  $: if ((folder.id || null) !== currentFolderId) {
+    currentFolderId = folder.id || null
+    trades = []
     hasLoadedTrades = false
+    isLoading = false
   }
   $: if (isExpanded && !hasLoadedTrades && !isLoading) {
     void loadTrades()
   }
-  const loadTrades = async () => {
+  const loadTrades = async (force = false) => {
     if (!folder.id) return
+    if (!force && (isLoading || hasLoadedTrades)) return
+
+    const requestId = ++loadRequestId
     isLoading = true
     try {
-      trades = await bookmarksService.fetchTradesByFolderId(folder.id)
+      const nextTrades = await bookmarksService.fetchTradesByFolderId(folder.id)
+      if (requestId !== loadRequestId) return
+      trades = nextTrades
     } catch {
       flashMessages.alert(translate($languageStore, "folder.loadTradesError"))
     } finally {
-      hasLoadedTrades = true
-      isLoading = false
+      if (requestId === loadRequestId) {
+        hasLoadedTrades = true
+        isLoading = false
+      }
     }
+  }
+
+  const refreshTrades = async () => {
+    hasLoadedTrades = false
+    await loadTrades(true)
   }
 
   const formatTradeMeta = (trade: BookmarksTradeStruct) => {
@@ -86,7 +102,7 @@
   const toggleTrade = async (trade: BookmarksTradeStruct) => {
     if (!folder.id) return
     await bookmarksService.toggleTradeCompletion(trade, folder.id)
-    await loadTrades()
+    await refreshTrades()
   }
 
   const copyTrade = (trade: BookmarksTradeStruct) => {
@@ -127,7 +143,7 @@
     if (!folder.id || !trade.id) return
     try {
       await bookmarksService.deleteTrade(trade.id, folder.id)
-      await loadTrades()
+      await refreshTrades()
       tradePendingDelete = null
     } catch {
       flashMessages.alert(translate($languageStore, "folder.deleteTradeError"))
@@ -147,7 +163,7 @@
     isDuplicating = true
     try {
       await bookmarksService.duplicateTrade(trade, folder.id)
-      await loadTrades()
+      await refreshTrades()
       flashMessages.success(
         translate($languageStore, "folder.duplicatedTrade", {
           title: trade.title
@@ -189,7 +205,7 @@
         trades = [...trades]
         // Background sync
         await bookmarksService.moveTrade(trade.id, folder.id, index)
-        await loadTrades()
+        await refreshTrades()
       }
     }
     draggedIndex = null
@@ -226,7 +242,7 @@
         .replace(/⚡ /g, "") ||
       "Trade"
     await bookmarksService.persistTrade(trade, folder.id)
-    await loadTrades()
+    await refreshTrades()
     flashMessages.success(
       translate($languageStore, "folder.addedToFolder", { title: trade.title })
     )
@@ -323,7 +339,7 @@
     savingTradeId = trade.id
     try {
       await bookmarksService.renameTrade(trade, folder.id, newTitle)
-      await loadTrades()
+      await refreshTrades()
       flashMessages.success(
         translate($languageStore, "folder.renamedSearch", { title: newTitle })
       )
@@ -364,7 +380,7 @@
     }
 
     await bookmarksService.persistTrade(updatedTrade, folder.id)
-    await loadTrades()
+    await refreshTrades()
     flashMessages.success(
       translate($languageStore, "folder.updatedSearchLocation", {
         title: trade.title
