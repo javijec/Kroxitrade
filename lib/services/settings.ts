@@ -3,23 +3,30 @@ import { setLanguage, type AppLanguage } from './i18n';
 import { storageService } from './storage';
 
 export type SidebarSide = 'left' | 'right';
+export type BookmarkTradeActionId = 'edit' | 'replace' | 'copy' | 'openLive' | 'toggle' | 'delete';
 
 export interface AppSettings {
   sidebarSide: SidebarSide;
   showEquivalentPricing: boolean;
   showBulkSellers: boolean;
+  showHistory: boolean;
+  showFinerFilters: boolean;
   sidebarWidth: number;
   language: AppLanguage;
   compactActionsMenu: boolean;
+  compactBookmarkTradeActions: BookmarkTradeActionId[];
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   sidebarSide: 'right',
   showEquivalentPricing: false,
   showBulkSellers: false,
+  showHistory: true,
+  showFinerFilters: true,
   sidebarWidth: 360,
   language: 'en',
-  compactActionsMenu: false
+  compactActionsMenu: false,
+  compactBookmarkTradeActions: []
 };
 
 let currentSettings: AppSettings = DEFAULT_SETTINGS;
@@ -70,6 +77,20 @@ export const settings = {
       return next;
     });
   },
+  async updateHistoryVisibility(showHistory: boolean) {
+    update(s => {
+      const next = { ...s, showHistory };
+      save(next);
+      return next;
+    });
+  },
+  async updateFinerFiltersVisibility(showFinerFilters: boolean) {
+    update(s => {
+      const next = { ...s, showFinerFilters };
+      save(next);
+      return next;
+    });
+  },
   async updateSidebarWidth(sidebarWidth: number) {
     update(s => {
       const next = { ...s, sidebarWidth };
@@ -88,6 +109,13 @@ export const settings = {
   async updateCompactActionsMenu(compactActionsMenu: boolean) {
     update(s => {
       const next = { ...s, compactActionsMenu };
+      save(next);
+      return next;
+    });
+  },
+  async updateCompactBookmarkTradeActions(compactBookmarkTradeActions: BookmarkTradeActionId[]) {
+    update(s => {
+      const next = { ...s, compactBookmarkTradeActions };
       save(next);
       return next;
     });

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { languageStore, translate, type AppLanguage } from "../../lib/services/i18n";
-  import { settings, type SidebarSide } from "../../lib/services/settings";
+  import { settings, type BookmarkTradeActionId, type SidebarSide } from "../../lib/services/settings";
   import Button from "../Button.svelte";
   import { onDestroy, onMount } from "svelte";
   import flagBR from "data-base64:../../assets/BR.png";
@@ -12,8 +12,34 @@
   import flagKR from "data-base64:../../assets/KR.png";
   import flagRU from "data-base64:../../assets/RU.png";
   import flagTH from "data-base64:../../assets/TH.png";
+  import editIcon from "data-text:lucide-static/icons/pencil.svg";
+  import replaceIcon from "data-text:lucide-static/icons/refresh-cw.svg";
+  import copyIcon from "data-text:lucide-static/icons/copy.svg";
+  import liveIcon from "data-text:lucide-static/icons/activity.svg";
+  import toggleIcon from "data-text:lucide-static/icons/check.svg";
+  import deleteIcon from "data-text:lucide-static/icons/trash-2.svg";
 
   const DEFAULT_SIDEBAR_WIDTH = 450;
+  const normalizeSettingsIcon = (svg: string) =>
+    svg.replace(/<svg\b([^>]*)>/, (_match, attrs) => {
+      const nextAttrs = attrs
+        .replace(/\sclass="[^"]*"/g, "")
+        .replace(/\swidth="[^"]*"/g, "")
+        .replace(/\sheight="[^"]*"/g, "")
+        .replace(/\sviewBox="[^"]*"/g, "")
+        .trim();
+
+      return `<svg ${nextAttrs} viewBox="-2 -2 28 28" class="settings-option-svg">`;
+    });
+
+  const compactTradeActionOptions: Array<{ id: BookmarkTradeActionId; labelKey: string; icon: string }> = [
+    { id: "edit", labelKey: "folder.editSearchName", icon: normalizeSettingsIcon(editIcon) },
+    { id: "replace", labelKey: "folder.replaceCurrentSearch", icon: normalizeSettingsIcon(replaceIcon) },
+    { id: "copy", labelKey: "folder.copyUrl", icon: normalizeSettingsIcon(copyIcon) },
+    { id: "openLive", labelKey: "folder.openLiveSearch", icon: normalizeSettingsIcon(liveIcon) },
+    { id: "toggle", labelKey: "settings.compactTradeActionToggle", icon: normalizeSettingsIcon(toggleIcon) },
+    { id: "delete", labelKey: "folder.deleteTrade", icon: normalizeSettingsIcon(deleteIcon) }
+  ];
   const languages: Array<{ code: AppLanguage; label: string; flag: string }> = [
     { code: "en", label: "English", flag: flagGB },
     { code: "es", label: "Español", flag: flagES },
@@ -53,8 +79,32 @@
     await settings.updateBulkSellersVisibility(showBulkSellers);
   }
 
+  async function handleHistoryChange(showHistory: boolean) {
+    await settings.updateHistoryVisibility(showHistory);
+  }
+
+  async function handleFinerFiltersChange(showFinerFilters: boolean) {
+    await settings.updateFinerFiltersVisibility(showFinerFilters);
+  }
+
   async function handleCompactActionsMenuChange(compactActionsMenu: boolean) {
     await settings.updateCompactActionsMenu(compactActionsMenu);
+  }
+
+  async function handleCompactTradeActionChange(actionId: BookmarkTradeActionId, checked: boolean) {
+    const nextActions = checked
+      ? [...$settings.compactBookmarkTradeActions, actionId]
+      : $settings.compactBookmarkTradeActions.filter((id) => id !== actionId);
+
+    await settings.updateCompactBookmarkTradeActions(
+      compactTradeActionOptions
+        .map((option) => option.id)
+        .filter((id) => nextActions.includes(id))
+    );
+  }
+
+  function handleCompactTradeActionInput(event: Event, actionId: BookmarkTradeActionId) {
+    handleCompactTradeActionChange(actionId, (event.currentTarget as HTMLInputElement).checked);
   }
 
   async function handleSidebarWidthReset() {
@@ -63,6 +113,10 @@
 
   async function handleLanguageChange(language: AppLanguage) {
     await settings.updateLanguage(language);
+  }
+
+  function toggleSwitchLabel(value: boolean) {
+    return value ? translate($languageStore, "settings.on") : translate($languageStore, "settings.off");
   }
 
   function toggleLanguageMenu(event: MouseEvent) {
@@ -109,8 +163,19 @@
 
 <div class="settings-page">
   <section class="settings-section">
-    <h3 class="section-title">{translate($languageStore, "settings.sidebarTitle")}</h3>
-    <p class="section-description">{translate($languageStore, "settings.sidebarDescription")}</p>
+    <div class="section-heading">
+      <h3 class="section-title">{translate($languageStore, "settings.sidebarTitle")}</h3>
+      <div class="info-tooltip">
+        <button
+          type="button"
+          class="info-tooltip__trigger"
+          aria-label={translate($languageStore, "settings.sidebarDescription")}
+        >
+          i
+        </button>
+        <div class="info-tooltip__content">{translate($languageStore, "settings.sidebarDescription")}</div>
+      </div>
+    </div>
     
     <div class="side-selector">
       <Button 
@@ -135,8 +200,19 @@
   </section>
 
   <section class="settings-section">
-    <h3 class="section-title">{translate($languageStore, "settings.languageTitle")}</h3>
-    <p class="section-description">{translate($languageStore, "settings.languageDescription")}</p>
+    <div class="section-heading">
+      <h3 class="section-title">{translate($languageStore, "settings.languageTitle")}</h3>
+      <div class="info-tooltip">
+        <button
+          type="button"
+          class="info-tooltip__trigger"
+          aria-label={translate($languageStore, "settings.languageDescription")}
+        >
+          i
+        </button>
+        <div class="info-tooltip__content">{translate($languageStore, "settings.languageDescription")}</div>
+      </div>
+    </div>
 
     <div class="language-selector" bind:this={languageSelectorEl}>
       <div class="language-preview">
@@ -180,48 +256,147 @@
   </section>
 
   <section class="settings-section">
-    <h3 class="section-title">{translate($languageStore, "settings.equivalentTitle")}</h3>
-    <p class="section-description">{translate($languageStore, "settings.equivalentDescription")}</p>
+    <div class="settings-inline-row">
+      <div class="section-heading section-heading--inline">
+        <h3 class="section-title">{translate($languageStore, "settings.equivalentTitle")}</h3>
+        <div class="info-tooltip">
+          <button
+            type="button"
+            class="info-tooltip__trigger"
+            aria-label={translate($languageStore, "settings.equivalentDescription")}
+          >
+            i
+          </button>
+          <div class="info-tooltip__content">{translate($languageStore, "settings.equivalentDescription")}</div>
+        </div>
+      </div>
 
-    <div class="side-selector">
-      <Button
-        label={translate($languageStore, "settings.hidden")}
-        theme={$settings.showEquivalentPricing ? 'blue' : 'gold'}
-        class="side-btn"
-        onClick={() => handleEquivalentPricingChange(false)}
-      />
-      <Button
-        label={translate($languageStore, "settings.visible")}
-        theme={$settings.showEquivalentPricing ? 'gold' : 'blue'}
-        class="side-btn"
-        onClick={() => handleEquivalentPricingChange(true)}
-      />
+      <button
+        type="button"
+        class="toggle-row toggle-row--inline"
+        class:is-active={$settings.showEquivalentPricing}
+        role="switch"
+        aria-checked={$settings.showEquivalentPricing}
+        aria-label={translate($languageStore, "settings.equivalentTitle")}
+        on:click={() => handleEquivalentPricingChange(!$settings.showEquivalentPricing)}
+      >
+        <span class="toggle-switch">
+          <span class="toggle-switch__thumb"></span>
+        </span>
+      </button>
     </div>
   </section>
 
   <section class="settings-section">
-    <h3 class="section-title">{translate($languageStore, "settings.bulkTitle")}</h3>
-    <p class="section-description">{translate($languageStore, "settings.bulkDescription")}</p>
+    <div class="settings-inline-row">
+      <div class="section-heading section-heading--inline">
+        <h3 class="section-title">{translate($languageStore, "settings.bulkTitle")}</h3>
+        <div class="info-tooltip">
+          <button
+            type="button"
+            class="info-tooltip__trigger"
+            aria-label={translate($languageStore, "settings.bulkDescription")}
+          >
+            i
+          </button>
+          <div class="info-tooltip__content">{translate($languageStore, "settings.bulkDescription")}</div>
+        </div>
+      </div>
 
-    <div class="side-selector">
-      <Button
-        label={translate($languageStore, "settings.hidden")}
-        theme={$settings.showBulkSellers ? 'blue' : 'gold'}
-        class="side-btn"
-        onClick={() => handleBulkSellersChange(false)}
-      />
-      <Button
-        label={translate($languageStore, "settings.visible")}
-        theme={$settings.showBulkSellers ? 'gold' : 'blue'}
-        class="side-btn"
-        onClick={() => handleBulkSellersChange(true)}
-      />
+      <button
+        type="button"
+        class="toggle-row toggle-row--inline"
+        class:is-active={$settings.showBulkSellers}
+        role="switch"
+        aria-checked={$settings.showBulkSellers}
+        aria-label={translate($languageStore, "settings.bulkTitle")}
+        on:click={() => handleBulkSellersChange(!$settings.showBulkSellers)}
+      >
+        <span class="toggle-switch">
+          <span class="toggle-switch__thumb"></span>
+        </span>
+      </button>
     </div>
   </section>
 
   <section class="settings-section">
-    <h3 class="section-title">{translate($languageStore, "settings.compactActionsTitle")}</h3>
-    <p class="section-description">{translate($languageStore, "settings.compactActionsDescription")}</p>
+    <div class="settings-inline-row">
+      <div class="section-heading section-heading--inline">
+        <h3 class="section-title">{translate($languageStore, "settings.historyTitle")}</h3>
+        <div class="info-tooltip">
+          <button
+            type="button"
+            class="info-tooltip__trigger"
+            aria-label={translate($languageStore, "settings.historyDescription")}
+          >
+            i
+          </button>
+          <div class="info-tooltip__content">{translate($languageStore, "settings.historyDescription")}</div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="toggle-row toggle-row--inline"
+        class:is-active={$settings.showHistory}
+        role="switch"
+        aria-checked={$settings.showHistory}
+        aria-label={translate($languageStore, "settings.historyTitle")}
+        on:click={() => handleHistoryChange(!$settings.showHistory)}
+      >
+        <span class="toggle-switch">
+          <span class="toggle-switch__thumb"></span>
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <div class="settings-inline-row">
+      <div class="section-heading section-heading--inline">
+        <h3 class="section-title">{translate($languageStore, "settings.finerFiltersTitle")}</h3>
+        <div class="info-tooltip">
+          <button
+            type="button"
+            class="info-tooltip__trigger"
+            aria-label={translate($languageStore, "settings.finerFiltersDescription")}
+          >
+            i
+          </button>
+          <div class="info-tooltip__content">{translate($languageStore, "settings.finerFiltersDescription")}</div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="toggle-row toggle-row--inline"
+        class:is-active={$settings.showFinerFilters}
+        role="switch"
+        aria-checked={$settings.showFinerFilters}
+        aria-label={translate($languageStore, "settings.finerFiltersTitle")}
+        on:click={() => handleFinerFiltersChange(!$settings.showFinerFilters)}
+      >
+        <span class="toggle-switch">
+          <span class="toggle-switch__thumb"></span>
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <div class="section-heading">
+      <h3 class="section-title">{translate($languageStore, "settings.compactActionsTitle")}</h3>
+      <div class="info-tooltip">
+        <button
+          type="button"
+          class="info-tooltip__trigger"
+          aria-label={translate($languageStore, "settings.compactActionsDescription")}
+        >
+          i
+        </button>
+        <div class="info-tooltip__content">{translate($languageStore, "settings.compactActionsDescription")}</div>
+      </div>
+    </div>
 
     <div class="side-selector">
       <Button
@@ -237,6 +412,41 @@
         onClick={() => handleCompactActionsMenuChange(true)}
       />
     </div>
+
+    {#if $settings.compactActionsMenu}
+      <div class="compact-options">
+        <div class="compact-options__heading">
+          <div class="compact-options__title">{translate($languageStore, "settings.compactTradeActionsTitle")}</div>
+          <div class="info-tooltip">
+            <button
+              type="button"
+              class="info-tooltip__trigger"
+              aria-label={translate($languageStore, "settings.compactTradeActionsDescription")}
+            >
+              i
+            </button>
+            <div class="info-tooltip__content">{translate($languageStore, "settings.compactTradeActionsDescription")}</div>
+          </div>
+        </div>
+        <div class="compact-options__grid">
+          {#each compactTradeActionOptions as option (option.id)}
+            <label
+              class="compact-option"
+              class:is-selected={$settings.compactBookmarkTradeActions.includes(option.id)}
+              title={translate($languageStore, option.labelKey)}
+            >
+              <input
+                type="checkbox"
+                checked={$settings.compactBookmarkTradeActions.includes(option.id)}
+                on:change={(event) => handleCompactTradeActionInput(event, option.id)}
+                aria-label={translate($languageStore, option.labelKey)}
+              />
+              <span class="compact-option__icon" aria-hidden="true">{@html option.icon}</span>
+            </label>
+          {/each}
+        </div>
+      </div>
+    {/if}
   </section>
 
 </div>
@@ -272,7 +482,7 @@
   }
 
   .section-title {
-    margin: 0 0 8px;
+    margin: 0;
     font-family: $primary-font;
     font-size: 14px;
     text-transform: uppercase;
@@ -280,17 +490,79 @@
     color: $gold;
   }
 
-  .section-description {
-    margin: 0 0 16px;
-    font-size: 12px;
-    color: rgba($white, 0.6);
-    line-height: 1.5;
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    min-width: 0;
+  }
+
+  .section-heading--inline {
+    margin-bottom: 0;
+  }
+
+  .settings-inline-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
   }
 
   .side-selector {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .toggle-row--inline {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 38px;
+    height: 20px;
+    border-radius: 999px;
+    background: rgba($blue, 0.4);
+    transition: background 0.16s ease, box-shadow 0.16s ease;
+    flex: 0 0 auto;
+  }
+
+  .toggle-row:hover .toggle-switch {
+    box-shadow: 0 0 0 1px rgba($blue, 0.2);
+  }
+
+  .toggle-row.is-active .toggle-switch {
+    background: rgba($gold, 0.5);
+  }
+
+  .toggle-switch__thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: rgba($blue-alt, 0.95);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+    transition: transform 0.16s ease, background 0.16s ease;
+  }
+
+  .toggle-row.is-active .toggle-switch__thumb {
+    transform: translateX(18px);
+    background: #f7d08a;
   }
 
   :global(.side-btn) {
@@ -457,5 +729,150 @@
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+  }
+
+  .info-tooltip {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+
+    &:hover .info-tooltip__content,
+    &:focus-within .info-tooltip__content {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+  }
+
+  .info-tooltip__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 1px solid rgba($gold, 0.28);
+    border-radius: 999px;
+    background: rgba($gold, 0.08);
+    color: rgba($gold, 0.9);
+    font-family: $primary-font;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: help;
+  }
+
+  .info-tooltip__content {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 8;
+    width: min(260px, calc(100vw - 64px));
+    padding: 10px 12px;
+    border: 1px solid rgba($gold, 0.18);
+    border-radius: 4px;
+    background: #14110d;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+    color: rgba($white, 0.82);
+    font-size: 11px;
+    line-height: 1.5;
+    text-transform: none;
+    letter-spacing: normal;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.16s ease;
+  }
+
+  .compact-options {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba($white, 0.08);
+  }
+
+  .compact-options__heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .compact-options__title {
+    font-family: $primary-font;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba($gold, 0.9);
+  }
+
+  .compact-options__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .compact-option {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba($white, 0.08);
+    border-radius: 4px;
+    background: rgba($black, 0.26);
+    cursor: pointer;
+    transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+
+    input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    &:hover {
+      border-color: rgba($gold, 0.34);
+      background: rgba($gold, 0.08);
+      transform: translateY(-1px);
+    }
+
+    &.is-selected {
+      border-color: rgba($gold, 0.38);
+      background: rgba(54, 42, 28, 0.96);
+      color: #e2b56e;
+    }
+  }
+
+  .compact-option__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    color: rgba($white, 0.84);
+  }
+
+  .compact-option__icon :global(.settings-option-svg) {
+    width: 15px;
+    height: 15px;
+    min-width: 15px;
+    min-height: 15px;
+    display: block;
+    overflow: visible;
+    stroke-width: 1.7;
+  }
+
+  @media (max-width: 430px) {
+    .settings-inline-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .toggle-row--inline {
+      width: 100%;
+    }
   }
 </style>

@@ -16,6 +16,7 @@
 
   import BookmarkFolder from "../BookmarkFolder.svelte";
   import Button from "../Button.svelte";
+  import ConfirmDialog from "../ConfirmDialog.svelte";
   import LoadingContainer from "../LoadingContainer.svelte";
 
   const EXPANDED_FOLDERS_STORAGE_KEY = "bookmark-folders-expanded";
@@ -29,6 +30,7 @@
   let importText = "";
   let draggedFolderId: string | null = null;
   let dragOverFolderId: string | null = null;
+  let folderPendingDelete: BookmarksFolderStruct | null = null;
 
   $: currentLocation = tradeLocationService.locationStore;
   $: displayedFolders = $bookmarksService.filter((folder) => {
@@ -98,7 +100,16 @@
   const deleteFolder = async (folder: BookmarksFolderStruct) => {
     if (!folder.id) return;
     await bookmarksService.deleteFolder(folder.id);
+    folderPendingDelete = null;
     flashMessages.success(translate($languageStore, "bookmarks.folderDeleted"));
+  };
+
+  const requestFolderDelete = (folder: BookmarksFolderStruct) => {
+    folderPendingDelete = folder;
+  };
+
+  const cancelFolderDelete = () => {
+    folderPendingDelete = null;
   };
 
   const collapseAll = () => {
@@ -289,7 +300,7 @@
               {expandedFolderIds} 
               onToggleExpansion={toggleExpansion}
               onArchiveEvent={() => toggleArchive(folder)}
-              onDeleteEvent={() => deleteFolder(folder)}
+               onDeleteEvent={() => requestFolderDelete(folder)}
               onFolderDragStart={handleFolderDragStart}
               onFolderDragEnter={handleFolderDragEnter}
               onFolderDrop={handleFolderDrop}
@@ -310,6 +321,21 @@
     </div>
   </section>
 </div>
+
+<ConfirmDialog
+  open={!!folderPendingDelete}
+  title={translate($languageStore, "confirm.deleteFolderTitle")}
+  message={translate($languageStore, "confirm.deleteFolderMessage", {
+    title: folderPendingDelete?.title || ""
+  })}
+  confirmLabel={translate($languageStore, "confirm.delete")}
+  cancelLabel={translate($languageStore, "confirm.cancel")}
+  onCancel={cancelFolderDelete}
+  onConfirm={() => {
+    if (folderPendingDelete) {
+      void deleteFolder(folderPendingDelete)
+    }
+  }} />
 
 <style lang="scss">
   @use "../../lib/styles/variables" as *;

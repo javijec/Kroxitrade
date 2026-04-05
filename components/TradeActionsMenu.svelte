@@ -1,12 +1,13 @@
 <script lang="ts">
   import { languageStore, translate } from "~lib/services/i18n";
-  import { settings } from "~lib/services/settings";
+  import { settings, type BookmarkTradeActionId } from "~lib/services/settings";
   import type { BookmarksTradeStruct } from "~lib/types/bookmarks";
   import ActionsMenu from "./ActionsMenu.svelte";
 
   import editIcon from "data-text:lucide-static/icons/pencil.svg";
   import replaceIcon from "data-text:lucide-static/icons/refresh-cw.svg";
   import copyIcon from "data-text:lucide-static/icons/copy.svg";
+  import liveIcon from "data-text:lucide-static/icons/activity.svg";
   import checkIcon from "data-text:lucide-static/icons/check.svg";
   import trashIcon from "data-text:lucide-static/icons/trash-2.svg";
   import moreIcon from "data-text:lucide-static/icons/more-horizontal.svg";
@@ -15,6 +16,7 @@
   export let onEdit: () => void;
   export let onReplace: () => void;
   export let onCopy: () => void;
+  export let onOpenLive: () => void;
   export let onToggle: () => void;
   export let onDelete: () => void;
   export let compactText = "";
@@ -23,6 +25,7 @@
     edit: editIcon,
     replace: replaceIcon,
     copy: copyIcon,
+    openLive: liveIcon,
     toggle: checkIcon,
     delete: trashIcon,
     more: moreIcon
@@ -57,6 +60,12 @@
       handler: onCopy
     },
     {
+      id: "openLive",
+      icon: icons.openLive,
+      labelKey: "openLiveSearch",
+      handler: onOpenLive
+    },
+    {
       id: "toggle",
       icon: icons.toggle,
       labelKey: "markComplete",
@@ -76,6 +85,7 @@
   }));
 
   const PRIMARY_ACTION_IDS = ["edit", "toggle", "delete"];
+  const ACTION_ORDER: BookmarkTradeActionId[] = ["edit", "replace", "copy", "openLive", "toggle", "delete"];
 </script>
 
 <ActionsMenu
@@ -83,6 +93,9 @@
   {compactText}
   primaryActionIds={PRIMARY_ACTION_IDS}
   compactMode={$settings.compactActionsMenu}
+  compactVisibleActionIds={ACTION_ORDER.filter((id) =>
+    $settings.compactBookmarkTradeActions.includes(id)
+  )}
   translate={(key) => translate($languageStore, key)}
   dropdownLabel={translate($languageStore, "folder.actionsMenu")}
   dropdownIcon={icons.more}

@@ -1,8 +1,19 @@
-import { writable } from "svelte/store";
+import { writable } from "svelte/store"
 
-export type AppLanguage = "en" | "es" | "pt" | "ru" | "th" | "de" | "fr" | "ja" | "ko";
+export type AppLanguage =
+  | "en"
+  | "es"
+  | "pt"
+  | "ru"
+  | "th"
+  | "de"
+  | "fr"
+  | "ja"
+  | "ko"
 
-type TranslationValue = string | ((params?: Record<string, string | number>) => string);
+type TranslationValue =
+  | string
+  | ((params?: Record<string, string | number>) => string)
 
 const translations = {
   en: {
@@ -18,35 +29,56 @@ const translations = {
     "layout.removeAlert": "Remove alert",
     "layout.resizeSidebar": "Resize sidebar",
     "layout.restorePanel": "Restore Poe Trade Plus Panel",
-    "popup.description": "Poe Trade Plus adds faster navigation and trading helpers to the official Path of Exile trade site.",
+    "popup.description":
+      "Poe Trade Plus adds faster navigation and trading helpers to the official Path of Exile trade site.",
     "popup.trade1": "PoE 1 Trade",
     "popup.trade2": "PoE 2 Trade",
     "popup.trade1Alt": "Path of Exile Trade",
     "popup.trade2Alt": "Path of Exile 2 Trade",
     "settings.sidebarTitle": "Sidebar Position",
-    "settings.sidebarDescription": "Choose which side of the screen you want the Poe Trade Plus panel to appear.",
+    "settings.sidebarDescription":
+      "Choose which side of the screen you want the Poe Trade Plus panel to appear.",
     "settings.left": "Left",
     "settings.right": "Right",
     "settings.resetWidth": "Reset Width",
     "settings.languageTitle": "Language",
-    "settings.languageDescription": "Choose the language used by the extension interface.",
+    "settings.languageDescription":
+      "Choose the language used by the extension interface.",
     "settings.languageEnglish": "English",
     "settings.languageSpanish": "Spanish",
     "settings.equivalentTitle": "Equivalent Pricing",
-    "settings.equivalentDescription": "Show or hide the extra chaos/divine equivalent line in trade results.",
+    "settings.equivalentDescription":
+      "Show or hide the extra chaos/divine equivalent line in trade results.",
     "settings.bulkTitle": "Bulk Sellers",
-    "settings.bulkDescription": "Show or hide the bulk sellers tab that groups repeated sellers from the current trade results.",
+    "settings.bulkDescription":
+      "Show or hide the bulk sellers tab that groups repeated sellers from the current trade results.",
+    "settings.historyTitle": "History",
+    "settings.historyDescription":
+      "Show or hide the history tab that stores your recently opened searches.",
+    "settings.finerFiltersTitle": "Add To Filters",
+    "settings.finerFiltersDescription":
+      "Show or hide the Add to Filters panel at the bottom of the sidebar.",
     "settings.hidden": "Hidden",
     "settings.visible": "Visible",
+    "settings.on": "On",
+    "settings.off": "Off",
     "settings.compactActionsTitle": "Bookmark Layout",
-    "settings.compactActionsDescription": "Choose a more compact layout for saved searches, with the league name and all actions grouped inside a three-dot menu.",
+    "settings.compactActionsDescription":
+      "Choose a more compact layout for saved searches, with the league name and all actions grouped inside a three-dot menu.",
     "settings.compactActionsDefault": "Classic",
     "settings.compactActionsCompact": "Compact",
+    "settings.compactTradeActionsTitle": "Trade Actions Outside Menu",
+    "settings.compactTradeActionsDescription":
+      "Choose which saved-search actions stay visible in compact mode. If none are selected, only the three-dot menu is shown. If all or all but one are selected, every action stays visible.",
+    "settings.compactTradeActionToggle": "Complete / Pending",
     "about.eyebrow": "About",
-    "about.description": "Poe Trade Plus is a companion for Path of Exile Trade built to save searches, organize folders, track history, and keep recurring trade workflows fast, visual, and easy to manage inside the official site.",
+    "about.description":
+      "Poe Trade Plus is a companion for Path of Exile Trade built to save searches, organize folders, track history, and keep recurring trade workflows fast, visual, and easy to manage inside the official site.",
     "about.github": "GitHub",
-    "about.version": ({ version }) => `Version ${version} • Developed by KroxiLabs`,
-    "bulk.empty": "No bulk sellers detected yet. Open a trade result list where the same seller appears more than once.",
+    "about.version": ({ version }) =>
+      `Version ${version} • Developed by KroxiLabs`,
+    "bulk.empty":
+      "No bulk sellers detected yet. Open a trade result list where the same seller appears more than once.",
     "bulk.find": "Find",
     "bulk.buy": "Buy",
     "bulk.findError": "Couldn't locate that listing in the current results.",
@@ -58,7 +90,8 @@ const translations = {
     "bookmarks.restored": "Backup restored!",
     "bookmarks.restoreFailed": "Failed to restore backup.",
     "bookmarks.pasteFolderData": "Please paste the folder data first.",
-    "bookmarks.invalidFolderData": "Invalid folder data. Please check the string.",
+    "bookmarks.invalidFolderData":
+      "Invalid folder data. Please check the string.",
     "bookmarks.importedFolder": ({ title }) => `Imported "${title}"!`,
     "bookmarks.toolbar.new": "New",
     "bookmarks.toolbar.newFolderTitle": "New Folder",
@@ -77,6 +110,14 @@ const translations = {
     "bookmarks.backupTitle": "Backup & Restore",
     "bookmarks.saveFile": "Save File",
     "bookmarks.restoreFile": "Restore From File",
+    "confirm.cancel": "Cancel",
+    "confirm.delete": "Delete",
+    "confirm.deleteFolderTitle": "Delete folder?",
+    "confirm.deleteFolderMessage": ({ title }) =>
+      `This will permanently delete "${title}" and all saved trades inside it.`,
+    "confirm.deleteTradeTitle": "Delete saved trade?",
+    "confirm.deleteTradeMessage": ({ title }) =>
+      `This will permanently delete "${title}" from the folder.`,
     "history.clear": "Clear History",
     "history.cleared": "History cleared!",
     "history.empty": ({ version }) => `History is empty for PoE ${version}.`,
@@ -91,7 +132,8 @@ const translations = {
     "folder.copyFolderError": "Couldn't copy the folder data.",
     "folder.renamedFolder": ({ title }) => `Renamed folder to "${title}"`,
     "folder.renamedSearch": ({ title }) => `Renamed search to "${title}"`,
-    "folder.updatedSearchLocation": ({ title }) => `Updated search location for "${title}"`,
+    "folder.updatedSearchLocation": ({ title }) =>
+      `Updated search location for "${title}"`,
     "folder.dragReorder": "Drag to reorder folder",
     "folder.collapse": "Collapse",
     "folder.expand": "Expand",
@@ -104,6 +146,7 @@ const translations = {
     "folder.editSearchName": "Edit search name",
     "folder.replaceCurrentSearch": "Replace with current search",
     "folder.copyUrl": "Copy URL",
+    "folder.openLiveSearch": "Open live search",
     "folder.markPending": "Mark as pending",
     "folder.markComplete": "Mark as complete",
     "folder.deleteTrade": "Delete trade",
@@ -128,7 +171,7 @@ const translations = {
     "header.subtitle": "Compañero de Trade",
     "header.expandSidebar": "Expandir panel",
     "header.minimizeSidebar": "Minimizar panel",
-    "layout.nav.bookmarks": "Favoritos",
+    "layout.nav.z": "Favoritos",
     "layout.nav.bulk": "Bulk",
     "layout.nav.history": "Historial",
     "layout.nav.settings": "Ajustes",
@@ -136,39 +179,62 @@ const translations = {
     "layout.removeAlert": "Quitar alerta",
     "layout.resizeSidebar": "Redimensionar panel",
     "layout.restorePanel": "Restaurar panel de Poe Trade Plus",
-    "popup.description": "Poe Trade Plus agrega navegación más rápida y ayudas de trade al sitio oficial de Path of Exile.",
+    "popup.description":
+      "Poe Trade Plus agrega navegación más rápida y ayudas de trade al sitio oficial de Path of Exile.",
     "popup.trade1": "Trade PoE 1",
     "popup.trade2": "Trade PoE 2",
     "popup.trade1Alt": "Trade de Path of Exile",
     "popup.trade2Alt": "Trade de Path of Exile 2",
     "settings.sidebarTitle": "Posición del panel",
-    "settings.sidebarDescription": "Elegí en qué lado de la pantalla querés que aparezca el panel de Poe Trade Plus.",
+    "settings.sidebarDescription":
+      "Elegí en qué lado de la pantalla querés que aparezca el panel de Poe Trade Plus.",
     "settings.left": "Izquierda",
     "settings.right": "Derecha",
     "settings.resetWidth": "Restablecer ancho",
     "settings.languageTitle": "Idioma",
-    "settings.languageDescription": "Elegí el idioma usado por la interfaz de la extensión.",
+    "settings.languageDescription":
+      "Elegí el idioma usado por la interfaz de la extensión.",
     "settings.languageEnglish": "Inglés",
     "settings.languageSpanish": "Español",
     "settings.equivalentTitle": "Precio equivalente",
-    "settings.equivalentDescription": "Mostrá u ocultá la línea extra con equivalencias en chaos/divine en los resultados.",
+    "settings.equivalentDescription":
+      "Mostrá u ocultá la línea extra con equivalencias en chaos/divine en los resultados.",
     "settings.bulkTitle": "Bulk Sellers",
-    "settings.bulkDescription": "Mostrá u ocultá la pestaña Bulk que agrupa vendedores repetidos de los resultados actuales.",
+    "settings.bulkDescription":
+      "Mostrá u ocultá la pestaña Bulk que agrupa vendedores repetidos de los resultados actuales.",
+    "settings.historyTitle": "Historial",
+    "settings.historyDescription":
+      "Mostrá u ocultá la pestaña Historial que guarda tus búsquedas abiertas recientemente.",
+    "settings.finerFiltersTitle": "Agregar a filtros",
+    "settings.finerFiltersDescription":
+      "Mostrá u ocultá el panel Agregar a filtros al final de la barra lateral.",
     "settings.hidden": "Oculto",
     "settings.visible": "Visible",
-    "settings.compactActionsTitle": "Diseño de bookmarks",
-    "settings.compactActionsDescription": "Elegí un diseño más compacto para las búsquedas guardadas, con el nombre de la liga y todas las acciones agrupadas dentro de un menú de tres puntos.",
+    "settings.on": "On",
+    "settings.off": "Off",
+    "settings.compactActionsTitle": "Diseño de Favoritos",
+    "settings.compactActionsDescription":
+      "Elegí un diseño más compacto para las búsquedas guardadas, con el nombre de la liga y todas las acciones agrupadas dentro de un menú de tres puntos.",
     "settings.compactActionsDefault": "Clasico",
     "settings.compactActionsCompact": "Compacto",
+    "settings.compactTradeActionsTitle": "Acciones visibles fuera del menú",
+    "settings.compactTradeActionsDescription":
+      "Elegí qué acciones de cada búsqueda guardada quedan visibles en modo compacto. Si no seleccionás ninguna, solo se ven los tres puntos. Si seleccionás todas o todas menos una, se muestran todas.",
+    "settings.compactTradeActionToggle": "Completar / Pendiente",
     "about.eyebrow": "Acerca de",
-    "about.description": "Poe Trade Plus es un complemento para Path of Exile Trade creado para guardar búsquedas, organizar carpetas, seguir el historial y hacer que los flujos de trade repetidos sean rápidos, visuales y fáciles de manejar dentro del sitio oficial.",
+    "about.description":
+      "Poe Trade Plus es un complemento para Path of Exile Trade creado para guardar búsquedas, organizar carpetas, seguir el historial y hacer que los flujos de trade repetidos sean rápidos, visuales y fáciles de manejar dentro del sitio oficial.",
     "about.github": "GitHub",
-    "about.version": ({ version }) => `Versión ${version} • Desarrollado por KroxiLabs`,
-    "bulk.empty": "Todavía no se detectaron vendedores bulk. Abrí una lista de resultados donde el mismo vendedor aparezca más de una vez.",
+    "about.version": ({ version }) =>
+      `Versión ${version} • Desarrollado por KroxiLabs`,
+    "bulk.empty":
+      "Todavía no se detectaron vendedores bulk. Abrí una lista de resultados donde el mismo vendedor aparezca más de una vez.",
     "bulk.find": "Buscar",
     "bulk.buy": "Comprar",
-    "bulk.findError": "No se pudo ubicar esa publicación en los resultados actuales.",
-    "bulk.buyError": "No se pudo ejecutar la acción de compra para esa publicación.",
+    "bulk.findError":
+      "No se pudo ubicar esa publicación en los resultados actuales.",
+    "bulk.buyError":
+      "No se pudo ejecutar la acción de compra para esa publicación.",
     "bookmarks.newFolder": "Nueva carpeta",
     "bookmarks.folderCreated": "¡Carpeta creada!",
     "bookmarks.folderDeleted": "¡Carpeta eliminada!",
@@ -195,21 +261,35 @@ const translations = {
     "bookmarks.backupTitle": "Respaldo y restauración",
     "bookmarks.saveFile": "Guardar archivo",
     "bookmarks.restoreFile": "Restaurar desde archivo",
+    "confirm.cancel": "Cancelar",
+    "confirm.delete": "Eliminar",
+    "confirm.deleteFolderTitle": "¿Eliminar carpeta?",
+    "confirm.deleteFolderMessage": ({ title }) =>
+      `Esto eliminará permanentemente "${title}" y todos los trades guardados dentro.`,
+    "confirm.deleteTradeTitle": "¿Eliminar trade guardado?",
+    "confirm.deleteTradeMessage": ({ title }) =>
+      `Esto eliminará permanentemente "${title}" de la carpeta.`,
     "history.clear": "Borrar historial",
     "history.cleared": "¡Historial borrado!",
-    "history.empty": ({ version }) => `El historial está vacío para PoE ${version}.`,
+    "history.empty": ({ version }) =>
+      `El historial está vacío para PoE ${version}.`,
     "folder.metaSeparator": " • ",
     "folder.copiedTrade": ({ title }) => `Se copió ${title} al portapapeles`,
     "folder.copyTradeError": "No se pudo copiar la URL del trade.",
     "folder.duplicatedTrade": ({ title }) => `Se duplicó ${title}`,
     "folder.invalidTradePage": "No estás en una página válida de trade",
-    "folder.missingTradeType": "Falta el tipo de trade para la búsqueda actual.",
+    "folder.missingTradeType":
+      "Falta el tipo de trade para la búsqueda actual.",
     "folder.addedToFolder": ({ title }) => `Se agregó "${title}" a la carpeta`,
-    "folder.copiedFolder": "¡Los datos de la carpeta se copiaron al portapapeles!",
+    "folder.copiedFolder":
+      "¡Los datos de la carpeta se copiaron al portapapeles!",
     "folder.copyFolderError": "No se pudieron copiar los datos de la carpeta.",
-    "folder.renamedFolder": ({ title }) => `La carpeta se renombró a "${title}"`,
-    "folder.renamedSearch": ({ title }) => `La búsqueda se renombró a "${title}"`,
-    "folder.updatedSearchLocation": ({ title }) => `Se actualizó la ubicación de búsqueda de "${title}"`,
+    "folder.renamedFolder": ({ title }) =>
+      `La carpeta se renombró a "${title}"`,
+    "folder.renamedSearch": ({ title }) =>
+      `La búsqueda se renombró a "${title}"`,
+    "folder.updatedSearchLocation": ({ title }) =>
+      `Se actualizó la ubicación de búsqueda de "${title}"`,
     "folder.dragReorder": "Arrastrar para reordenar carpeta",
     "folder.collapse": "Colapsar",
     "folder.expand": "Expandir",
@@ -222,6 +302,7 @@ const translations = {
     "folder.editSearchName": "Editar nombre de búsqueda",
     "folder.replaceCurrentSearch": "Reemplazar con búsqueda actual",
     "folder.copyUrl": "Copiar URL",
+    "folder.openLiveSearch": "Abrir búsqueda live",
     "folder.markPending": "Marcar como pendiente",
     "folder.markComplete": "Marcar como completada",
     "folder.deleteTrade": "Eliminar trade",
@@ -241,9 +322,9 @@ const translations = {
     "finer.attackWeapon": "Arma de ataque",
     "finer.spellWeapon": "Arma de hechizos"
   } as Record<string, TranslationValue>
-} as Record<"en" | "es", Record<string, TranslationValue>>;
+} as Record<"en" | "es", Record<string, TranslationValue>>
 
-const englishFallback = translations.en;
+const englishFallback = translations.en
 
 const portugueseTranslations: Record<string, TranslationValue> = {
   "header.subtitle": "Companheiro de Trade",
@@ -256,31 +337,44 @@ const portugueseTranslations: Record<string, TranslationValue> = {
   "layout.removeAlert": "Remover alerta",
   "layout.resizeSidebar": "Redimensionar painel",
   "layout.restorePanel": "Restaurar painel do Poe Trade Plus",
-  "popup.description": "Poe Trade Plus adiciona navegação mais rápida e ferramentas de trade ao site oficial de Path of Exile.",
+  "popup.description":
+    "Poe Trade Plus adiciona navegação mais rápida e ferramentas de trade ao site oficial de Path of Exile.",
   "settings.sidebarTitle": "Posição do painel",
-  "settings.sidebarDescription": "Escolha em qual lado da tela o painel do Poe Trade Plus deve aparecer.",
+  "settings.sidebarDescription":
+    "Escolha em qual lado da tela o painel do Poe Trade Plus deve aparecer.",
   "settings.left": "Esquerda",
   "settings.right": "Direita",
   "settings.resetWidth": "Redefinir largura",
   "settings.languageTitle": "Idioma",
-  "settings.languageDescription": "Escolha o idioma usado pela interface da extensão.",
+  "settings.languageDescription":
+    "Escolha o idioma usado pela interface da extensão.",
   "settings.languageEnglish": "Inglês",
   "settings.languageSpanish": "Espanhol",
   "settings.equivalentTitle": "Preço equivalente",
-  "settings.equivalentDescription": "Mostre ou oculte a linha extra com equivalência em chaos/divine nos resultados.",
+  "settings.equivalentDescription":
+    "Mostre ou oculte a linha extra com equivalência em chaos/divine nos resultados.",
   "settings.hidden": "Oculto",
   "settings.visible": "Visível",
-  "settings.compactActionsTitle": "Layout de bookmarks",
-  "settings.compactActionsDescription": "Escolha um layout mais compacto para as buscas salvas, com o nome da liga e todas as ações agrupadas em um menu de três pontos.",
+  "settings.compactActionsTitle": "Layout de favoritos",
+  "settings.compactActionsDescription":
+    "Escolha um layout mais compacto para as buscas salvas, com o nome da liga e todas as ações agrupadas em um menu de três pontos.",
   "settings.compactActionsDefault": "Classico",
   "settings.compactActionsCompact": "Compacto",
+  "settings.compactTradeActionsTitle": "Ações visíveis fora do menu",
+  "settings.compactTradeActionsDescription":
+    "Escolha quais ações de cada busca salva continuam visíveis no modo compacto. Se nenhuma for selecionada, apenas o menu de três pontos aparece. Se todas ou todas menos uma forem selecionadas, todas ficam visíveis.",
+  "settings.compactTradeActionToggle": "Completa / Pendente",
   "about.eyebrow": "Sobre",
-  "about.description": "Poe Trade Plus é um complemento para o Path of Exile Trade criado para salvar buscas, organizar pastas, acompanhar o histórico e manter fluxos de trade recorrentes rápidos, visuais e fáceis de gerenciar dentro do site oficial.",
-  "about.version": ({ version }) => `Versão ${version} • Desenvolvido por KroxiLabs`,
-  "bulk.empty": "Nenhum vendedor bulk detectado ainda. Abra uma lista de resultados onde o mesmo vendedor apareça mais de uma vez.",
+  "about.description":
+    "Poe Trade Plus é um complemento para o Path of Exile Trade criado para salvar buscas, organizar pastas, acompanhar o histórico e manter fluxos de trade recorrentes rápidos, visuais e fáceis de gerenciar dentro do site oficial.",
+  "about.version": ({ version }) =>
+    `Versão ${version} • Desenvolvido por KroxiLabs`,
+  "bulk.empty":
+    "Nenhum vendedor bulk detectado ainda. Abra uma lista de resultados onde o mesmo vendedor apareça mais de uma vez.",
   "bulk.find": "Buscar",
   "bulk.buy": "Comprar",
-  "bulk.findError": "Não foi possível localizar essa listagem nos resultados atuais.",
+  "bulk.findError":
+    "Não foi possível localizar essa listagem nos resultados atuais.",
   "bulk.buyError": "Não foi possível acionar a compra dessa listagem.",
   "bookmarks.newFolder": "Nova pasta",
   "bookmarks.folderCreated": "Pasta criada!",
@@ -310,18 +404,24 @@ const portugueseTranslations: Record<string, TranslationValue> = {
   "bookmarks.restoreFile": "Restaurar do arquivo",
   "history.clear": "Limpar histórico",
   "history.cleared": "Histórico limpo!",
-  "history.empty": ({ version }) => `O histórico está vazio para PoE ${version}.`,
-  "folder.copiedTrade": ({ title }) => `${title} copiado para a área de transferência`,
+  "history.empty": ({ version }) =>
+    `O histórico está vazio para PoE ${version}.`,
+  "folder.copiedTrade": ({ title }) =>
+    `${title} copiado para a área de transferência`,
   "folder.copyTradeError": "Não foi possível copiar a URL do trade.",
   "folder.duplicatedTrade": ({ title }) => `${title} duplicado`,
   "folder.invalidTradePage": "Você não está em uma página de trade válida",
   "folder.missingTradeType": "Falta o tipo de trade para a busca atual.",
   "folder.addedToFolder": ({ title }) => `"${title}" foi adicionado à pasta`,
-  "folder.copiedFolder": "Os dados da pasta foram copiados para a área de transferência!",
+  "folder.copiedFolder":
+    "Os dados da pasta foram copiados para a área de transferência!",
   "folder.copyFolderError": "Não foi possível copiar os dados da pasta.",
-  "folder.renamedFolder": ({ title }) => `A pasta foi renomeada para "${title}"`,
-  "folder.renamedSearch": ({ title }) => `A busca foi renomeada para "${title}"`,
-  "folder.updatedSearchLocation": ({ title }) => `A localização de busca de "${title}" foi atualizada`,
+  "folder.renamedFolder": ({ title }) =>
+    `A pasta foi renomeada para "${title}"`,
+  "folder.renamedSearch": ({ title }) =>
+    `A busca foi renomeada para "${title}"`,
+  "folder.updatedSearchLocation": ({ title }) =>
+    `A localização de busca de "${title}" foi atualizada`,
   "folder.dragReorder": "Arrastar para reordenar pasta",
   "folder.collapse": "Recolher",
   "folder.expand": "Expandir",
@@ -352,7 +452,7 @@ const portugueseTranslations: Record<string, TranslationValue> = {
   "finer.explicitResLife": "Res/Vida explícita",
   "finer.attackWeapon": "Arma de ataque",
   "finer.spellWeapon": "Arma de feitiços"
-};
+}
 
 const germanTranslations: Record<string, TranslationValue> = {
   "header.subtitle": "Trade-Begleiter",
@@ -364,31 +464,45 @@ const germanTranslations: Record<string, TranslationValue> = {
   "layout.removeAlert": "Hinweis entfernen",
   "layout.resizeSidebar": "Seitenleiste skalieren",
   "layout.restorePanel": "Poe Trade Plus-Panel wiederherstellen",
-  "popup.description": "Poe Trade Plus fügt der offiziellen Path of Exile-Handelsseite schnellere Navigation und Handelshilfen hinzu.",
+  "popup.description":
+    "Poe Trade Plus fügt der offiziellen Path of Exile-Handelsseite schnellere Navigation und Handelshilfen hinzu.",
   "settings.sidebarTitle": "Position der Seitenleiste",
-  "settings.sidebarDescription": "Wähle, auf welcher Seite des Bildschirms das Poe Trade Plus-Panel erscheinen soll.",
+  "settings.sidebarDescription":
+    "Wähle, auf welcher Seite des Bildschirms das Poe Trade Plus-Panel erscheinen soll.",
   "settings.left": "Links",
   "settings.right": "Rechts",
   "settings.resetWidth": "Breite zurücksetzen",
   "settings.languageTitle": "Sprache",
-  "settings.languageDescription": "Wähle die Sprache der Erweiterungsoberfläche.",
+  "settings.languageDescription":
+    "Wähle die Sprache der Erweiterungsoberfläche.",
   "settings.languageEnglish": "Englisch",
   "settings.languageSpanish": "Spanisch",
   "settings.equivalentTitle": "Äquivalenzpreis",
-  "settings.equivalentDescription": "Zeige oder verberge die zusätzliche Zeile mit Chaos/Divine-Äquivalenten in den Ergebnissen.",
+  "settings.equivalentDescription":
+    "Zeige oder verberge die zusätzliche Zeile mit Chaos/Divine-Äquivalenten in den Ergebnissen.",
   "settings.hidden": "Versteckt",
   "settings.visible": "Sichtbar",
   "settings.compactActionsTitle": "Bookmark-Layout",
-  "settings.compactActionsDescription": "Wähle ein kompakteres Layout für gespeicherte Suchen, mit Ligaanzeige und allen Aktionen in einem Drei-Punkte-Menü.",
+  "settings.compactActionsDescription":
+    "Wähle ein kompakteres Layout für gespeicherte Suchen, mit Ligaanzeige und allen Aktionen in einem Drei-Punkte-Menü.",
   "settings.compactActionsDefault": "Klassisch",
   "settings.compactActionsCompact": "Kompakt",
-  "about.description": "Poe Trade Plus ist ein Begleiter für Path of Exile Trade, entwickelt zum Speichern von Suchen, Organisieren von Ordnern, Nachverfolgen des Verlaufs und für schnelle, übersichtliche wiederkehrende Handelsabläufe direkt auf der offiziellen Seite.",
-  "about.version": ({ version }) => `Version ${version} • Entwickelt von KroxiLabs`,
-  "bulk.empty": "Noch keine Bulk-Verkäufer erkannt. Öffne eine Ergebnisliste, in der derselbe Verkäufer mehr als einmal erscheint.",
+  "settings.compactTradeActionsTitle": "Sichtbare Aktionen außerhalb des Menüs",
+  "settings.compactTradeActionsDescription":
+    "Wähle aus, welche Aktionen gespeicherter Suchen im kompakten Modus sichtbar bleiben. Wenn nichts ausgewählt ist, wird nur das Drei-Punkte-Menü angezeigt. Wenn alle oder alle bis auf eine ausgewählt sind, bleiben alle sichtbar.",
+  "settings.compactTradeActionToggle": "Abgeschlossen / Offen",
+  "about.description":
+    "Poe Trade Plus ist ein Begleiter für Path of Exile Trade, entwickelt zum Speichern von Suchen, Organisieren von Ordnern, Nachverfolgen des Verlaufs und für schnelle, übersichtliche wiederkehrende Handelsabläufe direkt auf der offiziellen Seite.",
+  "about.version": ({ version }) =>
+    `Version ${version} • Entwickelt von KroxiLabs`,
+  "bulk.empty":
+    "Noch keine Bulk-Verkäufer erkannt. Öffne eine Ergebnisliste, in der derselbe Verkäufer mehr als einmal erscheint.",
   "bulk.find": "Finden",
   "bulk.buy": "Kaufen",
-  "bulk.findError": "Dieser Eintrag konnte in den aktuellen Ergebnissen nicht gefunden werden.",
-  "bulk.buyError": "Die Kaufaktion für diesen Eintrag konnte nicht ausgelöst werden.",
+  "bulk.findError":
+    "Dieser Eintrag konnte in den aktuellen Ergebnissen nicht gefunden werden.",
+  "bulk.buyError":
+    "Die Kaufaktion für diesen Eintrag konnte nicht ausgelöst werden.",
   "bookmarks.newFolder": "Neuer Ordner",
   "bookmarks.folderCreated": "Ordner erstellt!",
   "bookmarks.folderDeleted": "Ordner gelöscht!",
@@ -428,7 +542,8 @@ const germanTranslations: Record<string, TranslationValue> = {
   "folder.copyFolderError": "Die Ordnerdaten konnten nicht kopiert werden.",
   "folder.renamedFolder": ({ title }) => `Ordner umbenannt in "${title}"`,
   "folder.renamedSearch": ({ title }) => `Suche umbenannt in "${title}"`,
-  "folder.updatedSearchLocation": ({ title }) => `Suchort von "${title}" aktualisiert`,
+  "folder.updatedSearchLocation": ({ title }) =>
+    `Suchort von "${title}" aktualisiert`,
   "folder.dragReorder": "Ziehen, um Ordner neu anzuordnen",
   "folder.editFolder": "Ordner bearbeiten",
   "folder.restoreFolder": "Ordner wiederherstellen",
@@ -457,7 +572,7 @@ const germanTranslations: Record<string, TranslationValue> = {
   "finer.explicitResLife": "Explizite Widerstände/Leben",
   "finer.attackWeapon": "Angriffswaffe",
   "finer.spellWeapon": "Zauberwaffe"
-};
+}
 
 const frenchTranslations: Record<string, TranslationValue> = {
   "header.subtitle": "Compagnon de trade",
@@ -470,31 +585,44 @@ const frenchTranslations: Record<string, TranslationValue> = {
   "layout.removeAlert": "Supprimer l’alerte",
   "layout.resizeSidebar": "Redimensionner le panneau",
   "layout.restorePanel": "Restaurer le panneau Poe Trade Plus",
-  "popup.description": "Poe Trade Plus ajoute une navigation plus rapide et des aides de trade au site officiel de Path of Exile.",
+  "popup.description":
+    "Poe Trade Plus ajoute une navigation plus rapide et des aides de trade au site officiel de Path of Exile.",
   "settings.sidebarTitle": "Position du panneau",
-  "settings.sidebarDescription": "Choisissez de quel côté de l’écran le panneau Poe Trade Plus doit apparaître.",
+  "settings.sidebarDescription":
+    "Choisissez de quel côté de l’écran le panneau Poe Trade Plus doit apparaître.",
   "settings.left": "Gauche",
   "settings.right": "Droite",
   "settings.resetWidth": "Réinitialiser la largeur",
   "settings.languageTitle": "Langue",
-  "settings.languageDescription": "Choisissez la langue utilisée par l’interface de l’extension.",
+  "settings.languageDescription":
+    "Choisissez la langue utilisée par l’interface de l’extension.",
   "settings.languageEnglish": "Anglais",
   "settings.languageSpanish": "Espagnol",
   "settings.equivalentTitle": "Prix équivalent",
-  "settings.equivalentDescription": "Afficher ou masquer la ligne supplémentaire avec l’équivalent chaos/divine dans les résultats.",
+  "settings.equivalentDescription":
+    "Afficher ou masquer la ligne supplémentaire avec l’équivalent chaos/divine dans les résultats.",
   "settings.hidden": "Masqué",
   "settings.visible": "Visible",
   "settings.compactActionsTitle": "Disposition des favoris",
-  "settings.compactActionsDescription": "Choisissez une disposition plus compacte pour les recherches sauvegardées, avec le nom de la ligue et toutes les actions regroupées dans un menu a trois points.",
+  "settings.compactActionsDescription":
+    "Choisissez une disposition plus compacte pour les recherches sauvegardées, avec le nom de la ligue et toutes les actions regroupées dans un menu a trois points.",
   "settings.compactActionsDefault": "Classique",
   "settings.compactActionsCompact": "Compact",
+  "settings.compactTradeActionsTitle": "Actions visibles hors du menu",
+  "settings.compactTradeActionsDescription":
+    "Choisissez quelles actions de chaque recherche sauvegardée restent visibles en mode compact. Si aucune n'est sélectionnée, seuls les trois points apparaissent. Si toutes ou toutes sauf une sont sélectionnées, toutes restent visibles.",
+  "settings.compactTradeActionToggle": "Terminée / En attente",
   "about.eyebrow": "À propos",
-  "about.description": "Poe Trade Plus est un compagnon pour Path of Exile Trade conçu pour sauvegarder des recherches, organiser des dossiers, suivre l’historique et garder les routines de trade rapides, visuelles et faciles à gérer directement sur le site officiel.",
-  "about.version": ({ version }) => `Version ${version} • Développé par KroxiLabs`,
-  "bulk.empty": "Aucun vendeur bulk détecté pour le moment. Ouvrez une liste de résultats où le même vendeur apparaît plus d’une fois.",
+  "about.description":
+    "Poe Trade Plus est un compagnon pour Path of Exile Trade conçu pour sauvegarder des recherches, organiser des dossiers, suivre l’historique et garder les routines de trade rapides, visuelles et faciles à gérer directement sur le site officiel.",
+  "about.version": ({ version }) =>
+    `Version ${version} • Développé par KroxiLabs`,
+  "bulk.empty":
+    "Aucun vendeur bulk détecté pour le moment. Ouvrez une liste de résultats où le même vendeur apparaît plus d’une fois.",
   "bulk.find": "Trouver",
   "bulk.buy": "Acheter",
-  "bulk.findError": "Impossible de localiser cette annonce dans les résultats actuels.",
+  "bulk.findError":
+    "Impossible de localiser cette annonce dans les résultats actuels.",
   "bulk.buyError": "Impossible de déclencher l’achat pour cette annonce.",
   "bookmarks.newFolder": "Nouveau dossier",
   "bookmarks.folderCreated": "Dossier créé !",
@@ -502,7 +630,8 @@ const frenchTranslations: Record<string, TranslationValue> = {
   "bookmarks.exported": "Sauvegarde exportée !",
   "bookmarks.restored": "Sauvegarde restaurée !",
   "bookmarks.restoreFailed": "Échec de la restauration de la sauvegarde.",
-  "bookmarks.pasteFolderData": "Veuillez d’abord coller les données du dossier.",
+  "bookmarks.pasteFolderData":
+    "Veuillez d’abord coller les données du dossier.",
   "bookmarks.invalidFolderData": "Les données du dossier sont invalides.",
   "bookmarks.importedFolder": ({ title }) => `"${title}" importé !`,
   "bookmarks.toolbar.new": "Nouveau",
@@ -524,18 +653,22 @@ const frenchTranslations: Record<string, TranslationValue> = {
   "bookmarks.restoreFile": "Restaurer depuis le fichier",
   "history.clear": "Effacer l’historique",
   "history.cleared": "Historique effacé !",
-  "history.empty": ({ version }) => `L’historique est vide pour PoE ${version}.`,
+  "history.empty": ({ version }) =>
+    `L’historique est vide pour PoE ${version}.`,
   "folder.copiedTrade": ({ title }) => `${title} copié dans le presse-papiers`,
   "folder.copyTradeError": "Impossible de copier l’URL du trade.",
   "folder.duplicatedTrade": ({ title }) => `${title} dupliqué`,
   "folder.invalidTradePage": "Vous n’êtes pas sur une page de trade valide",
-  "folder.missingTradeType": "Le type de trade est manquant pour la recherche actuelle.",
+  "folder.missingTradeType":
+    "Le type de trade est manquant pour la recherche actuelle.",
   "folder.addedToFolder": ({ title }) => `"${title}" ajouté au dossier`,
-  "folder.copiedFolder": "Les données du dossier ont été copiées dans le presse-papiers !",
+  "folder.copiedFolder":
+    "Les données du dossier ont été copiées dans le presse-papiers !",
   "folder.copyFolderError": "Impossible de copier les données du dossier.",
   "folder.renamedFolder": ({ title }) => `Dossier renommé en "${title}"`,
   "folder.renamedSearch": ({ title }) => `Recherche renommée en "${title}"`,
-  "folder.updatedSearchLocation": ({ title }) => `L’emplacement de recherche de "${title}" a été mis à jour`,
+  "folder.updatedSearchLocation": ({ title }) =>
+    `L’emplacement de recherche de "${title}" a été mis à jour`,
   "folder.dragReorder": "Glisser pour réorganiser le dossier",
   "folder.editFolder": "Modifier le dossier",
   "folder.restoreFolder": "Restaurer le dossier",
@@ -564,7 +697,7 @@ const frenchTranslations: Record<string, TranslationValue> = {
   "finer.explicitResLife": "Résistances/Vie explicites",
   "finer.attackWeapon": "Arme d’attaque",
   "finer.spellWeapon": "Arme de sort"
-};
+}
 
 const russianTranslations: Record<string, TranslationValue> = {
   "header.subtitle": "Помощник для трейда",
@@ -577,9 +710,11 @@ const russianTranslations: Record<string, TranslationValue> = {
   "layout.removeAlert": "Убрать уведомление",
   "layout.resizeSidebar": "Изменить размер панели",
   "layout.restorePanel": "Восстановить панель Poe Trade Plus",
-  "popup.description": "Poe Trade Plus добавляет более быструю навигацию и торговые инструменты на официальный сайт торговли Path of Exile.",
+  "popup.description":
+    "Poe Trade Plus добавляет более быструю навигацию и торговые инструменты на официальный сайт торговли Path of Exile.",
   "settings.sidebarTitle": "Положение панели",
-  "settings.sidebarDescription": "Выберите сторону экрана, где будет отображаться панель Poe Trade Plus.",
+  "settings.sidebarDescription":
+    "Выберите сторону экрана, где будет отображаться панель Poe Trade Plus.",
   "settings.left": "Слева",
   "settings.right": "Справа",
   "settings.resetWidth": "Сбросить ширину",
@@ -588,17 +723,25 @@ const russianTranslations: Record<string, TranslationValue> = {
   "settings.languageEnglish": "Английский",
   "settings.languageSpanish": "Испанский",
   "settings.equivalentTitle": "Эквивалентная цена",
-  "settings.equivalentDescription": "Показывать или скрывать дополнительную строку с эквивалентом в chaos/divine в результатах.",
+  "settings.equivalentDescription":
+    "Показывать или скрывать дополнительную строку с эквивалентом в chaos/divine в результатах.",
   "settings.hidden": "Скрыто",
   "settings.visible": "Показано",
   "settings.compactActionsTitle": "Макет закладок",
-  "settings.compactActionsDescription": "Выберите более компактный вид для сохраненных поисков: название лиги и все действия будут собраны в меню из трех точек.",
+  "settings.compactActionsDescription":
+    "Выберите более компактный вид для сохраненных поисков: название лиги и все действия будут собраны в меню из трех точек.",
   "settings.compactActionsDefault": "Классический",
   "settings.compactActionsCompact": "Компактный",
+  "settings.compactTradeActionsTitle": "Видимые действия вне меню",
+  "settings.compactTradeActionsDescription":
+    "Выберите, какие действия сохраненного поиска будут видны в компактном режиме. Если ничего не выбрано, отображается только меню из трех точек. Если выбраны все или все кроме одного, показываются все действия.",
+  "settings.compactTradeActionToggle": "Завершено / В ожидании",
   "about.eyebrow": "О проекте",
-  "about.description": "Poe Trade Plus — это дополнение для торговли Path of Exile, созданное для сохранения поисков, организации папок, отслеживания истории и удобной работы с повторяющимися торговыми сценариями прямо на официальном сайте.",
+  "about.description":
+    "Poe Trade Plus — это дополнение для торговли Path of Exile, созданное для сохранения поисков, организации папок, отслеживания истории и удобной работы с повторяющимися торговыми сценариями прямо на официальном сайте.",
   "about.version": ({ version }) => `Версия ${version} • Разработано KroxiLabs`,
-  "bulk.empty": "Продавцы bulk пока не обнаружены. Откройте список результатов, где один и тот же продавец встречается больше одного раза.",
+  "bulk.empty":
+    "Продавцы bulk пока не обнаружены. Откройте список результатов, где один и тот же продавец встречается больше одного раза.",
   "bulk.find": "Найти",
   "bulk.buy": "Купить",
   "bulk.findError": "Не удалось найти этот лот в текущих результатах.",
@@ -642,7 +785,8 @@ const russianTranslations: Record<string, TranslationValue> = {
   "folder.copyFolderError": "Не удалось скопировать данные папки.",
   "folder.renamedFolder": ({ title }) => `Папка переименована в "${title}"`,
   "folder.renamedSearch": ({ title }) => `Поиск переименован в "${title}"`,
-  "folder.updatedSearchLocation": ({ title }) => `Местоположение поиска "${title}" обновлено`,
+  "folder.updatedSearchLocation": ({ title }) =>
+    `Местоположение поиска "${title}" обновлено`,
   "folder.dragReorder": "Перетащите для изменения порядка папки",
   "folder.editFolder": "Редактировать папку",
   "folder.restoreFolder": "Восстановить папку",
@@ -671,7 +815,7 @@ const russianTranslations: Record<string, TranslationValue> = {
   "finer.explicitResLife": "Явные резы/жизнь",
   "finer.attackWeapon": "Оружие атаки",
   "finer.spellWeapon": "Оружие заклинаний"
-};
+}
 
 const thaiTranslations: Record<string, TranslationValue> = {
   "header.subtitle": "ผู้ช่วยการเทรด",
@@ -684,9 +828,11 @@ const thaiTranslations: Record<string, TranslationValue> = {
   "layout.removeAlert": "ลบการแจ้งเตือน",
   "layout.resizeSidebar": "ปรับขนาดแผง",
   "layout.restorePanel": "กู้คืนแผง Poe Trade Plus",
-  "popup.description": "Poe Trade Plus เพิ่มการนำทางที่เร็วขึ้นและเครื่องมือช่วยเทรดให้กับเว็บไซต์ซื้อขาย Path of Exile อย่างเป็นทางการ",
+  "popup.description":
+    "Poe Trade Plus เพิ่มการนำทางที่เร็วขึ้นและเครื่องมือช่วยเทรดให้กับเว็บไซต์ซื้อขาย Path of Exile อย่างเป็นทางการ",
   "settings.sidebarTitle": "ตำแหน่งแผง",
-  "settings.sidebarDescription": "เลือกด้านของหน้าจอที่ต้องการให้แผง Poe Trade Plus แสดงผล",
+  "settings.sidebarDescription":
+    "เลือกด้านของหน้าจอที่ต้องการให้แผง Poe Trade Plus แสดงผล",
   "settings.left": "ซ้าย",
   "settings.right": "ขวา",
   "settings.resetWidth": "รีเซ็ตความกว้าง",
@@ -695,17 +841,25 @@ const thaiTranslations: Record<string, TranslationValue> = {
   "settings.languageEnglish": "อังกฤษ",
   "settings.languageSpanish": "สเปน",
   "settings.equivalentTitle": "ราคาเทียบเท่า",
-  "settings.equivalentDescription": "แสดงหรือซ่อนบรรทัดเพิ่มเติมที่แสดงราคาเทียบเท่า chaos/divine ในผลลัพธ์",
+  "settings.equivalentDescription":
+    "แสดงหรือซ่อนบรรทัดเพิ่มเติมที่แสดงราคาเทียบเท่า chaos/divine ในผลลัพธ์",
   "settings.hidden": "ซ่อน",
   "settings.visible": "แสดง",
   "settings.compactActionsTitle": "เลย์เอาต์บุ๊กมาร์ก",
-  "settings.compactActionsDescription": "เลือกเลย์เอาต์ที่กะทัดรัดยิ่งขึ้นสำหรับการค้นหาที่บันทึกไว้ โดยแสดงชื่อลีกและรวมการทำงานทั้งหมดไว้ในเมนูสามจุด",
+  "settings.compactActionsDescription":
+    "เลือกเลย์เอาต์ที่กะทัดรัดยิ่งขึ้นสำหรับการค้นหาที่บันทึกไว้ โดยแสดงชื่อลีกและรวมการทำงานทั้งหมดไว้ในเมนูสามจุด",
   "settings.compactActionsDefault": "คลาสสิก",
   "settings.compactActionsCompact": "กะทัดรัด",
+  "settings.compactTradeActionsTitle": "การทำงานที่แสดงนอกเมนู",
+  "settings.compactTradeActionsDescription":
+    "เลือกว่าการทำงานใดของการค้นหาที่บันทึกไว้จะยังแสดงอยู่ในโหมดกะทัดรัด หากไม่เลือกเลยจะเห็นเฉพาะเมนูสามจุด หากเลือกทั้งหมดหรือทั้งหมดยกเว้นหนึ่งรายการ จะเห็นทั้งหมด",
+  "settings.compactTradeActionToggle": "เสร็จสิ้น / รอดำเนินการ",
   "about.eyebrow": "เกี่ยวกับ",
-  "about.description": "Poe Trade Plus เป็นส่วนเสริมสำหรับ Path of Exile Trade ที่สร้างขึ้นเพื่อบันทึกการค้นหา จัดระเบียบโฟลเดอร์ ติดตามประวัติ และทำให้การซื้อขายที่ทำซ้ำบ่อยรวดเร็ว มองเห็นได้ง่าย และจัดการได้สะดวกภายในเว็บไซต์ทางการ",
+  "about.description":
+    "Poe Trade Plus เป็นส่วนเสริมสำหรับ Path of Exile Trade ที่สร้างขึ้นเพื่อบันทึกการค้นหา จัดระเบียบโฟลเดอร์ ติดตามประวัติ และทำให้การซื้อขายที่ทำซ้ำบ่อยรวดเร็ว มองเห็นได้ง่าย และจัดการได้สะดวกภายในเว็บไซต์ทางการ",
   "about.version": ({ version }) => `เวอร์ชัน ${version} • พัฒนาโดย KroxiLabs`,
-  "bulk.empty": "ยังไม่พบผู้ขายแบบ bulk เปิดหน้าผลลัพธ์ที่มีผู้ขายคนเดิมมากกว่าหนึ่งรายการ",
+  "bulk.empty":
+    "ยังไม่พบผู้ขายแบบ bulk เปิดหน้าผลลัพธ์ที่มีผู้ขายคนเดิมมากกว่าหนึ่งรายการ",
   "bulk.find": "ค้นหา",
   "bulk.buy": "ซื้อ",
   "bulk.findError": "ไม่พบรายการนี้ในผลลัพธ์ปัจจุบัน",
@@ -747,9 +901,12 @@ const thaiTranslations: Record<string, TranslationValue> = {
   "folder.addedToFolder": ({ title }) => `เพิ่ม "${title}" ไปยังโฟลเดอร์แล้ว`,
   "folder.copiedFolder": "คัดลอกข้อมูลโฟลเดอร์ไปยังคลิปบอร์ดแล้ว!",
   "folder.copyFolderError": "ไม่สามารถคัดลอกข้อมูลโฟลเดอร์ได้",
-  "folder.renamedFolder": ({ title }) => `เปลี่ยนชื่อโฟลเดอร์เป็น "${title}" แล้ว`,
-  "folder.renamedSearch": ({ title }) => `เปลี่ยนชื่อการค้นหาเป็น "${title}" แล้ว`,
-  "folder.updatedSearchLocation": ({ title }) => `อัปเดตตำแหน่งการค้นหาของ "${title}" แล้ว`,
+  "folder.renamedFolder": ({ title }) =>
+    `เปลี่ยนชื่อโฟลเดอร์เป็น "${title}" แล้ว`,
+  "folder.renamedSearch": ({ title }) =>
+    `เปลี่ยนชื่อการค้นหาเป็น "${title}" แล้ว`,
+  "folder.updatedSearchLocation": ({ title }) =>
+    `อัปเดตตำแหน่งการค้นหาของ "${title}" แล้ว`,
   "folder.dragReorder": "ลากเพื่อจัดลำดับโฟลเดอร์ใหม่",
   "folder.editFolder": "แก้ไขโฟลเดอร์",
   "folder.restoreFolder": "กู้คืนโฟลเดอร์",
@@ -776,7 +933,7 @@ const thaiTranslations: Record<string, TranslationValue> = {
   "finer.modifiers": "ม็อด",
   "finer.attackWeapon": "อาวุธโจมตี",
   "finer.spellWeapon": "อาวุธเวท"
-};
+}
 
 const japaneseTranslations: Record<string, TranslationValue> = {
   "header.subtitle": "トレード companion",
@@ -789,32 +946,43 @@ const japaneseTranslations: Record<string, TranslationValue> = {
   "layout.removeAlert": "通知を閉じる",
   "layout.resizeSidebar": "パネルサイズを変更",
   "layout.restorePanel": "Poe Trade Plus パネルを復元",
-  "popup.description": "Poe Trade Plus は Path of Exile 公式トレードサイトに、より高速なナビゲーションと取引支援機能を追加します。",
+  "popup.description":
+    "Poe Trade Plus は Path of Exile 公式トレードサイトに、より高速なナビゲーションと取引支援機能を追加します。",
   "popup.trade1": "PoE 1 トレード",
   "popup.trade2": "PoE 2 トレード",
   "popup.trade1Alt": "Path of Exile トレード",
   "popup.trade2Alt": "Path of Exile 2 トレード",
   "settings.sidebarTitle": "パネル位置",
-  "settings.sidebarDescription": "Poe Trade Plus パネルを画面のどちら側に表示するか選択してください。",
+  "settings.sidebarDescription":
+    "Poe Trade Plus パネルを画面のどちら側に表示するか選択してください。",
   "settings.left": "左",
   "settings.right": "右",
   "settings.resetWidth": "幅をリセット",
   "settings.languageTitle": "言語",
-  "settings.languageDescription": "拡張機能のインターフェースで使用する言語を選択してください。",
+  "settings.languageDescription":
+    "拡張機能のインターフェースで使用する言語を選択してください。",
   "settings.languageEnglish": "英語",
   "settings.languageSpanish": "スペイン語",
   "settings.equivalentTitle": "等価価格",
-  "settings.equivalentDescription": "検索結果に追加表示される chaos/divine 等価行を表示または非表示にします。",
+  "settings.equivalentDescription":
+    "検索結果に追加表示される chaos/divine 等価行を表示または非表示にします。",
   "settings.hidden": "非表示",
   "settings.visible": "表示",
   "settings.compactActionsTitle": "ブックマークレイアウト",
-  "settings.compactActionsDescription": "保存した検索をよりコンパクトに表示し、リーグ名とすべての操作を3点メニューにまとめます。",
+  "settings.compactActionsDescription":
+    "保存した検索をよりコンパクトに表示し、リーグ名とすべての操作を3点メニューにまとめます。",
   "settings.compactActionsDefault": "クラシック",
   "settings.compactActionsCompact": "コンパクト",
+  "settings.compactTradeActionsTitle": "メニュー外に表示する操作",
+  "settings.compactTradeActionsDescription":
+    "コンパクトモードで表示したままにする保存済み検索の操作を選択します。何も選ばない場合は3点メニューのみ表示されます。すべて、または1つを除いて選択した場合は、すべての操作が表示されます。",
+  "settings.compactTradeActionToggle": "完了 / 保留",
   "about.eyebrow": "概要",
-  "about.description": "Poe Trade Plus は Path of Exile Trade 用の補助ツールで、検索の保存、フォルダー整理、履歴管理を行い、繰り返し使うトレード作業を公式サイト上で素早く見やすく簡単に管理できるようにします。",
+  "about.description":
+    "Poe Trade Plus は Path of Exile Trade 用の補助ツールで、検索の保存、フォルダー整理、履歴管理を行い、繰り返し使うトレード作業を公式サイト上で素早く見やすく簡単に管理できるようにします。",
   "about.version": ({ version }) => `バージョン ${version} • KroxiLabs 開発`,
-  "bulk.empty": "まだ Bulk 販売者は検出されていません。同じ販売者が複数回表示される結果一覧を開いてください。",
+  "bulk.empty":
+    "まだ Bulk 販売者は検出されていません。同じ販売者が複数回表示される結果一覧を開いてください。",
   "bulk.find": "検索",
   "bulk.buy": "購入",
   "bulk.findError": "現在の結果内でこの出品を見つけられませんでした。",
@@ -827,7 +995,8 @@ const japaneseTranslations: Record<string, TranslationValue> = {
   "bookmarks.restoreFailed": "バックアップの復元に失敗しました。",
   "bookmarks.pasteFolderData": "まずフォルダーのデータを貼り付けてください。",
   "bookmarks.invalidFolderData": "フォルダーデータが無効です。",
-  "bookmarks.importedFolder": ({ title }) => `「${title}」をインポートしました！`,
+  "bookmarks.importedFolder": ({ title }) =>
+    `「${title}」をインポートしました！`,
   "bookmarks.toolbar.new": "新規",
   "bookmarks.toolbar.newFolderTitle": "新しいフォルダー",
   "bookmarks.toolbar.cancel": "キャンセル",
@@ -848,17 +1017,21 @@ const japaneseTranslations: Record<string, TranslationValue> = {
   "history.clear": "履歴を消去",
   "history.cleared": "履歴を消去しました！",
   "history.empty": ({ version }) => `PoE ${version} の履歴は空です。`,
-  "folder.copiedTrade": ({ title }) => `${title} をクリップボードにコピーしました`,
+  "folder.copiedTrade": ({ title }) =>
+    `${title} をクリップボードにコピーしました`,
   "folder.copyTradeError": "トレード URL をコピーできませんでした。",
   "folder.duplicatedTrade": ({ title }) => `${title} を複製しました`,
   "folder.invalidTradePage": "有効なトレードページではありません",
   "folder.missingTradeType": "現在の検索にトレードタイプがありません。",
-  "folder.addedToFolder": ({ title }) => `「${title}」をフォルダーに追加しました`,
+  "folder.addedToFolder": ({ title }) =>
+    `「${title}」をフォルダーに追加しました`,
   "folder.copiedFolder": "フォルダーデータをクリップボードにコピーしました！",
   "folder.copyFolderError": "フォルダーデータをコピーできませんでした。",
-  "folder.renamedFolder": ({ title }) => `フォルダー名を「${title}」に変更しました`,
+  "folder.renamedFolder": ({ title }) =>
+    `フォルダー名を「${title}」に変更しました`,
   "folder.renamedSearch": ({ title }) => `検索名を「${title}」に変更しました`,
-  "folder.updatedSearchLocation": ({ title }) => `「${title}」の検索場所を更新しました`,
+  "folder.updatedSearchLocation": ({ title }) =>
+    `「${title}」の検索場所を更新しました`,
   "folder.dragReorder": "ドラッグしてフォルダーを並べ替え",
   "folder.editFolder": "フォルダーを編集",
   "folder.restoreFolder": "フォルダーを復元",
@@ -875,7 +1048,8 @@ const japaneseTranslations: Record<string, TranslationValue> = {
   "folder.actionsMenu": "その他のアクション",
   "folder.renameFolder": "フォルダーの名前を変更",
   "folder.duplicateFolder": "フォルダーを複製",
-  "folder.duplicatedFolder": ({ title }) => `フォルダーを複製しました: "${title}"`,
+  "folder.duplicatedFolder": ({ title }) =>
+    `フォルダーを複製しました: "${title}"`,
   "folder.saveCurrentSearch": "現在の検索を保存",
   "folder.loadTradesError": "tradeを読み込めませんでした。",
   "folder.deleteTradeError": "tradeを削除できませんでした。",
@@ -887,7 +1061,7 @@ const japaneseTranslations: Record<string, TranslationValue> = {
   "finer.explicitResLife": "明示耐性/ライフ",
   "finer.attackWeapon": "攻撃武器",
   "finer.spellWeapon": "スペル武器"
-};
+}
 
 const koreanTranslations: Record<string, TranslationValue> = {
   "header.subtitle": "거래 도우미",
@@ -900,32 +1074,43 @@ const koreanTranslations: Record<string, TranslationValue> = {
   "layout.removeAlert": "알림 닫기",
   "layout.resizeSidebar": "패널 크기 조절",
   "layout.restorePanel": "Poe Trade Plus 패널 복원",
-  "popup.description": "Poe Trade Plus는 공식 Path of Exile 거래 사이트에 더 빠른 탐색과 거래 도우미 기능을 추가합니다.",
+  "popup.description":
+    "Poe Trade Plus는 공식 Path of Exile 거래 사이트에 더 빠른 탐색과 거래 도우미 기능을 추가합니다.",
   "popup.trade1": "PoE 1 거래",
   "popup.trade2": "PoE 2 거래",
   "popup.trade1Alt": "Path of Exile 거래",
   "popup.trade2Alt": "Path of Exile 2 거래",
   "settings.sidebarTitle": "패널 위치",
-  "settings.sidebarDescription": "Poe Trade Plus 패널을 화면 어느 쪽에 표시할지 선택하세요.",
+  "settings.sidebarDescription":
+    "Poe Trade Plus 패널을 화면 어느 쪽에 표시할지 선택하세요.",
   "settings.left": "왼쪽",
   "settings.right": "오른쪽",
   "settings.resetWidth": "너비 초기화",
   "settings.languageTitle": "언어",
-  "settings.languageDescription": "확장 프로그램 인터페이스에 사용할 언어를 선택하세요.",
+  "settings.languageDescription":
+    "확장 프로그램 인터페이스에 사용할 언어를 선택하세요.",
   "settings.languageEnglish": "영어",
   "settings.languageSpanish": "스페인어",
   "settings.equivalentTitle": "환산 가격",
-  "settings.equivalentDescription": "결과에 추가로 표시되는 chaos/divine 환산 줄을 표시하거나 숨깁니다.",
+  "settings.equivalentDescription":
+    "결과에 추가로 표시되는 chaos/divine 환산 줄을 표시하거나 숨깁니다.",
   "settings.hidden": "숨김",
   "settings.visible": "표시",
   "settings.compactActionsTitle": "북마크 레이아웃",
-  "settings.compactActionsDescription": "저장된 검색을 더 간결하게 표시하고, 리그 이름과 모든 작업을 점 세 개 메뉴 안에 묶습니다.",
+  "settings.compactActionsDescription":
+    "저장된 검색을 더 간결하게 표시하고, 리그 이름과 모든 작업을 점 세 개 메뉴 안에 묶습니다.",
   "settings.compactActionsDefault": "기본형",
   "settings.compactActionsCompact": "컴팩트",
+  "settings.compactTradeActionsTitle": "메뉴 밖에 보일 작업",
+  "settings.compactTradeActionsDescription":
+    "컴팩트 모드에서 계속 보일 저장된 검색 작업을 선택하세요. 아무것도 선택하지 않으면 점 세 개 메뉴만 보입니다. 모두 선택하거나 하나만 제외하고 선택하면 모든 작업이 보입니다.",
+  "settings.compactTradeActionToggle": "완료 / 대기",
   "about.eyebrow": "정보",
-  "about.description": "Poe Trade Plus는 Path of Exile Trade용 보조 도구로, 검색 저장, 폴더 정리, 기록 추적을 지원하며 반복적인 거래 작업을 공식 사이트 안에서 빠르고 보기 쉽게 관리할 수 있게 해줍니다.",
+  "about.description":
+    "Poe Trade Plus는 Path of Exile Trade용 보조 도구로, 검색 저장, 폴더 정리, 기록 추적을 지원하며 반복적인 거래 작업을 공식 사이트 안에서 빠르고 보기 쉽게 관리할 수 있게 해줍니다.",
   "about.version": ({ version }) => `버전 ${version} • KroxiLabs 개발`,
-  "bulk.empty": "아직 Bulk 판매자가 감지되지 않았습니다. 같은 판매자가 두 번 이상 나타나는 결과 목록을 열어 주세요.",
+  "bulk.empty":
+    "아직 Bulk 판매자가 감지되지 않았습니다. 같은 판매자가 두 번 이상 나타나는 결과 목록을 열어 주세요.",
   "bulk.find": "찾기",
   "bulk.buy": "구매",
   "bulk.findError": "현재 결과에서 해당 목록을 찾을 수 없습니다.",
@@ -967,9 +1152,12 @@ const koreanTranslations: Record<string, TranslationValue> = {
   "folder.addedToFolder": ({ title }) => `"${title}"을(를) 폴더에 추가했습니다`,
   "folder.copiedFolder": "폴더 데이터를 클립보드에 복사했습니다!",
   "folder.copyFolderError": "폴더 데이터를 복사할 수 없습니다.",
-  "folder.renamedFolder": ({ title }) => `폴더 이름을 "${title}"(으)로 변경했습니다`,
-  "folder.renamedSearch": ({ title }) => `검색 이름을 "${title}"(으)로 변경했습니다`,
-  "folder.updatedSearchLocation": ({ title }) => `"${title}"의 검색 위치를 업데이트했습니다`,
+  "folder.renamedFolder": ({ title }) =>
+    `폴더 이름을 "${title}"(으)로 변경했습니다`,
+  "folder.renamedSearch": ({ title }) =>
+    `검색 이름을 "${title}"(으)로 변경했습니다`,
+  "folder.updatedSearchLocation": ({ title }) =>
+    `"${title}"의 검색 위치를 업데이트했습니다`,
   "folder.dragReorder": "드래그하여 폴더 순서 변경",
   "folder.editFolder": "폴더 편집",
   "folder.restoreFolder": "폴더 복원",
@@ -998,9 +1186,12 @@ const koreanTranslations: Record<string, TranslationValue> = {
   "finer.explicitResLife": "명시 저항/생명력",
   "finer.attackWeapon": "공격 무기",
   "finer.spellWeapon": "주문 무기"
-};
+}
 
-const extendedTranslations: Record<AppLanguage, Record<string, TranslationValue>> = {
+const extendedTranslations: Record<
+  AppLanguage,
+  Record<string, TranslationValue>
+> = {
   ...translations,
   pt: { ...englishFallback, ...portugueseTranslations },
   ru: { ...englishFallback, ...russianTranslations },
@@ -1009,26 +1200,26 @@ const extendedTranslations: Record<AppLanguage, Record<string, TranslationValue>
   fr: { ...englishFallback, ...frenchTranslations },
   ja: { ...englishFallback, ...japaneseTranslations },
   ko: { ...englishFallback, ...koreanTranslations }
-};
+}
 
-export const languageStore = writable<AppLanguage>("en");
+export const languageStore = writable<AppLanguage>("en")
 
 export const setLanguage = (language: AppLanguage) => {
-  languageStore.set(language);
-};
+  languageStore.set(language)
+}
 
 export const translate = (
   language: AppLanguage,
   key: string,
   params?: Record<string, string | number>
 ) => {
-  const dictionary = extendedTranslations[language] || extendedTranslations.en;
-  const fallback = extendedTranslations.en[key];
-  const value = dictionary[key] ?? fallback ?? key;
+  const dictionary = extendedTranslations[language] || extendedTranslations.en
+  const fallback = extendedTranslations.en[key]
+  const value = dictionary[key] ?? fallback ?? key
 
   if (typeof value === "function") {
-    return value(params);
+    return value(params)
   }
 
-  return value;
-};
+  return value
+}
