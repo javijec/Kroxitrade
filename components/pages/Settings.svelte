@@ -77,6 +77,10 @@
     await settings.updateBulkSellersVisibility(showBulkSellers);
   }
 
+  async function handleHistoryChange(showHistory: boolean) {
+    await settings.updateHistoryVisibility(showHistory);
+  }
+
   async function handleCompactActionsMenuChange(compactActionsMenu: boolean) {
     await settings.updateCompactActionsMenu(compactActionsMenu);
   }
@@ -299,6 +303,37 @@
         theme={$settings.showBulkSellers ? 'gold' : 'blue'}
         class="side-btn"
         onClick={() => handleBulkSellersChange(true)}
+      />
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <div class="section-heading">
+      <h3 class="section-title">{translate($languageStore, "settings.historyTitle")}</h3>
+      <div class="info-tooltip">
+        <button
+          type="button"
+          class="info-tooltip__trigger"
+          aria-label={translate($languageStore, "settings.historyDescription")}
+        >
+          i
+        </button>
+        <div class="info-tooltip__content">{translate($languageStore, "settings.historyDescription")}</div>
+      </div>
+    </div>
+
+    <div class="side-selector">
+      <Button
+        label={translate($languageStore, "settings.hidden")}
+        theme={$settings.showHistory ? 'blue' : 'gold'}
+        class="side-btn"
+        onClick={() => handleHistoryChange(false)}
+      />
+      <Button
+        label={translate($languageStore, "settings.visible")}
+        theme={$settings.showHistory ? 'gold' : 'blue'}
+        class="side-btn"
+        onClick={() => handleHistoryChange(true)}
       />
     </div>
   </section>

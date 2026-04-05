@@ -52,6 +52,9 @@ const translations = {
     "settings.bulkTitle": "Bulk Sellers",
     "settings.bulkDescription":
       "Show or hide the bulk sellers tab that groups repeated sellers from the current trade results.",
+    "settings.historyTitle": "History",
+    "settings.historyDescription":
+      "Show or hide the history tab that stores your recently opened searches.",
     "settings.hidden": "Hidden",
     "settings.visible": "Visible",
     "settings.compactActionsTitle": "Bookmark Layout",
@@ -185,6 +188,9 @@ const translations = {
     "settings.bulkTitle": "Bulk Sellers",
     "settings.bulkDescription":
       "Mostrá u ocultá la pestaña Bulk que agrupa vendedores repetidos de los resultados actuales.",
+    "settings.historyTitle": "Historial",
+    "settings.historyDescription":
+      "Mostrá u ocultá la pestaña Historial que guarda tus búsquedas abiertas recientemente.",
     "settings.hidden": "Oculto",
     "settings.visible": "Visible",
     "settings.compactActionsTitle": "Diseño de Favoritos",

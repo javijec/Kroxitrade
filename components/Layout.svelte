@@ -131,6 +131,10 @@
     currentPage = 'bookmarks';
   }
 
+  $: if (!$settings.showHistory && currentPage === 'history') {
+    currentPage = 'bookmarks';
+  }
+
   $: currentLocation = tradeLocationService.locationStore;
   $: minimizedStorageKey = `${MINIMIZED_STORAGE_KEY}-${$currentLocation.version}`;
   $: if (minimizedStorageKey && loadedMinimizedStateKey !== minimizedStorageKey) {
@@ -208,13 +212,15 @@
       </button>
     {/if}
 
-    <button 
-        class="nav-item {currentPage === 'history' ? 'is-active' : ''}" 
-        on:click={() => currentPage = 'history'}
-    >
-        <span class="nav-item__icon" aria-hidden="true">{@html navIcons.history}</span>
-        <span class="nav-item__label">{translate($languageStore, "layout.nav.history")}</span>
-    </button>
+    {#if $settings.showHistory}
+      <button 
+          class="nav-item {currentPage === 'history' ? 'is-active' : ''}" 
+          on:click={() => currentPage = 'history'}
+      >
+          <span class="nav-item__icon" aria-hidden="true">{@html navIcons.history}</span>
+          <span class="nav-item__label">{translate($languageStore, "layout.nav.history")}</span>
+      </button>
+    {/if}
     <button 
         class="nav-item {currentPage === 'settings' ? 'is-active' : ''}" 
         on:click={() => currentPage = 'settings'}
@@ -249,7 +255,7 @@
         <Bookmarks />
     {:else if currentPage === 'bulk' && $settings.showBulkSellers}
         <BulkSellers />
-    {:else if currentPage === 'history'}
+    {:else if currentPage === 'history' && $settings.showHistory}
         <History />
     {:else if currentPage === 'settings'}
         <Settings />
