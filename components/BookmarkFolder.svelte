@@ -512,6 +512,7 @@
     margin-bottom: 10px;
     border: 1px solid rgba($gold, 0.12);
     border-radius: 8px;
+    overflow: hidden;
     background: linear-gradient(180deg, rgba($gold, 0.035), rgba($gold, 0.015)),
       rgba($black, 0.4);
     box-shadow:

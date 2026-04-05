@@ -1,6 +1,6 @@
 <script lang="ts">
   import { languageStore, translate } from "~lib/services/i18n";
-  import { settings } from "~lib/services/settings";
+  import { settings, type BookmarkTradeActionId } from "~lib/services/settings";
   import type { BookmarksTradeStruct } from "~lib/types/bookmarks";
   import ActionsMenu from "./ActionsMenu.svelte";
 
@@ -76,6 +76,7 @@
   }));
 
   const PRIMARY_ACTION_IDS = ["edit", "toggle", "delete"];
+  const ACTION_ORDER: BookmarkTradeActionId[] = ["edit", "replace", "copy", "toggle", "delete"];
 </script>
 
 <ActionsMenu
@@ -83,6 +84,9 @@
   {compactText}
   primaryActionIds={PRIMARY_ACTION_IDS}
   compactMode={$settings.compactActionsMenu}
+  compactVisibleActionIds={ACTION_ORDER.filter((id) =>
+    $settings.compactBookmarkTradeActions.includes(id)
+  )}
   translate={(key) => translate($languageStore, key)}
   dropdownLabel={translate($languageStore, "folder.actionsMenu")}
   dropdownIcon={icons.more}

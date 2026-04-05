@@ -1,6 +1,6 @@
 <script lang="ts">
   import { languageStore, translate, type AppLanguage } from "../../lib/services/i18n";
-  import { settings, type SidebarSide } from "../../lib/services/settings";
+  import { settings, type BookmarkTradeActionId, type SidebarSide } from "../../lib/services/settings";
   import Button from "../Button.svelte";
   import { onDestroy, onMount } from "svelte";
   import flagBR from "data-base64:../../assets/BR.png";
@@ -12,8 +12,32 @@
   import flagKR from "data-base64:../../assets/KR.png";
   import flagRU from "data-base64:../../assets/RU.png";
   import flagTH from "data-base64:../../assets/TH.png";
+  import editIcon from "data-text:lucide-static/icons/pencil.svg";
+  import replaceIcon from "data-text:lucide-static/icons/refresh-cw.svg";
+  import copyIcon from "data-text:lucide-static/icons/copy.svg";
+  import toggleIcon from "data-text:lucide-static/icons/check.svg";
+  import deleteIcon from "data-text:lucide-static/icons/trash-2.svg";
 
   const DEFAULT_SIDEBAR_WIDTH = 450;
+  const normalizeSettingsIcon = (svg: string) =>
+    svg.replace(/<svg\b([^>]*)>/, (_match, attrs) => {
+      const nextAttrs = attrs
+        .replace(/\sclass="[^"]*"/g, "")
+        .replace(/\swidth="[^"]*"/g, "")
+        .replace(/\sheight="[^"]*"/g, "")
+        .replace(/\sviewBox="[^"]*"/g, "")
+        .trim();
+
+      return `<svg ${nextAttrs} viewBox="-2 -2 28 28" class="settings-option-svg">`;
+    });
+
+  const compactTradeActionOptions: Array<{ id: BookmarkTradeActionId; labelKey: string; icon: string }> = [
+    { id: "edit", labelKey: "folder.editSearchName", icon: normalizeSettingsIcon(editIcon) },
+    { id: "replace", labelKey: "folder.replaceCurrentSearch", icon: normalizeSettingsIcon(replaceIcon) },
+    { id: "copy", labelKey: "folder.copyUrl", icon: normalizeSettingsIcon(copyIcon) },
+    { id: "toggle", labelKey: "settings.compactTradeActionToggle", icon: normalizeSettingsIcon(toggleIcon) },
+    { id: "delete", labelKey: "folder.deleteTrade", icon: normalizeSettingsIcon(deleteIcon) }
+  ];
   const languages: Array<{ code: AppLanguage; label: string; flag: string }> = [
     { code: "en", label: "English", flag: flagGB },
     { code: "es", label: "Español", flag: flagES },
@@ -55,6 +79,22 @@
 
   async function handleCompactActionsMenuChange(compactActionsMenu: boolean) {
     await settings.updateCompactActionsMenu(compactActionsMenu);
+  }
+
+  async function handleCompactTradeActionChange(actionId: BookmarkTradeActionId, checked: boolean) {
+    const nextActions = checked
+      ? [...$settings.compactBookmarkTradeActions, actionId]
+      : $settings.compactBookmarkTradeActions.filter((id) => id !== actionId);
+
+    await settings.updateCompactBookmarkTradeActions(
+      compactTradeActionOptions
+        .map((option) => option.id)
+        .filter((id) => nextActions.includes(id))
+    );
+  }
+
+  function handleCompactTradeActionInput(event: Event, actionId: BookmarkTradeActionId) {
+    handleCompactTradeActionChange(actionId, (event.currentTarget as HTMLInputElement).checked);
   }
 
   async function handleSidebarWidthReset() {
@@ -292,6 +332,41 @@
         onClick={() => handleCompactActionsMenuChange(true)}
       />
     </div>
+
+    {#if $settings.compactActionsMenu}
+      <div class="compact-options">
+        <div class="compact-options__heading">
+          <div class="compact-options__title">{translate($languageStore, "settings.compactTradeActionsTitle")}</div>
+          <div class="info-tooltip">
+            <button
+              type="button"
+              class="info-tooltip__trigger"
+              aria-label={translate($languageStore, "settings.compactTradeActionsDescription")}
+            >
+              i
+            </button>
+            <div class="info-tooltip__content">{translate($languageStore, "settings.compactTradeActionsDescription")}</div>
+          </div>
+        </div>
+        <div class="compact-options__grid">
+          {#each compactTradeActionOptions as option (option.id)}
+            <label
+              class="compact-option"
+              class:is-selected={$settings.compactBookmarkTradeActions.includes(option.id)}
+              title={translate($languageStore, option.labelKey)}
+            >
+              <input
+                type="checkbox"
+                checked={$settings.compactBookmarkTradeActions.includes(option.id)}
+                on:change={(event) => handleCompactTradeActionInput(event, option.id)}
+                aria-label={translate($languageStore, option.labelKey)}
+              />
+              <span class="compact-option__icon" aria-hidden="true">{@html option.icon}</span>
+            </label>
+          {/each}
+        </div>
+      </div>
+    {/if}
   </section>
 
 </div>
@@ -566,5 +641,85 @@
     transform: translateY(-4px);
     pointer-events: none;
     transition: opacity 0.16s ease, transform 0.16s ease;
+  }
+
+  .compact-options {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba($white, 0.08);
+  }
+
+  .compact-options__heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .compact-options__title {
+    font-family: $primary-font;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba($gold, 0.9);
+  }
+
+  .compact-options__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .compact-option {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba($white, 0.08);
+    border-radius: 4px;
+    background: rgba($black, 0.26);
+    cursor: pointer;
+    transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+
+    input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    &:hover {
+      border-color: rgba($gold, 0.34);
+      background: rgba($gold, 0.08);
+      transform: translateY(-1px);
+    }
+
+    &.is-selected {
+      border-color: rgba($gold, 0.38);
+      background: rgba(54, 42, 28, 0.96);
+      color: #e2b56e;
+    }
+  }
+
+  .compact-option__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    color: rgba($white, 0.84);
+  }
+
+  .compact-option__icon :global(.settings-option-svg) {
+    width: 15px;
+    height: 15px;
+    min-width: 15px;
+    min-height: 15px;
+    display: block;
+    overflow: visible;
+    stroke-width: 1.7;
   }
 </style>

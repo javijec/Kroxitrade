@@ -59,6 +59,10 @@ const translations = {
       "Choose a more compact layout for saved searches, with the league name and all actions grouped inside a three-dot menu.",
     "settings.compactActionsDefault": "Classic",
     "settings.compactActionsCompact": "Compact",
+    "settings.compactTradeActionsTitle": "Trade Actions Outside Menu",
+    "settings.compactTradeActionsDescription":
+      "Choose which saved-search actions stay visible in compact mode. If none are selected, only the three-dot menu is shown. If all or all but one are selected, every action stays visible.",
+    "settings.compactTradeActionToggle": "Complete / Pending",
     "about.eyebrow": "About",
     "about.description":
       "Poe Trade Plus is a companion for Path of Exile Trade built to save searches, organize folders, track history, and keep recurring trade workflows fast, visual, and easy to manage inside the official site.",
@@ -188,6 +192,10 @@ const translations = {
       "Elegí un diseño más compacto para las búsquedas guardadas, con el nombre de la liga y todas las acciones agrupadas dentro de un menú de tres puntos.",
     "settings.compactActionsDefault": "Clasico",
     "settings.compactActionsCompact": "Compacto",
+    "settings.compactTradeActionsTitle": "Acciones visibles fuera del menú",
+    "settings.compactTradeActionsDescription":
+      "Elegí qué acciones de cada búsqueda guardada quedan visibles en modo compacto. Si no seleccionás ninguna, solo se ven los tres puntos. Si seleccionás todas o todas menos una, se muestran todas.",
+    "settings.compactTradeActionToggle": "Completar / Pendiente",
     "about.eyebrow": "Acerca de",
     "about.description":
       "Poe Trade Plus es un complemento para Path of Exile Trade creado para guardar búsquedas, organizar carpetas, seguir el historial y hacer que los flujos de trade repetidos sean rápidos, visuales y fáciles de manejar dentro del sitio oficial.",
@@ -318,6 +326,10 @@ const portugueseTranslations: Record<string, TranslationValue> = {
     "Escolha um layout mais compacto para as buscas salvas, com o nome da liga e todas as ações agrupadas em um menu de três pontos.",
   "settings.compactActionsDefault": "Classico",
   "settings.compactActionsCompact": "Compacto",
+  "settings.compactTradeActionsTitle": "Ações visíveis fora do menu",
+  "settings.compactTradeActionsDescription":
+    "Escolha quais ações de cada busca salva continuam visíveis no modo compacto. Se nenhuma for selecionada, apenas o menu de três pontos aparece. Se todas ou todas menos uma forem selecionadas, todas ficam visíveis.",
+  "settings.compactTradeActionToggle": "Completa / Pendente",
   "about.eyebrow": "Sobre",
   "about.description":
     "Poe Trade Plus é um complemento para o Path of Exile Trade criado para salvar buscas, organizar pastas, acompanhar o histórico e manter fluxos de trade recorrentes rápidos, visuais e fáceis de gerenciar dentro do site oficial.",
@@ -441,6 +453,10 @@ const germanTranslations: Record<string, TranslationValue> = {
     "Wähle ein kompakteres Layout für gespeicherte Suchen, mit Ligaanzeige und allen Aktionen in einem Drei-Punkte-Menü.",
   "settings.compactActionsDefault": "Klassisch",
   "settings.compactActionsCompact": "Kompakt",
+  "settings.compactTradeActionsTitle": "Sichtbare Aktionen außerhalb des Menüs",
+  "settings.compactTradeActionsDescription":
+    "Wähle aus, welche Aktionen gespeicherter Suchen im kompakten Modus sichtbar bleiben. Wenn nichts ausgewählt ist, wird nur das Drei-Punkte-Menü angezeigt. Wenn alle oder alle bis auf eine ausgewählt sind, bleiben alle sichtbar.",
+  "settings.compactTradeActionToggle": "Abgeschlossen / Offen",
   "about.description":
     "Poe Trade Plus ist ein Begleiter für Path of Exile Trade, entwickelt zum Speichern von Suchen, Organisieren von Ordnern, Nachverfolgen des Verlaufs und für schnelle, übersichtliche wiederkehrende Handelsabläufe direkt auf der offiziellen Seite.",
   "about.version": ({ version }) =>
@@ -558,6 +574,10 @@ const frenchTranslations: Record<string, TranslationValue> = {
     "Choisissez une disposition plus compacte pour les recherches sauvegardées, avec le nom de la ligue et toutes les actions regroupées dans un menu a trois points.",
   "settings.compactActionsDefault": "Classique",
   "settings.compactActionsCompact": "Compact",
+  "settings.compactTradeActionsTitle": "Actions visibles hors du menu",
+  "settings.compactTradeActionsDescription":
+    "Choisissez quelles actions de chaque recherche sauvegardée restent visibles en mode compact. Si aucune n'est sélectionnée, seuls les trois points apparaissent. Si toutes ou toutes sauf une sont sélectionnées, toutes restent visibles.",
+  "settings.compactTradeActionToggle": "Terminée / En attente",
   "about.eyebrow": "À propos",
   "about.description":
     "Poe Trade Plus est un compagnon pour Path of Exile Trade conçu pour sauvegarder des recherches, organiser des dossiers, suivre l’historique et garder les routines de trade rapides, visuelles et faciles à gérer directement sur le site officiel.",
@@ -678,6 +698,10 @@ const russianTranslations: Record<string, TranslationValue> = {
     "Выберите более компактный вид для сохраненных поисков: название лиги и все действия будут собраны в меню из трех точек.",
   "settings.compactActionsDefault": "Классический",
   "settings.compactActionsCompact": "Компактный",
+  "settings.compactTradeActionsTitle": "Видимые действия вне меню",
+  "settings.compactTradeActionsDescription":
+    "Выберите, какие действия сохраненного поиска будут видны в компактном режиме. Если ничего не выбрано, отображается только меню из трех точек. Если выбраны все или все кроме одного, показываются все действия.",
+  "settings.compactTradeActionToggle": "Завершено / В ожидании",
   "about.eyebrow": "О проекте",
   "about.description":
     "Poe Trade Plus — это дополнение для торговли Path of Exile, созданное для сохранения поисков, организации папок, отслеживания истории и удобной работы с повторяющимися торговыми сценариями прямо на официальном сайте.",
@@ -792,6 +816,10 @@ const thaiTranslations: Record<string, TranslationValue> = {
     "เลือกเลย์เอาต์ที่กะทัดรัดยิ่งขึ้นสำหรับการค้นหาที่บันทึกไว้ โดยแสดงชื่อลีกและรวมการทำงานทั้งหมดไว้ในเมนูสามจุด",
   "settings.compactActionsDefault": "คลาสสิก",
   "settings.compactActionsCompact": "กะทัดรัด",
+  "settings.compactTradeActionsTitle": "การทำงานที่แสดงนอกเมนู",
+  "settings.compactTradeActionsDescription":
+    "เลือกว่าการทำงานใดของการค้นหาที่บันทึกไว้จะยังแสดงอยู่ในโหมดกะทัดรัด หากไม่เลือกเลยจะเห็นเฉพาะเมนูสามจุด หากเลือกทั้งหมดหรือทั้งหมดยกเว้นหนึ่งรายการ จะเห็นทั้งหมด",
+  "settings.compactTradeActionToggle": "เสร็จสิ้น / รอดำเนินการ",
   "about.eyebrow": "เกี่ยวกับ",
   "about.description":
     "Poe Trade Plus เป็นส่วนเสริมสำหรับ Path of Exile Trade ที่สร้างขึ้นเพื่อบันทึกการค้นหา จัดระเบียบโฟลเดอร์ ติดตามประวัติ และทำให้การซื้อขายที่ทำซ้ำบ่อยรวดเร็ว มองเห็นได้ง่าย และจัดการได้สะดวกภายในเว็บไซต์ทางการ",
@@ -911,6 +939,10 @@ const japaneseTranslations: Record<string, TranslationValue> = {
     "保存した検索をよりコンパクトに表示し、リーグ名とすべての操作を3点メニューにまとめます。",
   "settings.compactActionsDefault": "クラシック",
   "settings.compactActionsCompact": "コンパクト",
+  "settings.compactTradeActionsTitle": "メニュー外に表示する操作",
+  "settings.compactTradeActionsDescription":
+    "コンパクトモードで表示したままにする保存済み検索の操作を選択します。何も選ばない場合は3点メニューのみ表示されます。すべて、または1つを除いて選択した場合は、すべての操作が表示されます。",
+  "settings.compactTradeActionToggle": "完了 / 保留",
   "about.eyebrow": "概要",
   "about.description":
     "Poe Trade Plus は Path of Exile Trade 用の補助ツールで、検索の保存、フォルダー整理、履歴管理を行い、繰り返し使うトレード作業を公式サイト上で素早く見やすく簡単に管理できるようにします。",
@@ -1035,6 +1067,10 @@ const koreanTranslations: Record<string, TranslationValue> = {
     "저장된 검색을 더 간결하게 표시하고, 리그 이름과 모든 작업을 점 세 개 메뉴 안에 묶습니다.",
   "settings.compactActionsDefault": "기본형",
   "settings.compactActionsCompact": "컴팩트",
+  "settings.compactTradeActionsTitle": "메뉴 밖에 보일 작업",
+  "settings.compactTradeActionsDescription":
+    "컴팩트 모드에서 계속 보일 저장된 검색 작업을 선택하세요. 아무것도 선택하지 않으면 점 세 개 메뉴만 보입니다. 모두 선택하거나 하나만 제외하고 선택하면 모든 작업이 보입니다.",
+  "settings.compactTradeActionToggle": "완료 / 대기",
   "about.eyebrow": "정보",
   "about.description":
     "Poe Trade Plus는 Path of Exile Trade용 보조 도구로, 검색 저장, 폴더 정리, 기록 추적을 지원하며 반복적인 거래 작업을 공식 사이트 안에서 빠르고 보기 쉽게 관리할 수 있게 해줍니다.",

@@ -16,6 +16,7 @@
   export let primaryActionIds: ActionId[];
   export let compactMode = false;
   export let compactText = "";
+  export let compactVisibleActionIds: ActionId[] = [];
   export let dropdownLabel = "More";
   export let dropdownIcon: string;
   export let translate: ((key: string) => string) | undefined = undefined;
@@ -66,8 +67,24 @@
     document.removeEventListener("keydown", handleKeydown);
   });
 
+  $: compactVisibleActions = actions.filter((action) =>
+    compactVisibleActionIds.includes(action.id)
+  );
+  $: shouldShowAllCompactActions =
+    compactMode &&
+    compactVisibleActionIds.length > 0 &&
+    compactVisibleActions.length >= actions.length - 1;
   $: showAsCompact = compactMode && actions.length > 0;
-  $: dropdownActions = actions;
+  $: inlineActions = showAsCompact
+    ? shouldShowAllCompactActions
+      ? actions
+      : compactVisibleActions
+    : actions;
+  $: dropdownActions = showAsCompact
+    ? shouldShowAllCompactActions
+      ? []
+      : actions.filter((action) => !compactVisibleActionIds.includes(action.id))
+    : [];
 
   const getDisplayLabel = (action: typeof actions[0]) => {
     if (action.customLabel) return action.customLabel;
@@ -83,17 +100,32 @@
         <span class="actions-inline__text" title={compactText}>{compactText}</span>
       {/if}
 
-      <button
-        type="button"
-        class="btn btn--icon menu-trigger"
-        title={translate ? translate(dropdownLabel) : dropdownLabel}
-        aria-label={translate ? translate(dropdownLabel) : dropdownLabel}
-        aria-expanded={isOpen}
-        on:click|stopPropagation={toggleMenu}
-        bind:this={triggerRef}
-      >
-        <span class="btn__icon" aria-hidden="true">{@html normalizeIcon(dropdownIcon || "")}</span>
-      </button>
+      {#each inlineActions as action}
+        <button
+          type="button"
+          class="btn btn--icon"
+          class:btn--danger={action.danger}
+          title={getDisplayLabel(action)}
+          aria-label={getDisplayLabel(action)}
+          on:click|stopPropagation={action.handler}
+        >
+          <span class="btn__icon" aria-hidden="true">{@html normalizeIcon(action.icon)}</span>
+        </button>
+      {/each}
+
+      {#if dropdownActions.length > 0}
+        <button
+          type="button"
+          class="btn btn--icon menu-trigger"
+          title={translate ? translate(dropdownLabel) : dropdownLabel}
+          aria-label={translate ? translate(dropdownLabel) : dropdownLabel}
+          aria-expanded={isOpen}
+          on:click|stopPropagation={toggleMenu}
+          bind:this={triggerRef}
+        >
+          <span class="btn__icon" aria-hidden="true">{@html normalizeIcon(dropdownIcon || "")}</span>
+        </button>
+      {/if}
     </div>
 
   {:else}

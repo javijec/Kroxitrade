@@ -3,6 +3,7 @@ import { setLanguage, type AppLanguage } from './i18n';
 import { storageService } from './storage';
 
 export type SidebarSide = 'left' | 'right';
+export type BookmarkTradeActionId = 'edit' | 'replace' | 'copy' | 'toggle' | 'delete';
 
 export interface AppSettings {
   sidebarSide: SidebarSide;
@@ -11,6 +12,7 @@ export interface AppSettings {
   sidebarWidth: number;
   language: AppLanguage;
   compactActionsMenu: boolean;
+  compactBookmarkTradeActions: BookmarkTradeActionId[];
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -19,7 +21,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   showBulkSellers: false,
   sidebarWidth: 360,
   language: 'en',
-  compactActionsMenu: false
+  compactActionsMenu: false,
+  compactBookmarkTradeActions: []
 };
 
 let currentSettings: AppSettings = DEFAULT_SETTINGS;
@@ -88,6 +91,13 @@ export const settings = {
   async updateCompactActionsMenu(compactActionsMenu: boolean) {
     update(s => {
       const next = { ...s, compactActionsMenu };
+      save(next);
+      return next;
+    });
+  },
+  async updateCompactBookmarkTradeActions(compactBookmarkTradeActions: BookmarkTradeActionId[]) {
+    update(s => {
+      const next = { ...s, compactBookmarkTradeActions };
       save(next);
       return next;
     });
