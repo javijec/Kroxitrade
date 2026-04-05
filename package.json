@@ -1,7 +1,7 @@
 {
   "name": "poe-trade-plus",
   "displayName": "Poe Trade Plus",
-  "version": "1.0.60",
+  "version": "1.0.64",
   "license": "MIT",
   "description": "Poe Trade Plus enhances the Path of Exile trade site with bookmarks, history and result tools.",
   "author": "KroxiLabs",
@@ -12,11 +12,13 @@
   "scripts": {
     "dev": "plasmo dev",
     "build:chrome": "plasmo build",
-    "build:firefox": "plasmo build --target=firefox-mv2",
+    "build:firefox": "plasmo build --target=firefox-mv3",
     "build": "npm run build:chrome && npm run build:firefox",
     "version:bump": "node scripts/bump-version.cjs",
     "archive:chrome": "node scripts/archive-build.cjs",
-    "archive:firefox": "node scripts/archive-build.cjs firefox-mv2-prod",
+    "archive:firefox": "node scripts/archive-build.cjs firefox-mv3-prod",
+    "package:chrome": "npm run build:chrome && npm run archive:chrome",
+    "package:firefox": "npm run build:firefox && npm run archive:firefox",
     "package": "npm run version:bump && npm run package:chrome && npm run package:firefox"
   },
   "dependencies": {
@@ -44,6 +46,16 @@
       "storage",
       "tabs"
     ],
+    "browser_specific_settings": {
+      "gecko": {
+        "id": "poe-trade-plus@kroxilabs.com",
+        "data_collection_permissions": {
+          "required": [
+            "none"
+          ]
+        }
+      }
+    },
     "host_permissions": [
       "https://www.pathofexile.com/*",
       "https://br.pathofexile.com/*",

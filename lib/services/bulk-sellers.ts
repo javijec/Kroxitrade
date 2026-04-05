@@ -10,6 +10,13 @@ export class BulkSellersService {
   private observer: MutationObserver | null = null;
   private observerTimer: ReturnType<typeof setTimeout> | null = null;
   private initialized = false;
+  private readonly postSearchRefreshDelays = [80, 220, 500, 900];
+  private searchRefreshTimers: number[] = [];
+  private readonly handleDocumentClick = (event: MouseEvent) => {
+    const target = event.target as Element | null;
+    if (!target?.closest(".btn.search-btn")) return;
+    this.schedulePostSearchRefresh();
+  };
 
   initialize() {
     if (this.initialized || typeof window === "undefined" || window.location.protocol === "chrome-extension:") {
@@ -19,6 +26,7 @@ export class BulkSellersService {
     this.initialized = true;
     this.startObserving();
     this.refresh();
+    document.addEventListener("click", this.handleDocumentClick, true);
   }
 
   teardown() {
@@ -27,8 +35,11 @@ export class BulkSellersService {
       clearTimeout(this.observerTimer);
       this.observerTimer = null;
     }
+    this.searchRefreshTimers.forEach((timer) => window.clearTimeout(timer));
+    this.searchRefreshTimers = [];
     this.observer?.disconnect();
     this.observer = null;
+    document.removeEventListener("click", this.handleDocumentClick, true);
     this.groupsStore.set([]);
   }
 
@@ -66,6 +77,13 @@ export class BulkSellersService {
     });
 
     this.observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  private schedulePostSearchRefresh() {
+    this.searchRefreshTimers.forEach((timer) => window.clearTimeout(timer));
+    this.searchRefreshTimers = this.postSearchRefreshDelays.map((delay) =>
+      window.setTimeout(() => this.refresh(), delay)
+    );
   }
 
   private collectGroups() {

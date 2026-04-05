@@ -135,11 +135,26 @@ if (process.platform === "win32") {
   const escapeForSingleQuotedPs = (value) => value.replace(/'/g, "''")
 
   const psScript = [
+    "Add-Type -AssemblyName System.IO.Compression",
     "Add-Type -AssemblyName System.IO.Compression.FileSystem",
     `$source = '${escapeForSingleQuotedPs(prodDir)}'`,
     `$destination = '${escapeForSingleQuotedPs(zipPath)}'`,
     "if (Test-Path $destination) { Remove-Item $destination -Force }",
-    "[System.IO.Compression.ZipFile]::CreateFromDirectory($source, $destination)"
+    "$files = Get-ChildItem -LiteralPath $source -Recurse -File",
+    "$sourceRoot = [System.IO.Path]::GetFullPath($source)",
+    "if (-not $sourceRoot.EndsWith([System.IO.Path]::DirectorySeparatorChar)) { $sourceRoot += [System.IO.Path]::DirectorySeparatorChar }",
+    "$sourceUri = New-Object System.Uri($sourceRoot)",
+    "$zip = [System.IO.Compression.ZipFile]::Open($destination, [System.IO.Compression.ZipArchiveMode]::Create)",
+    "try {",
+    "  foreach ($file in $files) {",
+    "    $fileUri = New-Object System.Uri($file.FullName)",
+    "    $relativePath = [System.Uri]::UnescapeDataString($sourceUri.MakeRelativeUri($fileUri).ToString())",
+    "    $entryName = $relativePath -replace '\\\\', '/'",
+    "    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $entryName) | Out-Null",
+    "  }",
+    "} finally {",
+    "  $zip.Dispose()",
+    "}"
   ].join("; ")
 
   result = runArchive("powershell", ["-NoProfile", "-Command", psScript])
