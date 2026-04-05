@@ -1,4 +1,9 @@
 <script lang="ts">
+  import bookmarkIcon from "data-text:lucide-static/icons/bookmark.svg";
+  import clockIcon from "data-text:lucide-static/icons/history.svg";
+  import infoIcon from "data-text:lucide-static/icons/info.svg";
+  import layersIcon from "data-text:lucide-static/icons/layers-3.svg";
+  import settingsIcon from "data-text:lucide-static/icons/settings-2.svg";
   import Header from "./Header.svelte";
   import Bookmarks from "./pages/Bookmarks.svelte";
   import BulkSellers from "./pages/BulkSellers.svelte";
@@ -9,35 +14,68 @@
   import logoUrl from "data-base64:~assets/logo.webp";
   import { flashMessages } from "../lib/services/flash";
   import { languageStore, translate } from "../lib/services/i18n";
-  import { layoutNavItems, type LayoutPage } from "../lib/services/layout-navigation";
-  import {
-    clampSidebarWidth,
-    getExpandedSidebarWidth,
-    getMinimizedStorageKey,
-    getRenderedSidebarWidth,
-    getResizeWidthFromPointer,
-    loadMinimizedState,
-    persistMinimizedState,
-    syncSidebarDomState
-  } from "../lib/services/layout-sidebar";
   import { settings } from "../lib/services/settings";
   import { storageService } from "../lib/services/storage";
   import { tradeLocationService } from "../lib/services/trade-location";
   import { onDestroy, onMount } from "svelte";
+  
+  const MINIMIZED_STORAGE_KEY = "layout-minimized";
 
-  let currentPage: LayoutPage = 'bookmarks';
+  let currentPage: 'bookmarks' | 'bulk' | 'history' | 'about' | 'settings' = 'bookmarks';
   let isMinimized = false;
   let isResizing = false;
   let liveSidebarWidth: number | null = null;
   let loadedMinimizedStateKey: string | null = null;
 
+  const MIN_SIDEBAR_WIDTH = 300;
+  const MAX_SIDEBAR_WIDTH = 560;
+  const MINIMIZED_WIDTH = 0;
+
+  const clampSidebarWidth = (value: number) =>
+    Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, Math.round(value)));
+
+  const getExpandedSidebarWidth = () => clampSidebarWidth($settings.sidebarWidth || 450);
+  const getRenderedSidebarWidth = () => clampSidebarWidth(liveSidebarWidth ?? getExpandedSidebarWidth());
+  const normalizeNavIcon = (svg: string) =>
+    svg
+      .replace(/<svg\b([^>]*)>/, (_match, attrs) => {
+        const cleaned = attrs
+          .replace(/\s(width|height|stroke-width|class|aria-hidden)="[^"]*"/g, "")
+          .trim();
+        const nextAttrs = cleaned ? `${cleaned} ` : "";
+        return `<svg ${nextAttrs} viewBox="-2 -2 28 28" class="nav-svg" aria-hidden="true">`;
+      })
+      .replace(/stroke-width="[^"]*"/g, 'stroke-width="1.75"');
+
+  const navIcons = {
+    bookmarks: normalizeNavIcon(bookmarkIcon),
+    bulk: normalizeNavIcon(layersIcon),
+    history: normalizeNavIcon(clockIcon),
+    settings: normalizeNavIcon(settingsIcon),
+    about: normalizeNavIcon(infoIcon)
+  };
+
   const toggleMinimize = () => {
     isMinimized = !isMinimized;
   };
 
-  const syncMinimizedStateFromStorage = (storageKey: string) => {
-    isMinimized = loadMinimizedState(storageService.getLocalValue, storageKey);
+  const loadMinimizedState = (storageKey: string) => {
+    isMinimized = storageService.getLocalValue(storageKey) === "true";
     loadedMinimizedStateKey = storageKey;
+  };
+
+  const persistMinimizedState = (storageKey: string, minimized: boolean) => {
+    storageService.setLocalValue(storageKey, minimized ? "true" : "false");
+  };
+
+  const updateSidebarWidthCssVar = () => {
+    if (typeof document === 'undefined') return;
+
+    const root = document.documentElement;
+    root.style.setProperty(
+      '--bt-sidebar-width',
+      isMinimized ? `${MINIMIZED_WIDTH}px` : `${getRenderedSidebarWidth()}px`
+    );
   };
 
   const stopResize = async () => {
@@ -55,9 +93,11 @@
   const handleResizeMove = (event: MouseEvent) => {
     if (!isResizing || isMinimized) return;
 
-    const clampedWidth = clampSidebarWidth(
-      getResizeWidthFromPointer(event.clientX, window.innerWidth, $settings.sidebarSide)
-    );
+    const nextWidth = $settings.sidebarSide === 'right'
+      ? window.innerWidth - event.clientX
+      : event.clientX;
+
+    const clampedWidth = clampSidebarWidth(nextWidth);
     liveSidebarWidth = clampedWidth;
     document.documentElement.style.setProperty('--bt-sidebar-width', `${clampedWidth}px`);
   };
@@ -67,7 +107,7 @@
 
     event.preventDefault();
     isResizing = true;
-    liveSidebarWidth = getExpandedSidebarWidth($settings.sidebarWidth);
+    liveSidebarWidth = getExpandedSidebarWidth();
     document.body.style.userSelect = 'none';
     document.body.style.cursor = 'col-resize';
   };
@@ -96,22 +136,41 @@
   }
 
   $: currentLocation = tradeLocationService.locationStore;
-  $: minimizedStorageKey = getMinimizedStorageKey($currentLocation.version);
+  $: minimizedStorageKey = `${MINIMIZED_STORAGE_KEY}-${$currentLocation.version}`;
   $: if (minimizedStorageKey && loadedMinimizedStateKey !== minimizedStorageKey) {
-    syncMinimizedStateFromStorage(minimizedStorageKey);
+    loadMinimizedState(minimizedStorageKey);
   }
   $: if (loadedMinimizedStateKey === minimizedStorageKey) {
-    persistMinimizedState(storageService.setLocalValue, minimizedStorageKey, isMinimized);
+    persistMinimizedState(minimizedStorageKey, isMinimized);
   }
 
   $: {
     if (typeof document !== 'undefined') {
-      syncSidebarDomState({
-        documentRef: document,
-        sidebarSide: $settings.sidebarSide,
-        isMinimized,
-        isResizing,
-        renderedWidth: getRenderedSidebarWidth(liveSidebarWidth, $settings.sidebarWidth)
+      const isRight = $settings.sidebarSide === 'right';
+      
+      updateSidebarWidthCssVar();
+
+      // Add classes to body and root to help site adjustments
+      document.body.classList.toggle('is-side-right', isRight);
+      document.body.classList.toggle('is-side-left', !isRight);
+      document.documentElement.classList.toggle('bt-side-right', isRight);
+      document.body.classList.toggle('bt-sidebar-minimized', isMinimized);
+      document.documentElement.classList.toggle('bt-sidebar-minimized', isMinimized);
+      document.body.classList.toggle('bt-is-resizing-sidebar', isResizing);
+
+      // Target all possible plasmo host containers and apply direct styles for extra robustness
+      const hosts = document.querySelectorAll('plasmo-csui, #plasmo-shadow-container');
+      hosts.forEach((h: any) => {
+        h.classList.toggle('is-side-right', isRight);
+        h.classList.toggle('is-side-left', !isRight);
+        
+        if (isRight) {
+          h.style.setProperty('left', 'auto', 'important');
+          h.style.setProperty('right', '0', 'important');
+        } else {
+          h.style.setProperty('left', '0', 'important');
+          h.style.setProperty('right', 'auto', 'important');
+        }
       });
     }
   }
@@ -135,23 +194,48 @@
   <Header {logoUrl} {isMinimized} onToggleMinimize={toggleMinimize} sidebarSide={$settings.sidebarSide} />
   
   <nav class="main-nav">
-    {#each layoutNavItems as item (item.id)}
-      {#if item.id !== 'bulk' || $settings.showBulkSellers}
-        {#if item.id !== 'history' || $settings.showHistory}
-          <button 
-              class="nav-item {item.iconOnly ? 'nav-item--icon-only' : ''} {currentPage === item.id ? 'is-active' : ''}" 
-              title={item.iconOnly ? translate($languageStore, item.labelKey) : undefined}
-              aria-label={translate($languageStore, item.labelKey)}
-              on:click={() => currentPage = item.id}
-          >
-              <span class="nav-item__icon" aria-hidden="true">{@html item.icon}</span>
-              {#if !item.iconOnly}
-                <span class="nav-item__label">{translate($languageStore, item.labelKey)}</span>
-              {/if}
-          </button>
-        {/if}
-      {/if}
-    {/each}
+    <button 
+        class="nav-item {currentPage === 'bookmarks' ? 'is-active' : ''}" 
+        on:click={() => currentPage = 'bookmarks'}
+    >
+        <span class="nav-item__icon" aria-hidden="true">{@html navIcons.bookmarks}</span>
+        <span class="nav-item__label">{translate($languageStore, "layout.nav.bookmarks")}</span>
+    </button>
+
+    {#if $settings.showBulkSellers}
+      <button 
+          class="nav-item {currentPage === 'bulk' ? 'is-active' : ''}" 
+          on:click={() => currentPage = 'bulk'}
+      >
+          <span class="nav-item__icon" aria-hidden="true">{@html navIcons.bulk}</span>
+          <span class="nav-item__label">{translate($languageStore, "layout.nav.bulk")}</span>
+      </button>
+    {/if}
+
+    {#if $settings.showHistory}
+      <button 
+          class="nav-item {currentPage === 'history' ? 'is-active' : ''}" 
+          on:click={() => currentPage = 'history'}
+      >
+          <span class="nav-item__icon" aria-hidden="true">{@html navIcons.history}</span>
+          <span class="nav-item__label">{translate($languageStore, "layout.nav.history")}</span>
+      </button>
+    {/if}
+    <button 
+        class="nav-item {currentPage === 'settings' ? 'is-active' : ''}" 
+        on:click={() => currentPage = 'settings'}
+    >
+        <span class="nav-item__icon" aria-hidden="true">{@html navIcons.settings}</span>
+        <span class="nav-item__label">{translate($languageStore, "layout.nav.settings")}</span>
+    </button>
+    <button 
+        class="nav-item nav-item--icon-only {currentPage === 'about' ? 'is-active' : ''}" 
+        title={translate($languageStore, "layout.nav.about")}
+        aria-label={translate($languageStore, "layout.nav.about")}
+        on:click={() => currentPage = 'about'}
+    >
+        <span class="nav-item__icon" aria-hidden="true">{@html navIcons.about}</span>
+    </button>
   </nav>
 
   <div class="flash-messages">
