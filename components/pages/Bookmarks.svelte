@@ -21,6 +21,21 @@
 
   const EXPANDED_FOLDERS_STORAGE_KEY = "bookmark-folders-expanded";
 
+  export let tutorialStep:
+    | "create-folder"
+    | "save-search"
+    | "history"
+    | "settings-tutorial"
+    | "settings-sidebar"
+    | "settings-language"
+    | "settings-equivalent"
+    | "settings-bulk"
+    | "settings-history"
+    | "settings-filters"
+    | "settings-bookmarks"
+    | null = null;
+  export let tutorialFolderId: string | null = null;
+
   let expandedFolderIds: string[] = [];
   let isLoading = false;
   let showArchived = false;
@@ -40,11 +55,17 @@
   });
   $: expandedFoldersStorageKey = `${EXPANDED_FOLDERS_STORAGE_KEY}-${$currentLocation.version}`;
   $: validFolderIds = new Set($bookmarksService.map((folder) => folder.id).filter(Boolean));
+  $: tutorialTargetFolderId = tutorialStep === "save-search"
+    ? tutorialFolderId || displayedFolders[0]?.id || null
+    : null;
   $: {
     const nextExpandedFolderIds = expandedFolderIds.filter((id) => validFolderIds.has(id));
     if (nextExpandedFolderIds.length !== expandedFolderIds.length) {
       expandedFolderIds = nextExpandedFolderIds;
     }
+  }
+  $: if (tutorialTargetFolderId && !expandedFolderIds.includes(tutorialTargetFolderId)) {
+    expandedFolderIds = [...expandedFolderIds, tutorialTargetFolderId];
   }
   $: if (expandedFoldersStorageKey && loadedExpandedStateKey !== expandedFoldersStorageKey) {
     loadExpandedState(expandedFoldersStorageKey);
@@ -236,11 +257,11 @@
   };
 </script>
 
-<div class="bookmarks-page">
+<div class="bookmarks-page" data-tutorial="bookmarks-panel">
   <section class="toolbar-panel">
     <div class="toolbar-row">
       <div class="toolbar-actions">
-        <button class="toolbar-button" type="button" title={translate($languageStore, "bookmarks.toolbar.newFolderTitle")} aria-label={translate($languageStore, "bookmarks.toolbar.newFolderTitle")} on:click={createFolder}>
+        <button class="toolbar-button" data-tutorial="new-folder" type="button" title={translate($languageStore, "bookmarks.toolbar.newFolderTitle")} aria-label={translate($languageStore, "bookmarks.toolbar.newFolderTitle")} on:click={createFolder}>
           <span class="toolbar-icon" aria-hidden="true">{@html toolbarIcons.newFolder}</span>
           <span class="toolbar-label">{translate($languageStore, "bookmarks.toolbar.new")}</span>
         </button>
@@ -298,6 +319,7 @@
           <BookmarkFolder 
               {folder} 
               {expandedFolderIds} 
+              isTutorialSaveTarget={tutorialStep === "save-search" && folder.id === tutorialTargetFolderId}
               onToggleExpansion={toggleExpansion}
               onArchiveEvent={() => toggleArchive(folder)}
                onDeleteEvent={() => requestFolderDelete(folder)}

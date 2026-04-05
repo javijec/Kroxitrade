@@ -19,6 +19,8 @@
   import toggleIcon from "data-text:lucide-static/icons/check.svg";
   import deleteIcon from "data-text:lucide-static/icons/trash-2.svg";
 
+  export let onOpenTutorial: () => void = () => {};
+
   const DEFAULT_SIDEBAR_WIDTH = 450;
   const normalizeSettingsIcon = (svg: string) =>
     svg.replace(/<svg\b([^>]*)>/, (_match, attrs) => {
@@ -162,7 +164,32 @@
 </script>
 
 <div class="settings-page">
-  <section class="settings-section">
+  <section class="settings-section" data-tutorial="settings-tutorial">
+    <div class="section-heading">
+      <h3 class="section-title">{translate($languageStore, "settings.onboardingTitle")}</h3>
+      <div class="info-tooltip">
+        <button
+          type="button"
+          class="info-tooltip__trigger"
+          aria-label={translate($languageStore, "settings.onboardingDescription")}
+        >
+          i
+        </button>
+        <div class="info-tooltip__content">{translate($languageStore, "settings.onboardingDescription")}</div>
+      </div>
+    </div>
+
+    <div class="side-selector">
+      <Button
+        label={translate($languageStore, "settings.reopenTutorial")}
+        theme="gold"
+        class="side-btn"
+        onClick={onOpenTutorial}
+      />
+    </div>
+  </section>
+
+  <section class="settings-section" data-tutorial="settings-sidebar">
     <div class="section-heading">
       <h3 class="section-title">{translate($languageStore, "settings.sidebarTitle")}</h3>
       <div class="info-tooltip">
@@ -199,7 +226,7 @@
     </div>
   </section>
 
-  <section class="settings-section">
+  <section class="settings-section" data-tutorial="settings-language">
     <div class="section-heading">
       <h3 class="section-title">{translate($languageStore, "settings.languageTitle")}</h3>
       <div class="info-tooltip">
@@ -255,7 +282,7 @@
     </div>
   </section>
 
-  <section class="settings-section">
+  <section class="settings-section" data-tutorial="settings-equivalent">
     <div class="settings-inline-row">
       <div class="section-heading section-heading--inline">
         <h3 class="section-title">{translate($languageStore, "settings.equivalentTitle")}</h3>
@@ -287,7 +314,7 @@
     </div>
   </section>
 
-  <section class="settings-section">
+  <section class="settings-section" data-tutorial="settings-bulk">
     <div class="settings-inline-row">
       <div class="section-heading section-heading--inline">
         <h3 class="section-title">{translate($languageStore, "settings.bulkTitle")}</h3>
@@ -319,7 +346,7 @@
     </div>
   </section>
 
-  <section class="settings-section">
+  <section class="settings-section" data-tutorial="settings-history">
     <div class="settings-inline-row">
       <div class="section-heading section-heading--inline">
         <h3 class="section-title">{translate($languageStore, "settings.historyTitle")}</h3>
@@ -351,7 +378,7 @@
     </div>
   </section>
 
-  <section class="settings-section">
+  <section class="settings-section" data-tutorial="settings-filters">
     <div class="settings-inline-row">
       <div class="section-heading section-heading--inline">
         <h3 class="section-title">{translate($languageStore, "settings.finerFiltersTitle")}</h3>
@@ -383,7 +410,7 @@
     </div>
   </section>
 
-  <section class="settings-section">
+  <section class="settings-section" data-tutorial="settings-bookmarks">
     <div class="section-heading">
       <h3 class="section-title">{translate($languageStore, "settings.compactActionsTitle")}</h3>
       <div class="info-tooltip">

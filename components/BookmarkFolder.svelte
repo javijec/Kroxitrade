@@ -44,6 +44,7 @@
   export let onFolderDragEnd: () => void = () => {}
   export let isFolderDragging = false
   export let isFolderDragOver = false
+  export let isTutorialSaveTarget = false
 
   let trades: BookmarksTradeStruct[] = []
   let isLoading = false
@@ -522,10 +523,14 @@
           {/each}
         </ul>
         <div class="footer-actions">
-          <Button
-            label={translate($languageStore, "folder.saveCurrentSearch")}
-            theme="gold"
-            onClick={createTradeFromCurrent} />
+          <div
+            class="save-search-anchor"
+            data-tutorial={isTutorialSaveTarget ? "save-search" : undefined}>
+            <Button
+              label={translate($languageStore, "folder.saveCurrentSearch")}
+              theme="gold"
+              onClick={createTradeFromCurrent} />
+          </div>
         </div>
       </LoadingContainer>
     </div>
@@ -927,5 +932,10 @@
   .footer-actions {
     padding: 0 10px 10px;
     display: flex;
+  }
+
+  .save-search-anchor {
+    display: flex;
+    width: 100%;
   }
 </style>

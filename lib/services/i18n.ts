@@ -29,6 +29,132 @@ const translations = {
     "layout.removeAlert": "Remove alert",
     "layout.resizeSidebar": "Resize sidebar",
     "layout.restorePanel": "Restore Poe Trade Plus Panel",
+    "welcome.title": "Welcome to Poe Trade Plus",
+    "welcome.message":
+      "Choose the language you want to use for the extension before you start.",
+    "welcome.languageLabel": "Interface language",
+    "welcome.continue": "Continue",
+    "onboarding.badge": "Quick Tour",
+    "onboarding.title": "Welcome to Poe Trade Plus",
+    "onboarding.subtitle":
+      "Follow these steps in order and the guide will point at the exact place to click.",
+    "onboarding.stepCounter": ({ current, total }) => `Step ${current} of ${total}`,
+    "onboarding.step1Eyebrow": "Bookmarks",
+    "onboarding.step1Title": "Create your first folder",
+    "onboarding.step1Body":
+      "Start here. This button creates the folder where your saved searches will live.",
+    "onboarding.step1Highlight1":
+      "Stay on the Bookmarks tab.",
+    "onboarding.step1Highlight2":
+      "Click New Folder once to create a category.",
+    "onboarding.step1Highlight3":
+      "The new folder will appear below this toolbar.",
+    "onboarding.step2Eyebrow": "Bookmarks",
+    "onboarding.step2Title": "Save the current search into that folder",
+    "onboarding.step2Body":
+      "This action turns the trade page you are viewing right now into a saved bookmark.",
+    "onboarding.step2Highlight1":
+      "Open the folder you want to use if it is collapsed.",
+    "onboarding.step2Highlight2":
+      "Go to the bottom area inside that folder.",
+    "onboarding.step2Highlight3":
+      "Click Save current search while you are on the trade query you want to keep.",
+    "onboarding.step3Eyebrow": "History",
+    "onboarding.step3Title": "Find your recent searches",
+    "onboarding.step3Body":
+      "This tab is for searches you opened recently, even if you did not save them as bookmarks.",
+    "onboarding.step3Highlight1":
+      "Click the History tab in the top navigation.",
+    "onboarding.step3Highlight2":
+      "Use it to reopen recent searches quickly.",
+    "onboarding.step3Highlight3":
+      "If you want to keep one permanently, save it later from Bookmarks.",
+    "onboarding.step4Eyebrow": "Settings",
+    "onboarding.step4Title": "Reopen the guide from here",
+    "onboarding.step4Body":
+      "This first settings block is just for the tutorial itself.",
+    "onboarding.step4Highlight1":
+      "Use Open Tutorial whenever you want to run this guide again.",
+    "onboarding.step4Highlight2":
+      "It is useful after updates or when you want to revisit a feature.",
+    "onboarding.step4Highlight3":
+      "The next steps will mark the rest of the settings one by one.",
+    "onboarding.step5Eyebrow": "Settings",
+    "onboarding.step5Title": "Sidebar Position",
+    "onboarding.step5Body":
+      "These controls change where the extension lives on the screen and how wide it starts.",
+    "onboarding.step5Highlight1":
+      "Left moves the panel to the left side of the trade site.",
+    "onboarding.step5Highlight2":
+      "Right moves it to the right side.",
+    "onboarding.step5Highlight3":
+      "Reset Width restores the default sidebar width if you resized it.",
+    "onboarding.step6Eyebrow": "Settings",
+    "onboarding.step6Title": "Language",
+    "onboarding.step6Body":
+      "This section changes the language used by the extension interface.",
+    "onboarding.step6Highlight1":
+      "Open the selector to see every available language.",
+    "onboarding.step6Highlight2":
+      "The flag and labels show the current choice.",
+    "onboarding.step6Highlight3":
+      "Changing this updates the extension text across the panel.",
+    "onboarding.step7Eyebrow": "Settings",
+    "onboarding.step7Title": "Equivalent Pricing",
+    "onboarding.step7Body":
+      "This toggle controls the extra line that converts listed prices into chaos or divine equivalents.",
+    "onboarding.step7Highlight1":
+      "Turn it on if you want quick conversion help in results.",
+    "onboarding.step7Highlight2":
+      "Turn it off if you prefer a cleaner trade list.",
+    "onboarding.step7Highlight3":
+      "It only affects how prices are shown, not the search itself.",
+    "onboarding.step8Eyebrow": "Settings",
+    "onboarding.step8Title": "Bulk Sellers",
+    "onboarding.step8Body":
+      "This toggle shows or hides the Bulk tab.",
+    "onboarding.step8Highlight1":
+      "Enable it if you want grouped repeated sellers from the current results.",
+    "onboarding.step8Highlight2":
+      "Disable it if you do not use the Bulk helper often.",
+    "onboarding.step8Highlight3":
+      "When hidden, the Bulk tab disappears from the top navigation.",
+    "onboarding.step9Eyebrow": "Settings",
+    "onboarding.step9Title": "History",
+    "onboarding.step9Body":
+      "This toggle shows or hides the History tab.",
+    "onboarding.step9Highlight1":
+      "Enable it if you want fast access to recent searches.",
+    "onboarding.step9Highlight2":
+      "Disable it if you only use saved bookmarks.",
+    "onboarding.step9Highlight3":
+      "When hidden, the History tab is removed from the navigation.",
+    "onboarding.step10Eyebrow": "Settings",
+    "onboarding.step10Title": "Add To Filters",
+    "onboarding.step10Body":
+      "This toggle controls the helper panel that adds found modifiers directly into the search filters.",
+    "onboarding.step10Highlight1":
+      "Enable it to keep the Add To Filters helper visible.",
+    "onboarding.step10Highlight2":
+      "Disable it if you want a simpler sidebar.",
+    "onboarding.step10Highlight3":
+      "It affects the helper panel at the bottom of the extension.",
+    "onboarding.step11Eyebrow": "Settings",
+    "onboarding.step11Title": "Bookmark Layout",
+    "onboarding.step11Body":
+      "These controls change how saved searches and their action buttons are displayed in bookmarks.",
+    "onboarding.step11Highlight1":
+      "Classic keeps the fuller bookmark layout.",
+    "onboarding.step11Highlight2":
+      "Compact moves actions into a tighter layout with a three-dot menu.",
+    "onboarding.step11Highlight3":
+      "If Compact is enabled, the extra options below choose which actions stay visible.",
+    "onboarding.sampleFolder": "Tutorial Folder",
+    "onboarding.sampleTrade": "Example Bookmark",
+    "onboarding.back": "Back",
+    "onboarding.next": "Next",
+    "onboarding.skip": "Skip",
+    "onboarding.finish": "Start using it",
     "popup.description":
       "Poe Trade Plus adds faster navigation and trading helpers to the official Path of Exile trade site.",
     "popup.trade1": "PoE 1 Trade",
@@ -46,6 +172,10 @@ const translations = {
       "Choose the language used by the extension interface.",
     "settings.languageEnglish": "English",
     "settings.languageSpanish": "Spanish",
+    "settings.onboardingTitle": "Tutorial",
+    "settings.onboardingDescription":
+      "Open the quick onboarding again to review the main actions and tabs.",
+    "settings.reopenTutorial": "Open Tutorial",
     "settings.equivalentTitle": "Equivalent Pricing",
     "settings.equivalentDescription":
       "Show or hide the extra chaos/divine equivalent line in trade results.",
@@ -179,6 +309,132 @@ const translations = {
     "layout.removeAlert": "Quitar alerta",
     "layout.resizeSidebar": "Redimensionar panel",
     "layout.restorePanel": "Restaurar panel de Poe Trade Plus",
+    "welcome.title": "Bienvenido a Poe Trade Plus",
+    "welcome.message":
+      "Elegí el idioma que querés usar para la extensión antes de empezar.",
+    "welcome.languageLabel": "Idioma de la interfaz",
+    "welcome.continue": "Continuar",
+    "onboarding.badge": "Recorrido rápido",
+    "onboarding.title": "Bienvenido a Poe Trade Plus",
+    "onboarding.subtitle":
+      "Seguí estos pasos en orden y la guía te va a señalar exactamente dónde hacer clic.",
+    "onboarding.stepCounter": ({ current, total }) => `Paso ${current} de ${total}`,
+    "onboarding.step1Eyebrow": "Favoritos",
+    "onboarding.step1Title": "Creá tu primera carpeta",
+    "onboarding.step1Body":
+      "Empezá por acá. Este botón crea la carpeta donde vas a guardar tus búsquedas.",
+    "onboarding.step1Highlight1":
+      "Quedate en la pestaña Favoritos.",
+    "onboarding.step1Highlight2":
+      "Hacé clic en Nueva carpeta una vez para crear una categoría.",
+    "onboarding.step1Highlight3":
+      "La carpeta nueva va a aparecer debajo de esta barra.",
+    "onboarding.step2Eyebrow": "Favoritos",
+    "onboarding.step2Title": "Guardá la búsqueda actual dentro de esa carpeta",
+    "onboarding.step2Body":
+      "Esta acción convierte la búsqueda de trade que estás viendo ahora en un bookmark guardado.",
+    "onboarding.step2Highlight1":
+      "Abrí la carpeta que quieras usar si está cerrada.",
+    "onboarding.step2Highlight2":
+      "Andá a la parte de abajo dentro de esa carpeta.",
+    "onboarding.step2Highlight3":
+      "Hacé clic en Guardar búsqueda actual mientras estás parado en la búsqueda que querés conservar.",
+    "onboarding.step3Eyebrow": "Historial",
+    "onboarding.step3Title": "Encontrá tus búsquedas recientes",
+    "onboarding.step3Body":
+      "Esta pestaña sirve para volver rápido a búsquedas que abriste hace poco, aunque no las hayas guardado.",
+    "onboarding.step3Highlight1":
+      "Hacé clic en la pestaña Historial de la navegación superior.",
+    "onboarding.step3Highlight2":
+      "Usala para reabrir búsquedas recientes sin armarlas de nuevo.",
+    "onboarding.step3Highlight3":
+      "Si querés conservar una para siempre, después guardala desde Favoritos.",
+    "onboarding.step4Eyebrow": "Ajustes",
+    "onboarding.step4Title": "Volvé a abrir la guía desde acá",
+    "onboarding.step4Body":
+      "Este primer bloque de ajustes es sólo para el tutorial.",
+    "onboarding.step4Highlight1":
+      "Usá Abrir tutorial cuando quieras volver a recorrer esta guía.",
+    "onboarding.step4Highlight2":
+      "Sirve después de cambios o cuando querés repasar una función.",
+    "onboarding.step4Highlight3":
+      "En los siguientes pasos te voy marcando el resto de los ajustes uno por uno.",
+    "onboarding.step5Eyebrow": "Ajustes",
+    "onboarding.step5Title": "Posición del panel",
+    "onboarding.step5Body":
+      "Estos controles cambian en qué lado de la pantalla vive la extensión y con qué ancho arranca.",
+    "onboarding.step5Highlight1":
+      "Izquierda mueve el panel al lado izquierdo del sitio de trade.",
+    "onboarding.step5Highlight2":
+      "Derecha lo mueve al lado derecho.",
+    "onboarding.step5Highlight3":
+      "Restablecer ancho vuelve al ancho por defecto si lo redimensionaste.",
+    "onboarding.step6Eyebrow": "Ajustes",
+    "onboarding.step6Title": "Idioma",
+    "onboarding.step6Body":
+      "Esta sección cambia el idioma usado por la interfaz de la extensión.",
+    "onboarding.step6Highlight1":
+      "Abrí el selector para ver todos los idiomas disponibles.",
+    "onboarding.step6Highlight2":
+      "La bandera y las etiquetas muestran la opción actual.",
+    "onboarding.step6Highlight3":
+      "Al cambiarlo, se actualizan los textos de toda la extensión.",
+    "onboarding.step7Eyebrow": "Ajustes",
+    "onboarding.step7Title": "Precio equivalente",
+    "onboarding.step7Body":
+      "Este toggle controla la línea extra que convierte precios listados a equivalentes en chaos o divine.",
+    "onboarding.step7Highlight1":
+      "Activarlo te da ayuda rápida de conversión en los resultados.",
+    "onboarding.step7Highlight2":
+      "Desactivarlo deja la lista de trade más limpia.",
+    "onboarding.step7Highlight3":
+      "Sólo cambia cómo se muestran los precios, no la búsqueda en sí.",
+    "onboarding.step8Eyebrow": "Ajustes",
+    "onboarding.step8Title": "Bulk Sellers",
+    "onboarding.step8Body":
+      "Este toggle muestra u oculta la pestaña Bulk.",
+    "onboarding.step8Highlight1":
+      "Activala si querés ver vendedores repetidos agrupados en los resultados actuales.",
+    "onboarding.step8Highlight2":
+      "Desactivala si casi no usás la ayuda Bulk.",
+    "onboarding.step8Highlight3":
+      "Cuando está oculta, la pestaña Bulk desaparece de la navegación superior.",
+    "onboarding.step9Eyebrow": "Ajustes",
+    "onboarding.step9Title": "Historial",
+    "onboarding.step9Body":
+      "Este toggle muestra u oculta la pestaña Historial.",
+    "onboarding.step9Highlight1":
+      "Activala si querés acceso rápido a búsquedas recientes.",
+    "onboarding.step9Highlight2":
+      "Desactivala si sólo usás bookmarks guardados.",
+    "onboarding.step9Highlight3":
+      "Cuando está oculta, la pestaña Historial sale de la navegación.",
+    "onboarding.step10Eyebrow": "Ajustes",
+    "onboarding.step10Title": "Agregar a filtros",
+    "onboarding.step10Body":
+      "Este toggle controla el panel auxiliar que agrega modificadores encontrados directo a los filtros de búsqueda.",
+    "onboarding.step10Highlight1":
+      "Activarlo deja visible la ayuda Agregar a filtros.",
+    "onboarding.step10Highlight2":
+      "Desactivarlo simplifica un poco más la barra lateral.",
+    "onboarding.step10Highlight3":
+      "Afecta el panel auxiliar que aparece al fondo de la extensión.",
+    "onboarding.step11Eyebrow": "Ajustes",
+    "onboarding.step11Title": "Diseño de Favoritos",
+    "onboarding.step11Body":
+      "Estos controles cambian cómo se muestran las búsquedas guardadas y sus botones de acción.",
+    "onboarding.step11Highlight1":
+      "Clásico mantiene la vista más completa de bookmarks.",
+    "onboarding.step11Highlight2":
+      "Compacto acomoda las acciones en un diseño más apretado con menú de tres puntos.",
+    "onboarding.step11Highlight3":
+      "Si activás Compacto, las opciones de abajo deciden qué acciones quedan visibles.",
+    "onboarding.sampleFolder": "Carpeta del tutorial",
+    "onboarding.sampleTrade": "Favorito de ejemplo",
+    "onboarding.back": "Atrás",
+    "onboarding.next": "Siguiente",
+    "onboarding.skip": "Omitir",
+    "onboarding.finish": "Empezar a usarlo",
     "popup.description":
       "Poe Trade Plus agrega navegación más rápida y ayudas de trade al sitio oficial de Path of Exile.",
     "popup.trade1": "Trade PoE 1",
@@ -196,6 +452,10 @@ const translations = {
       "Elegí el idioma usado por la interfaz de la extensión.",
     "settings.languageEnglish": "Inglés",
     "settings.languageSpanish": "Español",
+    "settings.onboardingTitle": "Tutorial",
+    "settings.onboardingDescription":
+      "Volvé a abrir la guía rápida para repasar las acciones y pestañas principales.",
+    "settings.reopenTutorial": "Abrir tutorial",
     "settings.equivalentTitle": "Precio equivalente",
     "settings.equivalentDescription":
       "Mostrá u ocultá la línea extra con equivalencias en chaos/divine en los resultados.",

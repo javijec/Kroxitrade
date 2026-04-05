@@ -8,24 +8,49 @@
   import Bookmarks from "./pages/Bookmarks.svelte";
   import BulkSellers from "./pages/BulkSellers.svelte";
   import History from "./pages/History.svelte";
+  import OnboardingModal from "./OnboardingModal.svelte";
   import Settings from "./pages/Settings.svelte";
   import About from "./pages/About.svelte";
   import FinerFilters from "./FinerFilters.svelte";
+  import WelcomeDialog from "./WelcomeDialog.svelte";
   import logoUrl from "data-base64:~assets/logo.webp";
   import { flashMessages } from "../lib/services/flash";
+  import { bookmarksService } from "../lib/services/bookmarks";
   import { languageStore, translate } from "../lib/services/i18n";
   import { settings } from "../lib/services/settings";
   import { storageService } from "../lib/services/storage";
   import { tradeLocationService } from "../lib/services/trade-location";
+  import type { BookmarksFolderStruct, BookmarksTradeStruct } from "../lib/types/bookmarks";
   import { onDestroy, onMount } from "svelte";
   
   const MINIMIZED_STORAGE_KEY = "layout-minimized";
+  const WELCOME_SEEN_KEY = "layout-welcome-seen";
+  const ONBOARDING_SEEN_KEY = "layout-onboarding-seen";
+  const ONBOARDING_FOLDER_ID_KEY = "layout-onboarding-folder-id";
 
   let currentPage: 'bookmarks' | 'bulk' | 'history' | 'about' | 'settings' = 'bookmarks';
   let isMinimized = false;
   let isResizing = false;
   let liveSidebarWidth: number | null = null;
   let loadedMinimizedStateKey: string | null = null;
+  let showOnboarding = false;
+  let showWelcome = false;
+  let welcomeLanguage = "en" as typeof $settings.language;
+  let onboardingHighlightedPage: 'bookmarks' | 'bulk' | 'history' | 'about' | 'settings' | null = null;
+  let onboardingCurrentStepId:
+    | 'create-folder'
+    | 'save-search'
+    | 'history'
+    | 'settings-tutorial'
+    | 'settings-sidebar'
+    | 'settings-language'
+    | 'settings-equivalent'
+    | 'settings-bulk'
+    | 'settings-history'
+    | 'settings-filters'
+    | 'settings-bookmarks'
+    | null = null;
+  let onboardingTutorialFolderId: string | null = null;
 
   const MIN_SIDEBAR_WIDTH = 300;
   const MAX_SIDEBAR_WIDTH = 560;
@@ -53,6 +78,55 @@
     history: normalizeNavIcon(clockIcon),
     settings: normalizeNavIcon(settingsIcon),
     about: normalizeNavIcon(infoIcon)
+  };
+
+  const getTutorialTradeStruct = (): BookmarksTradeStruct => {
+    const current = tradeLocationService.current;
+
+    return {
+      title: translate($languageStore, "onboarding.sampleTrade"),
+      completedAt: null,
+      location: {
+        version: current.version,
+        type: current.type || "search",
+        slug: current.slug || "tutorial-example",
+        league: current.league || "Standard"
+      }
+    };
+  };
+
+  const cleanupTutorialArtifacts = async (folderId = onboardingTutorialFolderId) => {
+    if (!folderId) return;
+
+    try {
+      await bookmarksService.deleteFolder(folderId);
+    } catch {
+      // Ignore cleanup failures; the next onboarding run can overwrite the sample.
+    } finally {
+      if (folderId === onboardingTutorialFolderId) {
+        onboardingTutorialFolderId = null;
+      }
+      storageService.deleteLocalValue(ONBOARDING_FOLDER_ID_KEY);
+    }
+  };
+
+  const ensureTutorialArtifacts = async () => {
+    const persistedFolderId = storageService.getLocalValue(ONBOARDING_FOLDER_ID_KEY);
+    if (persistedFolderId) {
+      await cleanupTutorialArtifacts(persistedFolderId);
+    }
+
+    const tutorialFolder: BookmarksFolderStruct = {
+      title: translate($languageStore, "onboarding.sampleFolder"),
+      icon: null,
+      version: tradeLocationService.current.version,
+      archivedAt: null
+    };
+
+    const folderId = await bookmarksService.persistFolder(tutorialFolder);
+    onboardingTutorialFolderId = folderId;
+    storageService.setLocalValue(ONBOARDING_FOLDER_ID_KEY, folderId);
+    await bookmarksService.persistTrade(getTutorialTradeStruct(), folderId);
   };
 
   const toggleMinimize = () => {
@@ -115,11 +189,67 @@
   onMount(async () => {
     await settings.load();
     tradeLocationService.startPolling();
+    welcomeLanguage = $settings.language;
+    const shouldShowWelcome = storageService.getLocalValue(WELCOME_SEEN_KEY) !== "true";
+    const shouldShowOnboarding = storageService.getLocalValue(ONBOARDING_SEEN_KEY) !== "true";
+    if (shouldShowWelcome) {
+      showWelcome = true;
+    } else if (shouldShowOnboarding) {
+      await openOnboarding();
+    }
 
     window.addEventListener('mousemove', handleResizeMove);
     window.addEventListener('mouseup', stopResize);
     window.addEventListener('mouseleave', stopResize);
   });
+
+  const closeOnboarding = async () => {
+    showOnboarding = false;
+    onboardingHighlightedPage = null;
+    onboardingCurrentStepId = null;
+    storageService.setLocalValue(ONBOARDING_SEEN_KEY, "true");
+    await cleanupTutorialArtifacts();
+  };
+
+  const openOnboarding = async () => {
+    await ensureTutorialArtifacts();
+    showOnboarding = true;
+    onboardingHighlightedPage = 'bookmarks';
+    onboardingCurrentStepId = 'create-folder';
+    currentPage = 'bookmarks';
+  };
+
+  const confirmWelcome = async () => {
+    await settings.updateLanguage(welcomeLanguage);
+    storageService.setLocalValue(WELCOME_SEEN_KEY, "true");
+    showWelcome = false;
+
+    if (storageService.getLocalValue(ONBOARDING_SEEN_KEY) !== "true") {
+      await openOnboarding();
+    }
+  };
+
+  const handleOnboardingStepChange = (
+    page: 'bookmarks' | 'bulk' | 'history' | 'about' | 'settings',
+    stepId:
+      | 'create-folder'
+      | 'save-search'
+      | 'history'
+      | 'settings-tutorial'
+      | 'settings-sidebar'
+      | 'settings-language'
+      | 'settings-equivalent'
+      | 'settings-bulk'
+      | 'settings-history'
+      | 'settings-filters'
+      | 'settings-bookmarks'
+  ) => {
+    onboardingHighlightedPage = page;
+    onboardingCurrentStepId = stepId;
+    if (page === 'bulk' && !$settings.showBulkSellers) return;
+    if (page === 'history' && !$settings.showHistory) return;
+    currentPage = page;
+  };
 
   onDestroy(() => {
     window.removeEventListener('mousemove', handleResizeMove);
@@ -195,7 +325,8 @@
   
   <nav class="main-nav">
     <button 
-        class="nav-item {currentPage === 'bookmarks' ? 'is-active' : ''}" 
+        class="nav-item {currentPage === 'bookmarks' ? 'is-active' : ''} {showOnboarding && onboardingHighlightedPage === 'bookmarks' ? 'is-onboarding-focus' : ''}" 
+        data-tutorial="nav-bookmarks"
         on:click={() => currentPage = 'bookmarks'}
     >
         <span class="nav-item__icon" aria-hidden="true">{@html navIcons.bookmarks}</span>
@@ -204,7 +335,7 @@
 
     {#if $settings.showBulkSellers}
       <button 
-          class="nav-item {currentPage === 'bulk' ? 'is-active' : ''}" 
+          class="nav-item {currentPage === 'bulk' ? 'is-active' : ''} {showOnboarding && onboardingHighlightedPage === 'bulk' ? 'is-onboarding-focus' : ''}" 
           on:click={() => currentPage = 'bulk'}
       >
           <span class="nav-item__icon" aria-hidden="true">{@html navIcons.bulk}</span>
@@ -214,7 +345,8 @@
 
     {#if $settings.showHistory}
       <button 
-          class="nav-item {currentPage === 'history' ? 'is-active' : ''}" 
+          class="nav-item {currentPage === 'history' ? 'is-active' : ''} {showOnboarding && onboardingHighlightedPage === 'history' ? 'is-onboarding-focus' : ''}" 
+          data-tutorial="nav-history"
           on:click={() => currentPage = 'history'}
       >
           <span class="nav-item__icon" aria-hidden="true">{@html navIcons.history}</span>
@@ -222,14 +354,15 @@
       </button>
     {/if}
     <button 
-        class="nav-item {currentPage === 'settings' ? 'is-active' : ''}" 
+        class="nav-item {currentPage === 'settings' ? 'is-active' : ''} {showOnboarding && onboardingHighlightedPage === 'settings' ? 'is-onboarding-focus' : ''}" 
+        data-tutorial="nav-settings"
         on:click={() => currentPage = 'settings'}
     >
         <span class="nav-item__icon" aria-hidden="true">{@html navIcons.settings}</span>
         <span class="nav-item__label">{translate($languageStore, "layout.nav.settings")}</span>
     </button>
     <button 
-        class="nav-item nav-item--icon-only {currentPage === 'about' ? 'is-active' : ''}" 
+        class="nav-item nav-item--icon-only {currentPage === 'about' ? 'is-active' : ''} {showOnboarding && onboardingHighlightedPage === 'about' ? 'is-onboarding-focus' : ''}" 
         title={translate($languageStore, "layout.nav.about")}
         aria-label={translate($languageStore, "layout.nav.about")}
         on:click={() => currentPage = 'about'}
@@ -252,13 +385,15 @@
 
   <main>
     {#if currentPage === 'bookmarks'}
-        <Bookmarks />
+        <Bookmarks
+          tutorialStep={showOnboarding ? onboardingCurrentStepId : null}
+          tutorialFolderId={showOnboarding ? onboardingTutorialFolderId : null} />
     {:else if currentPage === 'bulk' && $settings.showBulkSellers}
         <BulkSellers />
     {:else if currentPage === 'history' && $settings.showHistory}
         <History />
     {:else if currentPage === 'settings'}
-        <Settings />
+        <Settings onOpenTutorial={openOnboarding} />
     {:else if currentPage === 'about'}
         <About />
     {/if}
@@ -267,6 +402,20 @@
   {#if $settings.showFinerFilters}
     <FinerFilters />
   {/if}
+
+  <OnboardingModal
+    open={showOnboarding}
+    showHistoryStep={$settings.showHistory}
+    onClose={closeOnboarding}
+    onStepChange={handleOnboardingStepChange} />
+
+  <WelcomeDialog
+    open={showWelcome}
+    selectedLanguage={welcomeLanguage}
+    onSelectLanguage={(language) => {
+      welcomeLanguage = language;
+    }}
+    onConfirm={confirmWelcome} />
 </div>
 
 {#if isMinimized}
@@ -481,6 +630,17 @@
         color: $white; 
         border-bottom-color: $gold;
         background-color: rgba($white, 0.04);
+    }
+
+    &.is-onboarding-focus {
+      color: #fff3d7;
+      border-bottom-color: rgba($gold, 0.72);
+      background:
+        linear-gradient(180deg, rgba($gold, 0.16), rgba($gold, 0.06)),
+        rgba($white, 0.04);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 231, 187, 0.08),
+        0 0 0 1px rgba($gold, 0.12);
     }
   }
 
