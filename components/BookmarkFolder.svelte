@@ -68,10 +68,19 @@
     if (!folder.id) return
     if (!force && (isLoading || hasLoadedTrades)) return
 
+    if (!force) {
+      const cachedTrades = bookmarksService.getCachedTradesByFolderId(folder.id)
+      if (cachedTrades) {
+        trades = cachedTrades
+        hasLoadedTrades = true
+        return
+      }
+    }
+
     const requestId = ++loadRequestId
     isLoading = true
     try {
-      const nextTrades = await bookmarksService.fetchTradesByFolderId(folder.id)
+      const nextTrades = await bookmarksService.fetchTradesByFolderId(folder.id, { force })
       if (requestId !== loadRequestId) return
       trades = nextTrades
     } catch {
@@ -101,8 +110,8 @@
 
   const toggleTrade = async (trade: BookmarksTradeStruct) => {
     if (!folder.id) return
-    await bookmarksService.toggleTradeCompletion(trade, folder.id)
-    await refreshTrades()
+    trades = await bookmarksService.toggleTradeCompletion(trade, folder.id)
+    hasLoadedTrades = true
   }
 
   const copyTrade = (trade: BookmarksTradeStruct) => {
@@ -142,8 +151,8 @@
   const deleteTrade = async (trade: BookmarksTradeStruct) => {
     if (!folder.id || !trade.id) return
     try {
-      await bookmarksService.deleteTrade(trade.id, folder.id)
-      await refreshTrades()
+      trades = await bookmarksService.deleteTrade(trade.id, folder.id)
+      hasLoadedTrades = true
       tradePendingDelete = null
     } catch {
       flashMessages.alert(translate($languageStore, "folder.deleteTradeError"))
@@ -162,8 +171,8 @@
     if (!folder.id || isDuplicating) return
     isDuplicating = true
     try {
-      await bookmarksService.duplicateTrade(trade, folder.id)
-      await refreshTrades()
+      trades = await bookmarksService.duplicateTrade(trade, folder.id)
+      hasLoadedTrades = true
       flashMessages.success(
         translate($languageStore, "folder.duplicatedTrade", {
           title: trade.title
@@ -204,8 +213,8 @@
         trades.splice(index, 0, moved)
         trades = [...trades]
         // Background sync
-        await bookmarksService.moveTrade(trade.id, folder.id, index)
-        await refreshTrades()
+        trades = await bookmarksService.moveTrade(trade.id, folder.id, index)
+        hasLoadedTrades = true
       }
     }
     draggedIndex = null
@@ -338,8 +347,8 @@
 
     savingTradeId = trade.id
     try {
-      await bookmarksService.renameTrade(trade, folder.id, newTitle)
-      await refreshTrades()
+      trades = await bookmarksService.renameTrade(trade, folder.id, newTitle)
+      hasLoadedTrades = true
       flashMessages.success(
         translate($languageStore, "folder.renamedSearch", { title: newTitle })
       )

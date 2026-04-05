@@ -27,6 +27,8 @@ interface ExportedFolderStruct {
 export class BookmarksService {
   private foldersStore = writable<BookmarksFolderStruct[]>([]);
   private listeners = new Set<() => void>();
+  private tradesCache = new Map<string, BookmarksTradeStruct[]>();
+  private tradesRequests = new Map<string, Promise<BookmarksTradeStruct[]>>();
   public subscribe = this.foldersStore.subscribe;
 
   constructor() {
@@ -55,12 +57,44 @@ export class BookmarksService {
     return (folders || []).map(f => this.initializeFolderStruct(f.version || "1", f));
   }
 
-  async fetchTradesByFolderId(folderId: string): Promise<BookmarksTradeStruct[]> {
-    const trades = await storageService.getValue<BookmarksTradeStruct[]>(`${TRADES_PREFIX_KEY}--${folderId}`);
+  private normalizeTrades(trades: BookmarksTradeStruct[] | null | undefined): BookmarksTradeStruct[] {
     return (trades || []).map(t => ({
       ...t,
       location: { ...t.location, version: t.location.version || "1", league: t.location.league || null }
     }));
+  }
+
+  getCachedTradesByFolderId(folderId: string): BookmarksTradeStruct[] | null {
+    const cached = this.tradesCache.get(folderId);
+    return cached ? [...cached] : null;
+  }
+
+  async fetchTradesByFolderId(folderId: string, options?: { force?: boolean }): Promise<BookmarksTradeStruct[]> {
+    if (!options?.force) {
+      const cached = this.getCachedTradesByFolderId(folderId);
+      if (cached) {
+        return cached;
+      }
+
+      const pending = this.tradesRequests.get(folderId);
+      if (pending) {
+        return pending;
+      }
+    }
+
+    const request = storageService
+      .getValue<BookmarksTradeStruct[]>(`${TRADES_PREFIX_KEY}--${folderId}`)
+      .then((trades) => {
+        const normalized = this.normalizeTrades(trades);
+        this.tradesCache.set(folderId, normalized);
+        return [...normalized];
+      })
+      .finally(() => {
+        this.tradesRequests.delete(folderId);
+      });
+
+    this.tradesRequests.set(folderId, request);
+    return request;
   }
 
   async fetchTradeByLocation(location: PartialBookmarksTradeLocation): Promise<BookmarksTradeStruct | null> {
@@ -131,29 +165,37 @@ export class BookmarksService {
     return id;
   }
 
-  async persistTrades(trades: BookmarksTradeStruct[], folderId: string) {
-    const safeTrades = trades.map(t => ({ ...t, id: t.id || uniqueId() }));
+  async persistTrades(trades: BookmarksTradeStruct[], folderId: string): Promise<BookmarksTradeStruct[]> {
+    const safeTrades = this.normalizeTrades(trades.map(t => ({ ...t, id: t.id || uniqueId() })));
+    this.tradesCache.set(folderId, safeTrades);
     await storageService.setValue(`${TRADES_PREFIX_KEY}--${folderId}`, safeTrades);
+    return [...safeTrades];
   }
 
-  async deleteTrade(tradeId: string, folderId: string) {
+  async deleteTrade(tradeId: string, folderId: string): Promise<BookmarksTradeStruct[]> {
     const trades = await this.fetchTradesByFolderId(folderId);
     const updated = trades.filter(t => t.id !== tradeId);
-    await this.persistTrades(updated, folderId);
+    const persisted = await this.persistTrades(updated, folderId);
     await this.refresh();
+    return persisted;
   }
 
   async deleteFolder(folderId: string) {
     const folders = await this.fetchFolders();
     const updated = folders.filter(f => f.id !== folderId);
     await this.persistFolders(updated);
+    this.tradesCache.delete(folderId);
+    this.tradesRequests.delete(folderId);
     await storageService.deleteValue(`${TRADES_PREFIX_KEY}--${folderId}`);
     await this.refresh();
   }
 
-  async duplicateTrade(trade: BookmarksTradeStruct, targetFolderId: string) {
+  async duplicateTrade(trade: BookmarksTradeStruct, targetFolderId: string): Promise<BookmarksTradeStruct[]> {
     const newTrade = { ...trade, id: uniqueId() };
-    await this.persistTrade(newTrade, targetFolderId);
+    const trades = await this.fetchTradesByFolderId(targetFolderId);
+    const persisted = await this.persistTrades([...trades, newTrade], targetFolderId);
+    await this.refresh();
+    return persisted;
   }
 
   async renameFolder(folder: BookmarksFolderStruct, title: string) {
@@ -177,8 +219,12 @@ export class BookmarksService {
     await this.refresh();
   }
 
-  async renameTrade(trade: BookmarksTradeStruct, folderId: string, title: string) {
-    return this.persistTrade({ ...trade, title }, folderId);
+  async renameTrade(trade: BookmarksTradeStruct, folderId: string, title: string): Promise<BookmarksTradeStruct[]> {
+    const trades = await this.fetchTradesByFolderId(folderId);
+    const updated = trades.map(t => t.id === trade.id ? { ...t, title } : t);
+    const persisted = await this.persistTrades(updated, folderId);
+    await this.refresh();
+    return persisted;
   }
 
   async reorderTrade(tradeId: string, folderId: string, direction: "up" | "down") {
@@ -195,20 +241,21 @@ export class BookmarksService {
     await this.refresh();
   }
 
-  async moveTrade(tradeId: string, folderId: string, newIndex: number) {
+  async moveTrade(tradeId: string, folderId: string, newIndex: number): Promise<BookmarksTradeStruct[]> {
     const trades = await this.fetchTradesByFolderId(folderId);
     const index = trades.findIndex(t => t.id === tradeId);
-    if (index === -1) return;
+    if (index === -1) return trades;
     
     const safeIndex = Math.max(0, Math.min(newIndex, trades.length - 1));
-    if (index === safeIndex) return;
+    if (index === safeIndex) return trades;
 
     const updated = [...trades];
     const [movedElement] = updated.splice(index, 1);
     updated.splice(safeIndex, 0, movedElement);
     
-    await this.persistTrades(updated, folderId);
+    const persisted = await this.persistTrades(updated, folderId);
     await this.refresh();
+    return persisted;
   }
 
   async moveFolder(folderId: string, newIndex: number, options: { version: TradeSiteVersion; archived: boolean }) {
@@ -233,11 +280,16 @@ export class BookmarksService {
 
   // ─── LOGIC ────────────────────────────────────────────────
 
-  async toggleTradeCompletion(trade: BookmarksTradeStruct, folderId: string) {
-    return this.persistTrade(
-      { ...trade, completedAt: trade.completedAt ? null : new Date().toISOString() },
-      folderId
+  async toggleTradeCompletion(trade: BookmarksTradeStruct, folderId: string): Promise<BookmarksTradeStruct[]> {
+    const trades = await this.fetchTradesByFolderId(folderId);
+    const updated = trades.map((entry) =>
+      entry.id === trade.id
+        ? { ...entry, completedAt: entry.completedAt ? null : new Date().toISOString() }
+        : entry
     );
+    const persisted = await this.persistTrades(updated, folderId);
+    await this.refresh();
+    return persisted;
   }
 
   async toggleFolderArchive(folder: BookmarksFolderStruct) {
