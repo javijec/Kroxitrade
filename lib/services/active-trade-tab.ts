@@ -37,13 +37,6 @@ export const getActiveTradeTabTitle = async () => {
 }
 
 export const openUrlInActiveTab = async (url: string) => {
-  // When we're running inside the injected sidebar on the trade page,
-  // direct navigation avoids extension-port warnings during bfcache transitions.
-  if (typeof window !== "undefined" && window.location.protocol !== "chrome-extension:") {
-    window.location.href = url
-    return
-  }
-
   const tab = await getActiveTab()
 
   // Background script / popup script case
@@ -56,6 +49,12 @@ export const openUrlInActiveTab = async (url: string) => {
         console.warn("[Poe Trade Plus] Failed to update active tab", error)
       }
     }
+  }
+
+  // Content script case - navigate the current page directly
+  if (typeof window !== "undefined") {
+    window.location.href = url
+    return
   }
 
   // Final fallback
