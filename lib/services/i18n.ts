@@ -60,6 +60,8 @@ const translations = {
       "Show or hide the Add to Filters panel at the bottom of the sidebar.",
     "settings.hidden": "Hidden",
     "settings.visible": "Visible",
+    "settings.on": "On",
+    "settings.off": "Off",
     "settings.compactActionsTitle": "Bookmark Layout",
     "settings.compactActionsDescription":
       "Choose a more compact layout for saved searches, with the league name and all actions grouped inside a three-dot menu.",
@@ -108,6 +110,14 @@ const translations = {
     "bookmarks.backupTitle": "Backup & Restore",
     "bookmarks.saveFile": "Save File",
     "bookmarks.restoreFile": "Restore From File",
+    "confirm.cancel": "Cancel",
+    "confirm.delete": "Delete",
+    "confirm.deleteFolderTitle": "Delete folder?",
+    "confirm.deleteFolderMessage": ({ title }) =>
+      `This will permanently delete "${title}" and all saved trades inside it.`,
+    "confirm.deleteTradeTitle": "Delete saved trade?",
+    "confirm.deleteTradeMessage": ({ title }) =>
+      `This will permanently delete "${title}" from the folder.`,
     "history.clear": "Clear History",
     "history.cleared": "History cleared!",
     "history.empty": ({ version }) => `History is empty for PoE ${version}.`,
@@ -136,6 +146,7 @@ const translations = {
     "folder.editSearchName": "Edit search name",
     "folder.replaceCurrentSearch": "Replace with current search",
     "folder.copyUrl": "Copy URL",
+    "folder.openLiveSearch": "Open live search",
     "folder.markPending": "Mark as pending",
     "folder.markComplete": "Mark as complete",
     "folder.deleteTrade": "Delete trade",
@@ -199,6 +210,8 @@ const translations = {
       "Mostrá u ocultá el panel Agregar a filtros al final de la barra lateral.",
     "settings.hidden": "Oculto",
     "settings.visible": "Visible",
+    "settings.on": "On",
+    "settings.off": "Off",
     "settings.compactActionsTitle": "Diseño de Favoritos",
     "settings.compactActionsDescription":
       "Elegí un diseño más compacto para las búsquedas guardadas, con el nombre de la liga y todas las acciones agrupadas dentro de un menú de tres puntos.",
@@ -248,6 +261,14 @@ const translations = {
     "bookmarks.backupTitle": "Respaldo y restauración",
     "bookmarks.saveFile": "Guardar archivo",
     "bookmarks.restoreFile": "Restaurar desde archivo",
+    "confirm.cancel": "Cancelar",
+    "confirm.delete": "Eliminar",
+    "confirm.deleteFolderTitle": "¿Eliminar carpeta?",
+    "confirm.deleteFolderMessage": ({ title }) =>
+      `Esto eliminará permanentemente "${title}" y todos los trades guardados dentro.`,
+    "confirm.deleteTradeTitle": "¿Eliminar trade guardado?",
+    "confirm.deleteTradeMessage": ({ title }) =>
+      `Esto eliminará permanentemente "${title}" de la carpeta.`,
     "history.clear": "Borrar historial",
     "history.cleared": "¡Historial borrado!",
     "history.empty": ({ version }) =>
@@ -281,6 +302,7 @@ const translations = {
     "folder.editSearchName": "Editar nombre de búsqueda",
     "folder.replaceCurrentSearch": "Reemplazar con búsqueda actual",
     "folder.copyUrl": "Copiar URL",
+    "folder.openLiveSearch": "Abrir búsqueda live",
     "folder.markPending": "Marcar como pendiente",
     "folder.markComplete": "Marcar como completada",
     "folder.deleteTrade": "Eliminar trade",

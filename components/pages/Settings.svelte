@@ -15,6 +15,7 @@
   import editIcon from "data-text:lucide-static/icons/pencil.svg";
   import replaceIcon from "data-text:lucide-static/icons/refresh-cw.svg";
   import copyIcon from "data-text:lucide-static/icons/copy.svg";
+  import liveIcon from "data-text:lucide-static/icons/activity.svg";
   import toggleIcon from "data-text:lucide-static/icons/check.svg";
   import deleteIcon from "data-text:lucide-static/icons/trash-2.svg";
 
@@ -35,6 +36,7 @@
     { id: "edit", labelKey: "folder.editSearchName", icon: normalizeSettingsIcon(editIcon) },
     { id: "replace", labelKey: "folder.replaceCurrentSearch", icon: normalizeSettingsIcon(replaceIcon) },
     { id: "copy", labelKey: "folder.copyUrl", icon: normalizeSettingsIcon(copyIcon) },
+    { id: "openLive", labelKey: "folder.openLiveSearch", icon: normalizeSettingsIcon(liveIcon) },
     { id: "toggle", labelKey: "settings.compactTradeActionToggle", icon: normalizeSettingsIcon(toggleIcon) },
     { id: "delete", labelKey: "folder.deleteTrade", icon: normalizeSettingsIcon(deleteIcon) }
   ];
@@ -111,6 +113,10 @@
 
   async function handleLanguageChange(language: AppLanguage) {
     await settings.updateLanguage(language);
+  }
+
+  function toggleSwitchLabel(value: boolean) {
+    return value ? translate($languageStore, "settings.on") : translate($languageStore, "settings.off");
   }
 
   function toggleLanguageMenu(event: MouseEvent) {
@@ -250,126 +256,130 @@
   </section>
 
   <section class="settings-section">
-    <div class="section-heading">
-      <h3 class="section-title">{translate($languageStore, "settings.equivalentTitle")}</h3>
-      <div class="info-tooltip">
-        <button
-          type="button"
-          class="info-tooltip__trigger"
-          aria-label={translate($languageStore, "settings.equivalentDescription")}
-        >
-          i
-        </button>
-        <div class="info-tooltip__content">{translate($languageStore, "settings.equivalentDescription")}</div>
+    <div class="settings-inline-row">
+      <div class="section-heading section-heading--inline">
+        <h3 class="section-title">{translate($languageStore, "settings.equivalentTitle")}</h3>
+        <div class="info-tooltip">
+          <button
+            type="button"
+            class="info-tooltip__trigger"
+            aria-label={translate($languageStore, "settings.equivalentDescription")}
+          >
+            i
+          </button>
+          <div class="info-tooltip__content">{translate($languageStore, "settings.equivalentDescription")}</div>
+        </div>
       </div>
-    </div>
 
-    <div class="side-selector">
-      <Button
-        label={translate($languageStore, "settings.hidden")}
-        theme={$settings.showEquivalentPricing ? 'blue' : 'gold'}
-        class="side-btn"
-        onClick={() => handleEquivalentPricingChange(false)}
-      />
-      <Button
-        label={translate($languageStore, "settings.visible")}
-        theme={$settings.showEquivalentPricing ? 'gold' : 'blue'}
-        class="side-btn"
-        onClick={() => handleEquivalentPricingChange(true)}
-      />
+      <button
+        type="button"
+        class="toggle-row toggle-row--inline"
+        class:is-active={$settings.showEquivalentPricing}
+        role="switch"
+        aria-checked={$settings.showEquivalentPricing}
+        aria-label={translate($languageStore, "settings.equivalentTitle")}
+        on:click={() => handleEquivalentPricingChange(!$settings.showEquivalentPricing)}
+      >
+        <span class="toggle-switch">
+          <span class="toggle-switch__thumb"></span>
+        </span>
+      </button>
     </div>
   </section>
 
   <section class="settings-section">
-    <div class="section-heading">
-      <h3 class="section-title">{translate($languageStore, "settings.bulkTitle")}</h3>
-      <div class="info-tooltip">
-        <button
-          type="button"
-          class="info-tooltip__trigger"
-          aria-label={translate($languageStore, "settings.bulkDescription")}
-        >
-          i
-        </button>
-        <div class="info-tooltip__content">{translate($languageStore, "settings.bulkDescription")}</div>
+    <div class="settings-inline-row">
+      <div class="section-heading section-heading--inline">
+        <h3 class="section-title">{translate($languageStore, "settings.bulkTitle")}</h3>
+        <div class="info-tooltip">
+          <button
+            type="button"
+            class="info-tooltip__trigger"
+            aria-label={translate($languageStore, "settings.bulkDescription")}
+          >
+            i
+          </button>
+          <div class="info-tooltip__content">{translate($languageStore, "settings.bulkDescription")}</div>
+        </div>
       </div>
-    </div>
 
-    <div class="side-selector">
-      <Button
-        label={translate($languageStore, "settings.hidden")}
-        theme={$settings.showBulkSellers ? 'blue' : 'gold'}
-        class="side-btn"
-        onClick={() => handleBulkSellersChange(false)}
-      />
-      <Button
-        label={translate($languageStore, "settings.visible")}
-        theme={$settings.showBulkSellers ? 'gold' : 'blue'}
-        class="side-btn"
-        onClick={() => handleBulkSellersChange(true)}
-      />
+      <button
+        type="button"
+        class="toggle-row toggle-row--inline"
+        class:is-active={$settings.showBulkSellers}
+        role="switch"
+        aria-checked={$settings.showBulkSellers}
+        aria-label={translate($languageStore, "settings.bulkTitle")}
+        on:click={() => handleBulkSellersChange(!$settings.showBulkSellers)}
+      >
+        <span class="toggle-switch">
+          <span class="toggle-switch__thumb"></span>
+        </span>
+      </button>
     </div>
   </section>
 
   <section class="settings-section">
-    <div class="section-heading">
-      <h3 class="section-title">{translate($languageStore, "settings.historyTitle")}</h3>
-      <div class="info-tooltip">
-        <button
-          type="button"
-          class="info-tooltip__trigger"
-          aria-label={translate($languageStore, "settings.historyDescription")}
-        >
-          i
-        </button>
-        <div class="info-tooltip__content">{translate($languageStore, "settings.historyDescription")}</div>
+    <div class="settings-inline-row">
+      <div class="section-heading section-heading--inline">
+        <h3 class="section-title">{translate($languageStore, "settings.historyTitle")}</h3>
+        <div class="info-tooltip">
+          <button
+            type="button"
+            class="info-tooltip__trigger"
+            aria-label={translate($languageStore, "settings.historyDescription")}
+          >
+            i
+          </button>
+          <div class="info-tooltip__content">{translate($languageStore, "settings.historyDescription")}</div>
+        </div>
       </div>
-    </div>
 
-    <div class="side-selector">
-      <Button
-        label={translate($languageStore, "settings.hidden")}
-        theme={$settings.showHistory ? 'blue' : 'gold'}
-        class="side-btn"
-        onClick={() => handleHistoryChange(false)}
-      />
-      <Button
-        label={translate($languageStore, "settings.visible")}
-        theme={$settings.showHistory ? 'gold' : 'blue'}
-        class="side-btn"
-        onClick={() => handleHistoryChange(true)}
-      />
+      <button
+        type="button"
+        class="toggle-row toggle-row--inline"
+        class:is-active={$settings.showHistory}
+        role="switch"
+        aria-checked={$settings.showHistory}
+        aria-label={translate($languageStore, "settings.historyTitle")}
+        on:click={() => handleHistoryChange(!$settings.showHistory)}
+      >
+        <span class="toggle-switch">
+          <span class="toggle-switch__thumb"></span>
+        </span>
+      </button>
     </div>
   </section>
 
   <section class="settings-section">
-    <div class="section-heading">
-      <h3 class="section-title">{translate($languageStore, "settings.finerFiltersTitle")}</h3>
-      <div class="info-tooltip">
-        <button
-          type="button"
-          class="info-tooltip__trigger"
-          aria-label={translate($languageStore, "settings.finerFiltersDescription")}
-        >
-          i
-        </button>
-        <div class="info-tooltip__content">{translate($languageStore, "settings.finerFiltersDescription")}</div>
+    <div class="settings-inline-row">
+      <div class="section-heading section-heading--inline">
+        <h3 class="section-title">{translate($languageStore, "settings.finerFiltersTitle")}</h3>
+        <div class="info-tooltip">
+          <button
+            type="button"
+            class="info-tooltip__trigger"
+            aria-label={translate($languageStore, "settings.finerFiltersDescription")}
+          >
+            i
+          </button>
+          <div class="info-tooltip__content">{translate($languageStore, "settings.finerFiltersDescription")}</div>
+        </div>
       </div>
-    </div>
 
-    <div class="side-selector">
-      <Button
-        label={translate($languageStore, "settings.hidden")}
-        theme={$settings.showFinerFilters ? 'blue' : 'gold'}
-        class="side-btn"
-        onClick={() => handleFinerFiltersChange(false)}
-      />
-      <Button
-        label={translate($languageStore, "settings.visible")}
-        theme={$settings.showFinerFilters ? 'gold' : 'blue'}
-        class="side-btn"
-        onClick={() => handleFinerFiltersChange(true)}
-      />
+      <button
+        type="button"
+        class="toggle-row toggle-row--inline"
+        class:is-active={$settings.showFinerFilters}
+        role="switch"
+        aria-checked={$settings.showFinerFilters}
+        aria-label={translate($languageStore, "settings.finerFiltersTitle")}
+        on:click={() => handleFinerFiltersChange(!$settings.showFinerFilters)}
+      >
+        <span class="toggle-switch">
+          <span class="toggle-switch__thumb"></span>
+        </span>
+      </button>
     </div>
   </section>
 
@@ -488,10 +498,71 @@
     min-width: 0;
   }
 
+  .section-heading--inline {
+    margin-bottom: 0;
+  }
+
+  .settings-inline-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
   .side-selector {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .toggle-row--inline {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 38px;
+    height: 20px;
+    border-radius: 999px;
+    background: rgba($blue, 0.4);
+    transition: background 0.16s ease, box-shadow 0.16s ease;
+    flex: 0 0 auto;
+  }
+
+  .toggle-row:hover .toggle-switch {
+    box-shadow: 0 0 0 1px rgba($blue, 0.2);
+  }
+
+  .toggle-row.is-active .toggle-switch {
+    background: rgba($gold, 0.5);
+  }
+
+  .toggle-switch__thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: rgba($blue-alt, 0.95);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+    transition: transform 0.16s ease, background 0.16s ease;
+  }
+
+  .toggle-row.is-active .toggle-switch__thumb {
+    transform: translateX(18px);
+    background: #f7d08a;
   }
 
   :global(.side-btn) {
@@ -791,5 +862,17 @@
     display: block;
     overflow: visible;
     stroke-width: 1.7;
+  }
+
+  @media (max-width: 430px) {
+    .settings-inline-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .toggle-row--inline {
+      width: 100%;
+    }
   }
 </style>

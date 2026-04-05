@@ -22,6 +22,7 @@
   import { normalizeIcon } from "../lib/utilities/icons"
   import { formatLeagueLabel } from "../lib/utilities/league"
   import Button from "./Button.svelte"
+  import ConfirmDialog from "./ConfirmDialog.svelte"
   import FolderActionsMenu from "./FolderActionsMenu.svelte"
   import LoadingContainer from "./LoadingContainer.svelte"
   import TradeActionsMenu from "./TradeActionsMenu.svelte"
@@ -48,6 +49,7 @@
   let isLoading = false
   let hasLoadedTrades = false
   let isDuplicating = false
+  let tradePendingDelete: BookmarksTradeStruct | null = null
 
   $: isExpanded = expandedFolderIds.includes(folder.id || "")
   $: isArchived = !!folder.archivedAt
@@ -106,14 +108,37 @@
       })
   }
 
+  const openTradeLive = async (trade: BookmarksTradeStruct) => {
+    await openUrlInActiveTab(
+      getTradeUrl(
+        trade.location.version,
+        trade.location.type,
+        trade.location.slug,
+        trade.location.league ||
+          tradeLocationService.current.league ||
+          "Standard",
+        "/live"
+      )
+    )
+  }
+
   const deleteTrade = async (trade: BookmarksTradeStruct) => {
     if (!folder.id || !trade.id) return
     try {
       await bookmarksService.deleteTrade(trade.id, folder.id)
       await loadTrades()
+      tradePendingDelete = null
     } catch {
       flashMessages.alert(translate($languageStore, "folder.deleteTradeError"))
     }
+  }
+
+  const requestTradeDelete = (trade: BookmarksTradeStruct) => {
+    tradePendingDelete = trade
+  }
+
+  const cancelTradeDelete = () => {
+    tradePendingDelete = null
   }
 
   const duplicateTrade = async (trade: BookmarksTradeStruct) => {
@@ -471,8 +496,9 @@
                         onEdit={() => startEditingTrade(trade)}
                         onReplace={() => void replaceSearchWithCurrent(trade)}
                         onCopy={() => copyTrade(trade)}
+                        onOpenLive={() => void openTradeLive(trade)}
                         onToggle={() => void toggleTrade(trade)}
-                        onDelete={() => void deleteTrade(trade)} />
+                        onDelete={() => requestTradeDelete(trade)} />
                     </div>
                   {/if}
                 </div>
@@ -485,8 +511,9 @@
                         onEdit={() => startEditingTrade(trade)}
                         onReplace={() => void replaceSearchWithCurrent(trade)}
                         onCopy={() => copyTrade(trade)}
+                        onOpenLive={() => void openTradeLive(trade)}
                         onToggle={() => void toggleTrade(trade)}
-                        onDelete={() => void deleteTrade(trade)} />
+                        onDelete={() => requestTradeDelete(trade)} />
                     </div>
                   </div>
                 {/if}
@@ -505,6 +532,21 @@
   {/if}
 </div>
 
+<ConfirmDialog
+  open={!!tradePendingDelete}
+  title={translate($languageStore, "confirm.deleteTradeTitle")}
+  message={translate($languageStore, "confirm.deleteTradeMessage", {
+    title: tradePendingDelete?.title || ""
+  })}
+  confirmLabel={translate($languageStore, "confirm.delete")}
+  cancelLabel={translate($languageStore, "confirm.cancel")}
+  onCancel={cancelTradeDelete}
+  onConfirm={() => {
+    if (tradePendingDelete) {
+      void deleteTrade(tradePendingDelete)
+    }
+  }} />
+
 <style lang="scss">
   @use "../lib/styles/variables" as *;
 
@@ -512,7 +554,7 @@
     margin-bottom: 10px;
     border: 1px solid rgba($gold, 0.12);
     border-radius: 8px;
-    overflow: hidden;
+    overflow: visible;
     background: linear-gradient(180deg, rgba($gold, 0.035), rgba($gold, 0.015)),
       rgba($black, 0.4);
     box-shadow:
@@ -556,6 +598,7 @@
     color: $white;
     font-family: $primary-font;
     border-bottom: 1px solid rgba($gold, 0.1);
+    border-radius: 8px 8px 0 0;
   }
 
   .folder-drag-handle {
@@ -878,6 +921,7 @@
 
   .trades-content {
     background: rgba($black, 0.24);
+    border-radius: 0 0 8px 8px;
   }
 
   .footer-actions {

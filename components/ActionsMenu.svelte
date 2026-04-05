@@ -170,6 +170,8 @@
     display: flex;
     align-items: center;
     min-width: 0;
+    isolation: isolate;
+    z-index: 20;
   }
 
   .actions-inline {
@@ -234,13 +236,13 @@
       gap: 10px;
       padding: 8px 10px;
       border: none;
-      background: none;
+      background: #0b0b0b;
       border-radius: 4px;
       text-align: left;
       font-size: 12px;
 
       &:hover {
-        background-color: rgba($white, 0.08);
+        background-color: #171717;
         border-color: transparent;
       }
     }
@@ -270,10 +272,12 @@
     z-index: 1000;
     min-width: 160px;
     margin-top: 4px;
-    background: rgba($black, 0.96);
+    background-color: #0b0b0b;
+    opacity: 1;
     border: 1px solid rgba($gold, 0.3);
     border-radius: 6px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    backdrop-filter: none;
     padding: 4px;
     display: flex;
     flex-direction: column;

@@ -3,7 +3,7 @@ import { setLanguage, type AppLanguage } from './i18n';
 import { storageService } from './storage';
 
 export type SidebarSide = 'left' | 'right';
-export type BookmarkTradeActionId = 'edit' | 'replace' | 'copy' | 'toggle' | 'delete';
+export type BookmarkTradeActionId = 'edit' | 'replace' | 'copy' | 'openLive' | 'toggle' | 'delete';
 
 export interface AppSettings {
   sidebarSide: SidebarSide;
