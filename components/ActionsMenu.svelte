@@ -220,7 +220,7 @@
   }
 
   .actions-container.is-open {
-    z-index: 1200;
+    z-index: 4000;
   }
 
   .actions-inline {
@@ -320,7 +320,7 @@
     right: 0;
     z-index: 1000;
     min-width: 172px;
-    margin-top: 8px;
+    margin-top: 4px;
     background-color: #0b0b0b;
     opacity: 1;
     border: 1px solid rgba($gold, 0.3);
@@ -330,5 +330,16 @@
     padding: 6px;
     display: flex;
     flex-direction: column;
+    pointer-events: auto;
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: -8px;
+      right: 0;
+      width: 56px;
+      height: 8px;
+      pointer-events: auto;
+    }
   }
 </style>

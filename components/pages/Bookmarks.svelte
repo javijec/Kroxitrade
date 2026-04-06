@@ -468,7 +468,7 @@
     flex-direction: column;
     flex-shrink: 0;
     padding: 12px;
-    background: linear-gradient(180deg, rgba($gold, 0.05), transparent);
+    background: #120f0d;
     border: 1px solid rgba($gold, 0.1);
     border-radius: 4px;
     margin: 0 4px;
@@ -488,9 +488,7 @@
   .toolbar-panel {
     gap: 10px;
     padding: 10px 12px;
-    background:
-      linear-gradient(180deg, rgba($gold, 0.08), rgba($gold, 0.02)),
-      rgba($black, 0.5);
+    background: #15110e;
     border-color: rgba($gold, 0.14);
     min-width: 0;
     box-shadow: inset 0 1px 0 rgba($white, 0.03);

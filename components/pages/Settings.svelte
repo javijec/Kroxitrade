@@ -2,7 +2,9 @@
   import { languageStore, translate, type AppLanguage } from "../../lib/services/i18n";
   import { bookmarksService } from "../../lib/services/bookmarks";
   import { flashMessages } from "../../lib/services/flash";
+  import { itemResultsService } from "../../lib/services/item-results";
   import { settings, type BookmarkTradeActionId, type SidebarSide } from "../../lib/services/settings";
+  import { tradeLocationService } from "../../lib/services/trade-location";
   import Button from "../Button.svelte";
   import { onDestroy, onMount } from "svelte";
   import flagBR from "data-base64:../../assets/BR.png";
@@ -69,6 +71,7 @@
   };
 
   let isLanguageMenuOpen = false;
+  let isRefreshingEquivalentRatios = false;
   let languageSelectorEl: HTMLDivElement | null = null;
 
   async function handleSideChange(side: SidebarSide) {
@@ -77,6 +80,28 @@
 
   async function handleEquivalentPricingChange(showEquivalentPricing: boolean) {
     await settings.updateEquivalentPricingVisibility(showEquivalentPricing);
+  }
+
+  async function handleEquivalentPricingRefresh() {
+    if (isRefreshingEquivalentRatios) return;
+
+    const league = tradeLocationService.current.league;
+    if (!league) {
+      flashMessages.alert(translate($languageStore, "settings.equivalentRefreshUnavailable"));
+      return;
+    }
+
+    isRefreshingEquivalentRatios = true;
+    try {
+      await itemResultsService.forceRefreshEquivalentPricing();
+      flashMessages.success(
+        translate($languageStore, "settings.equivalentRefreshSuccess", { league })
+      );
+    } catch {
+      flashMessages.alert(translate($languageStore, "settings.equivalentRefreshError"));
+    } finally {
+      isRefreshingEquivalentRatios = false;
+    }
   }
 
   async function handleBulkSellersChange(showBulkSellers: boolean) {
@@ -273,23 +298,23 @@
       </div>
     </section>
 
-    <section class="settings-section settings-section--wide" data-tutorial="settings-bookmarks">
+    <section class="settings-section settings-section--wide settings-section--bookmarks-layout" data-tutorial="settings-bookmarks">
       <div class="section-heading">
         <h3 class="section-title">{translate($languageStore, "settings.compactActionsTitle")}</h3>
       </div>
       <p class="section-description">{translate($languageStore, "settings.compactActionsDescription")}</p>
 
-      <div class="side-selector">
+      <div class="side-selector side-selector--bookmark-layout">
         <Button
           label={translate($languageStore, "settings.compactActionsDefault")}
           theme={$settings.compactActionsMenu ? 'blue' : 'gold'}
-          class="side-btn"
+          class="side-btn side-btn--bookmark-layout"
           onClick={() => handleCompactActionsMenuChange(false)}
         />
         <Button
           label={translate($languageStore, "settings.compactActionsCompact")}
           theme={$settings.compactActionsMenu ? 'gold' : 'blue'}
-          class="side-btn"
+          class="side-btn side-btn--bookmark-layout"
           onClick={() => handleCompactActionsMenuChange(true)}
         />
       </div>
@@ -351,6 +376,22 @@
           <div class="settings-row__copy">
             <div class="settings-row__title">{translate($languageStore, "settings.equivalentTitle")}</div>
             <div class="settings-row__description">{translate($languageStore, "settings.equivalentDescription")}</div>
+            <div class="settings-row__hint settings-row__hint--actions">
+              <span>{translate($languageStore, "settings.equivalentSource")}</span>
+              <button
+                type="button"
+                class="mini-action"
+                on:click={handleEquivalentPricingRefresh}
+                disabled={isRefreshingEquivalentRatios}
+              >
+                {translate(
+                  $languageStore,
+                  isRefreshingEquivalentRatios
+                    ? "settings.equivalentRefreshLoading"
+                    : "settings.equivalentRefresh"
+                )}
+              </button>
+            </div>
           </div>
           <button
             type="button"
@@ -523,6 +564,10 @@
     margin-top: 8px;
   }
 
+  .settings-section--bookmarks-layout {
+    text-align: left;
+  }
+
   .section-actions {
     margin-top: 14px;
   }
@@ -578,11 +623,64 @@
     line-height: 1.5;
   }
 
+  .settings-row__hint {
+    margin-top: 6px;
+    color: rgba($gold, 0.72);
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+  .settings-row__hint--actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .mini-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    padding: 0 8px;
+    border: 1px solid rgba($gold, 0.18);
+    border-radius: 4px;
+    background: rgba($gold, 0.07);
+    color: rgba($gold-alt, 0.92);
+    font-family: $primary-font;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      border-color 0.16s ease,
+      background-color 0.16s ease,
+      color 0.16s ease;
+
+    &:hover,
+    &:focus-visible {
+      border-color: rgba($gold, 0.34);
+      background: rgba($gold, 0.12);
+      color: $white;
+      outline: none;
+    }
+
+    &:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+  }
+
   .side-selector {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
     margin-top: 14px;
+  }
+
+  .side-selector--bookmark-layout {
+    justify-content: center;
+    margin-top: 18px;
   }
 
   .settings-actions-row {
@@ -666,6 +764,11 @@
   :global(.side-btn) {
     flex: 1;
     min-width: 0;
+  }
+
+  :global(.side-btn--bookmark-layout) {
+    flex: 0 1 170px;
+    min-width: 140px;
   }
 
   :global(.reset-btn) {
@@ -912,6 +1015,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    justify-content: center;
   }
 
   .compact-option {

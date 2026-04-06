@@ -184,6 +184,16 @@ const translations = {
     "settings.equivalentTitle": "Equivalent Pricing",
     "settings.equivalentDescription":
       "Show or hide the extra chaos/divine equivalent line in trade results.",
+    "settings.equivalentSource":
+      "Uses poe.ninja ratios cached every 15 minutes.",
+    "settings.equivalentRefresh": "Refresh Ratio",
+    "settings.equivalentRefreshLoading": "Refreshing...",
+    "settings.equivalentRefreshSuccess": ({ league }) =>
+      `Equivalent pricing ratios refreshed for ${league}.`,
+    "settings.equivalentRefreshError":
+      "Could not refresh the poe.ninja ratio right now.",
+    "settings.equivalentRefreshUnavailable":
+      "Open a trade league first to refresh the poe.ninja ratio.",
     "settings.bulkTitle": "Bulk Sellers",
     "settings.bulkDescription":
       "Show or hide the bulk sellers tab that groups repeated sellers from the current trade results.",
@@ -492,6 +502,16 @@ const translations = {
     "settings.equivalentTitle": "Precio equivalente",
     "settings.equivalentDescription":
       "Mostrá u ocultá la línea extra con equivalencias en chaos/divine en los resultados.",
+    "settings.equivalentSource":
+      "Usa ratios de poe.ninja cacheados cada 15 minutos.",
+    "settings.equivalentRefresh": "Recargar ratio",
+    "settings.equivalentRefreshLoading": "Recargando...",
+    "settings.equivalentRefreshSuccess": ({ league }) =>
+      `Los ratios de precio equivalente se recargaron para ${league}.`,
+    "settings.equivalentRefreshError":
+      "No se pudo recargar el ratio de poe.ninja ahora mismo.",
+    "settings.equivalentRefreshUnavailable":
+      "Abrí primero una liga de trade para recargar el ratio de poe.ninja.",
     "settings.bulkTitle": "Bulk Sellers",
     "settings.bulkDescription":
       "Mostrá u ocultá la pestaña Bulk que agrupa vendedores repetidos de los resultados actuales.",

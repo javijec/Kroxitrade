@@ -87,7 +87,7 @@ export class ItemResultsService {
 
 
 
-  private async fetchRatios() {
+  private async fetchRatios(forceFresh = false) {
     const { league, type, slug } = tradeLocationService.current;
 
     if (!league || !type || !slug) {
@@ -96,7 +96,14 @@ export class ItemResultsService {
     }
 
     console.log("[Poe Trade Plus] Current league detected:", league);
-    this.chaosRatios = await poeNinjaService.fetchChaosRatiosFor(league);
+    this.chaosRatios = forceFresh
+      ? await poeNinjaService.fetchFreshChaosRatiosFor(league)
+      : await poeNinjaService.fetchChaosRatiosFor(league);
+  }
+
+  async forceRefreshEquivalentPricing() {
+    await this.fetchRatios(true);
+    this.refreshEquivalentPricing();
   }
 
   private injectEquivalentPricing(row: HTMLElement) {
