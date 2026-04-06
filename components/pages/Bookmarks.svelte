@@ -46,6 +46,7 @@
   let draggedFolderId: string | null = null;
   let dragOverFolderId: string | null = null;
   let folderPendingDelete: BookmarksFolderStruct | null = null;
+  let pendingEditFolderId: string | null = null;
   let toolbarStickyEl: HTMLDivElement | null = null;
   let toolbarRenderKey = 0;
   let toolbarRepairFrame = 0;
@@ -60,6 +61,7 @@
   $: displayedFolders = versionFolders.filter(
     (folder) => !!folder.archivedAt === showArchived
   );
+  $: isEmptyState = !isLoading && displayedFolders.length === 0;
   $: displayedFolderIndexById = new Map(
     displayedFolders.map((folder, index) => [folder.id, index])
   );
@@ -122,6 +124,7 @@
     if (folderId && !expandedFolderIds.includes(folderId)) {
       expandedFolderIds = [...expandedFolderIds, folderId];
     }
+    pendingEditFolderId = folderId;
     flashMessages.success(translate($languageStore, "bookmarks.folderCreated"));
   };
 
@@ -190,37 +193,6 @@
   const handleFolderDragEnd = () => {
     draggedFolderId = null;
     dragOverFolderId = null;
-  };
-
-  const exportToFile = async () => {
-      const dataString = await bookmarksService.generateBackupDataString();
-      const blob = new Blob([dataString], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `poe-trade-plus-backup-${new Date().toISOString().slice(0,10)}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-      flashMessages.success(translate($languageStore, "bookmarks.exported"));
-  };
-
-  const restoreFromFile = (event: Event) => {
-      const input = event.target as HTMLInputElement;
-      const file = input.files?.[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-          const dataString = e.target?.result as string;
-          const success = await bookmarksService.restoreFromDataString(dataString);
-          if (success) {
-              flashMessages.success(translate($languageStore, "bookmarks.restored"));
-          } else {
-              flashMessages.alert(translate($languageStore, "bookmarks.restoreFailed"));
-          }
-          input.value = "";
-      };
-      reader.readAsText(file);
   };
 
   const processTextImport = async () => {
@@ -345,7 +317,7 @@
     <div class="toolbar-sticky" data-tutorial="bookmarks-toolbar" bind:this={toolbarStickyEl}>
       <section class="toolbar-panel">
         <div class="toolbar-row">
-          <div class="toolbar-actions">
+          <div class="toolbar-actions toolbar-actions--primary">
             <button class="toolbar-button" data-tutorial="new-folder" type="button" title={translate($languageStore, "bookmarks.toolbar.newFolderTitle")} aria-label={translate($languageStore, "bookmarks.toolbar.newFolderTitle")} on:click={createFolder}>
               <span class="toolbar-icon" aria-hidden="true">{@html toolbarIcons.newFolder}</span>
               <span class="toolbar-label">{translate($languageStore, "bookmarks.toolbar.new")}</span>
@@ -363,6 +335,9 @@
               </span>
               <span class="toolbar-label">{isImportingText ? translate($languageStore, "bookmarks.toolbar.cancel") : translate($languageStore, "bookmarks.toolbar.import")}</span>
             </button>
+          </div>
+
+          <div class="toolbar-actions toolbar-actions--secondary">
             <button class="toolbar-button" type="button" title={translate($languageStore, "bookmarks.toolbar.collapseAll")} aria-label={translate($languageStore, "bookmarks.toolbar.collapseAll")} on:click={collapseAll}>
               <span class="toolbar-icon" aria-hidden="true">{@html toolbarIcons.collapse}</span>
               <span class="toolbar-label">{translate($languageStore, "bookmarks.toolbar.collapse")}</span>
@@ -385,11 +360,17 @@
 
         {#if isImportingText}
           <div class="import-text-area">
-            <textarea 
-              bind:value={importText} 
+            <div class="import-copy">
+              <div class="import-title">{translate($languageStore, "bookmarks.importTitle")}</div>
+              <p class="import-description">{translate($languageStore, "bookmarks.importDescription")}</p>
+            </div>
+            <div class="import-field">
+              <textarea
+              bind:value={importText}
               placeholder={translate($languageStore, "bookmarks.importPlaceholder")}
-              autofocus
-            ></textarea>
+              ></textarea>
+              <div class="import-hint">{translate($languageStore, "bookmarks.importHint")}</div>
+            </div>
             <div class="import-actions">
               <Button label={translate($languageStore, "bookmarks.confirmImport")} theme="gold" onClick={processTextImport} />
             </div>
@@ -401,34 +382,55 @@
 
   <LoadingContainer {isLoading}>
     <div class="folders-list">
-      {#each displayedFolders as folder (folder.id)}
-        <div class="folder-shell" animate:flip={{ duration: 180 }}>
-          <BookmarkFolder 
-              {folder} 
-              isExpanded={expandedFolderIds.includes(folder.id || "")}
-              isTutorialSaveTarget={tutorialStep === "save-search" && folder.id === tutorialTargetFolderId}
-              onToggleExpansion={toggleExpansion}
-              onArchiveEvent={() => toggleArchive(folder)}
-               onDeleteEvent={() => requestFolderDelete(folder)}
-              onFolderDragStart={handleFolderDragStart}
-              onFolderDragEnter={handleFolderDragEnter}
-              onFolderDrop={handleFolderDrop}
-              onFolderDragEnd={handleFolderDragEnd}
-              isFolderDragging={draggedFolderId === folder.id}
-              isFolderDragOver={dragOverFolderId === folder.id}
-          />
-        </div>
-      {/each}
+      {#if isEmptyState}
+        <section class="empty-state">
+          <div class="empty-state-eyebrow">{translate($languageStore, "bookmarks.emptyEyebrow")}</div>
+          <h3 class="empty-state-title">
+            {translate($languageStore, showArchived ? "bookmarks.emptyArchivedTitle" : "bookmarks.emptyTitle")}
+          </h3>
+          <p class="empty-state-description">
+            {translate($languageStore, showArchived ? "bookmarks.emptyArchivedDescription" : "bookmarks.emptyDescription")}
+          </p>
+          <div class="empty-state-actions">
+            {#if showArchived}
+              <Button
+                label={translate($languageStore, "bookmarks.emptyArchivedAction")}
+                theme="gold"
+                onClick={() => showArchived = false} />
+            {:else}
+              <Button
+                label={translate($languageStore, "bookmarks.toolbar.newFolderTitle")}
+                theme="gold"
+                onClick={createFolder} />
+            {/if}
+          </div>
+        </section>
+      {:else}
+        {#each displayedFolders as folder (folder.id)}
+          <div class="folder-shell" animate:flip={{ duration: 180 }}>
+            <BookmarkFolder 
+                {folder} 
+                isExpanded={expandedFolderIds.includes(folder.id || "")}
+                isTutorialSaveTarget={tutorialStep === "save-search" && folder.id === tutorialTargetFolderId}
+                startInEditMode={pendingEditFolderId === folder.id}
+                onStartInEditModeHandled={() => {
+                  if (pendingEditFolderId === folder.id) pendingEditFolderId = null;
+                }}
+                onToggleExpansion={toggleExpansion}
+                onArchiveEvent={() => toggleArchive(folder)}
+                 onDeleteEvent={() => requestFolderDelete(folder)}
+                onFolderDragStart={handleFolderDragStart}
+                onFolderDragEnter={handleFolderDragEnter}
+                onFolderDrop={handleFolderDrop}
+                onFolderDragEnd={handleFolderDragEnd}
+                isFolderDragging={draggedFolderId === folder.id}
+                isFolderDragOver={dragOverFolderId === folder.id}
+            />
+          </div>
+        {/each}
+      {/if}
     </div>
   </LoadingContainer>
-
-  <section class="action-section backup-section">
-    <div class="section-heading">{translate($languageStore, "bookmarks.backupTitle")}</div>
-    <div class="button-row backup-row">
-        <Button label={translate($languageStore, "bookmarks.saveFile")} theme="gold" iconHtml={toolbarIcons.import} onClick={exportToFile} class="flex-1" />
-        <Button label={translate($languageStore, "bookmarks.restoreFile")} theme="gold" iconHtml={toolbarIcons.active} onFileChange={restoreFromFile} fileAccept=".txt" class="flex-1" />
-    </div>
-  </section>
 </div>
 
 <ConfirmDialog
@@ -466,7 +468,7 @@
     flex-direction: column;
     flex-shrink: 0;
     padding: 12px;
-    background: linear-gradient(180deg, rgba($gold, 0.05), transparent);
+    background: #120f0d;
     border: 1px solid rgba($gold, 0.1);
     border-radius: 4px;
     margin: 0 4px;
@@ -486,30 +488,17 @@
   .toolbar-panel {
     gap: 10px;
     padding: 10px 12px;
-    background:
-      linear-gradient(180deg, rgba($gold, 0.08), rgba($gold, 0.02)),
-      rgba($black, 0.5);
+    background: #15110e;
     border-color: rgba($gold, 0.14);
     min-width: 0;
     box-shadow: inset 0 1px 0 rgba($white, 0.03);
   }
 
-  .backup-section {
-    margin-top: auto;
-    margin-bottom: 0;
-    margin-left: 0;
-    margin-right: 0;
-    padding: 10px 15px;
-    background-color: rgba($black, 0.4);
-    border-top: 1px solid rgba($gold, 0.1);
-    border-bottom: none;
-    border-left: none;
-    border-right: none;
-    border-radius: 0;
-  }
-
   .toolbar-row {
-    display: block;
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 6px;
+    align-items: start;
   }
 
   .bookmarks-page :global(.loading-container) {
@@ -521,6 +510,10 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
+  }
+
+  .toolbar-actions--secondary {
+    opacity: 0.88;
   }
 
   .toolbar-button {
@@ -556,6 +549,25 @@
       border-color: rgba($gold, 0.38);
       background: rgba(54, 42, 28, 0.96);
       color: #e2b56e;
+    }
+  }
+
+  .toolbar-actions--secondary .toolbar-button {
+    min-height: 34px;
+    border-color: rgba($gold, 0.14);
+    background: rgba($black, 0.22);
+    color: rgba(215, 167, 95, 0.84);
+
+    &:hover {
+      border-color: rgba($gold, 0.24);
+      background: rgba(33, 27, 20, 0.82);
+      box-shadow: inset 0 1px 0 rgba(255, 232, 187, 0.02);
+    }
+
+    &.active {
+      border-color: rgba($gold, 0.26);
+      background: rgba(47, 38, 28, 0.88);
+      color: #ddb26b;
     }
   }
 
@@ -602,11 +614,13 @@
 
   @media (min-width: 520px) {
     .toolbar-row {
-      display: block;
+      grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
     }
+  }
 
-    .toolbar-actions {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+  @container (max-width: 359px) {
+    .toolbar-row {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 
@@ -627,20 +641,6 @@
       min-width: 0;
   }
 
-  .backup-row {
-      :global(button) {
-          letter-spacing: 0.05em;
-      }
-
-      :global(.icon),
-      :global(.button-icon),
-      :global(.icon-slot),
-      :global([class*="icon"]) {
-          opacity: 0.68;
-          transform: scale(0.88);
-      }
-  }
-
   .view-controls {
       display: flex;
       gap: 6px;
@@ -655,30 +655,113 @@
     min-width: 0;
   }
 
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 4px;
+    padding: 16px 14px;
+    border: 1px dashed rgba($gold, 0.18);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba($gold, 0.05), rgba($gold, 0.015)),
+      rgba($black, 0.28);
+  }
+
+  .empty-state-eyebrow {
+    font-family: $primary-font;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba($gold-alt, 0.82);
+  }
+
+  .empty-state-title {
+    margin: 0;
+    font-family: "Fontin", serif;
+    font-size: 18px;
+    line-height: 1.15;
+    color: rgba($white, 0.96);
+  }
+
+  .empty-state-description {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba($white, 0.74);
+  }
+
+  .empty-state-actions {
+    display: flex;
+    padding-top: 2px;
+  }
+
 
   .import-text-area {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
       margin-top: 10px;
-      padding-top: 10px;
+      padding-top: 12px;
       border-top: 1px solid rgba($gold, 0.1);
+      background: linear-gradient(180deg, rgba($gold, 0.04), rgba($gold, 0.01));
+      border-radius: 6px;
+  }
+
+  .import-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+  }
+
+  .import-title {
+      font-family: $primary-font;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: $gold;
+  }
+
+  .import-description,
+  .import-hint {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.4;
+  }
+
+  .import-description {
+      color: rgba($white, 0.76);
+  }
+
+  .import-hint {
+      color: rgba($gold-alt, 0.62);
+  }
+
+  .import-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
 
       textarea {
           width: 100%;
-          height: 100px;
-          background: rgba($black, 0.3);
-          border: 1px solid rgba($gold, 0.2);
-          border-radius: 4px;
+          min-height: 112px;
+          background: rgba($black, 0.38);
+          border: 1px solid rgba($gold, 0.18);
+          border-radius: 6px;
           color: $white;
           font-family: monospace;
           font-size: 11px;
-          padding: 8px;
+          line-height: 1.45;
+          padding: 10px;
           resize: vertical;
-          outline: none;
-
-          &:focus {
+          &:focus-visible {
               border-color: $gold;
+              box-shadow:
+                0 0 0 1px rgba($gold, 0.24),
+                0 0 0 3px rgba($gold, 0.1);
            }
        }
    }

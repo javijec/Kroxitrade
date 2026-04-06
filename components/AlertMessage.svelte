@@ -5,7 +5,7 @@
   $: icon = type === "success" ? "✓" : "⚠";
 </script>
 
-<div class="alert-message is-{type}">
+<div class="alert-message is-{type}" role="status" aria-live="polite">
   <span class="icon">{icon}</span>
   <span class="text">{@html message}</span>
 </div>

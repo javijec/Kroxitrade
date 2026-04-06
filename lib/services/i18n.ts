@@ -29,6 +29,10 @@ const translations = {
     "layout.removeAlert": "Remove alert",
     "layout.resizeSidebar": "Resize sidebar",
     "layout.restorePanel": "Restore Poe Trade Plus Panel",
+    "layout.versionNoticeEyebrow": "New Version",
+    "layout.versionNoticeMessage": ({ version }) =>
+      `Poe Trade Plus was updated to ${version}.`,
+    "layout.versionNoticeClose": "Close new version message",
     "welcome.title": "Welcome to Poe Trade Plus",
     "welcome.message":
       "Choose the language you want to use for the extension before you start.",
@@ -176,9 +180,20 @@ const translations = {
     "settings.onboardingDescription":
       "Open the quick onboarding again to review the main actions and tabs.",
     "settings.reopenTutorial": "Open Tutorial",
+    "settings.resultsTitle": "Results Tools",
     "settings.equivalentTitle": "Equivalent Pricing",
     "settings.equivalentDescription":
       "Show or hide the extra chaos/divine equivalent line in trade results.",
+    "settings.equivalentSource":
+      "Uses poe.ninja ratios cached every 15 minutes.",
+    "settings.equivalentRefresh": "Refresh Ratio",
+    "settings.equivalentRefreshLoading": "Refreshing...",
+    "settings.equivalentRefreshSuccess": ({ league }) =>
+      `Equivalent pricing ratios refreshed for ${league}.`,
+    "settings.equivalentRefreshError":
+      "Could not refresh the poe.ninja ratio right now.",
+    "settings.equivalentRefreshUnavailable":
+      "Open a trade league first to refresh the poe.ninja ratio.",
     "settings.bulkTitle": "Bulk Sellers",
     "settings.bulkDescription":
       "Show or hide the bulk sellers tab that groups repeated sellers from the current trade results.",
@@ -200,6 +215,9 @@ const translations = {
     "settings.compactTradeActionsTitle": "Trade Actions Outside Menu",
     "settings.compactTradeActionsDescription":
       "Choose which saved-search actions stay visible in compact mode. If none are selected, only the three-dot menu is shown. If all or all but one are selected, every action stays visible.",
+    "settings.tradeActionsTitle": "Visible Trade Actions",
+    "settings.tradeActionsDescription":
+      "Choose which saved-search actions stay visible outside the menu in both classic and compact layouts. If none are selected, only the three-dot menu is shown.",
     "settings.compactTradeActionToggle": "Complete / Pending",
     "about.eyebrow": "About",
     "about.description":
@@ -235,9 +253,24 @@ const translations = {
     "bookmarks.toolbar.archive": "Archive",
     "bookmarks.toolbar.showActive": "Show Active",
     "bookmarks.toolbar.showArchived": "Show Archived",
+    "bookmarks.importTitle": "Import folder",
+    "bookmarks.importDescription":
+      "Paste the exported folder text below to restore it as a saved bookmarks folder.",
     "bookmarks.importPlaceholder": "Paste folder text here...",
+    "bookmarks.importHint":
+      "Use the full export string from a previously exported folder.",
+    "bookmarks.emptyEyebrow": "Bookmarks",
+    "bookmarks.emptyTitle": "Create your first folder",
+    "bookmarks.emptyDescription":
+      "Save your most-used trade searches in folders so you can reopen them quickly later.",
+    "bookmarks.emptyArchivedTitle": "No archived folders yet",
+    "bookmarks.emptyArchivedDescription":
+      "Archived folders will appear here when you move them out of your active bookmarks list.",
+    "bookmarks.emptyArchivedAction": "Show active folders",
     "bookmarks.confirmImport": "Confirm Import",
     "bookmarks.backupTitle": "Backup & Restore",
+    "bookmarks.backupDescription":
+      "Save a file copy of your folders or restore one you exported earlier.",
     "bookmarks.saveFile": "Save File",
     "bookmarks.restoreFile": "Restore From File",
     "confirm.cancel": "Cancel",
@@ -251,6 +284,8 @@ const translations = {
     "history.clear": "Clear History",
     "history.cleared": "History cleared!",
     "history.empty": ({ version }) => `History is empty for PoE ${version}.`,
+    "history.today": "Today",
+    "history.yesterday": "Yesterday",
     "folder.metaSeparator": " • ",
     "folder.copiedTrade": ({ title }) => `Copied ${title} to clipboard`,
     "folder.copyTradeError": "Couldn't copy the trade URL.",
@@ -282,8 +317,11 @@ const translations = {
     "folder.deleteTrade": "Delete trade",
     "folder.actionsMenu": "More actions",
     "folder.renameFolder": "Rename folder",
+    "folder.chooseIcon": "Choose a folder icon",
+    "folder.noIcon": "No icon",
     "folder.duplicateFolder": "Duplicate folder",
     "folder.duplicatedFolder": ({ title }) => `Duplicated folder "${title}"`,
+    "folder.saveFolderChanges": "Save folder",
     "folder.saveCurrentSearch": "Save current search",
     "folder.loadTradesError": "Couldn't load trades.",
     "folder.deleteTradeError": "Couldn't delete trade.",
@@ -309,6 +347,10 @@ const translations = {
     "layout.removeAlert": "Quitar alerta",
     "layout.resizeSidebar": "Redimensionar panel",
     "layout.restorePanel": "Restaurar panel de Poe Trade Plus",
+    "layout.versionNoticeEyebrow": "Nueva versión",
+    "layout.versionNoticeMessage": ({ version }) =>
+      `Poe Trade Plus se actualizó a la versión ${version}.`,
+    "layout.versionNoticeClose": "Cerrar aviso de nueva versión",
     "welcome.title": "Bienvenido a Poe Trade Plus",
     "welcome.message":
       "Elegí el idioma que querés usar para la extensión antes de empezar.",
@@ -456,9 +498,20 @@ const translations = {
     "settings.onboardingDescription":
       "Volvé a abrir la guía rápida para repasar las acciones y pestañas principales.",
     "settings.reopenTutorial": "Abrir tutorial",
+    "settings.resultsTitle": "Herramientas de resultados",
     "settings.equivalentTitle": "Precio equivalente",
     "settings.equivalentDescription":
       "Mostrá u ocultá la línea extra con equivalencias en chaos/divine en los resultados.",
+    "settings.equivalentSource":
+      "Usa ratios de poe.ninja cacheados cada 15 minutos.",
+    "settings.equivalentRefresh": "Recargar ratio",
+    "settings.equivalentRefreshLoading": "Recargando...",
+    "settings.equivalentRefreshSuccess": ({ league }) =>
+      `Los ratios de precio equivalente se recargaron para ${league}.`,
+    "settings.equivalentRefreshError":
+      "No se pudo recargar el ratio de poe.ninja ahora mismo.",
+    "settings.equivalentRefreshUnavailable":
+      "Abrí primero una liga de trade para recargar el ratio de poe.ninja.",
     "settings.bulkTitle": "Bulk Sellers",
     "settings.bulkDescription":
       "Mostrá u ocultá la pestaña Bulk que agrupa vendedores repetidos de los resultados actuales.",
@@ -480,6 +533,9 @@ const translations = {
     "settings.compactTradeActionsTitle": "Acciones visibles fuera del menú",
     "settings.compactTradeActionsDescription":
       "Elegí qué acciones de cada búsqueda guardada quedan visibles en modo compacto. Si no seleccionás ninguna, solo se ven los tres puntos. Si seleccionás todas o todas menos una, se muestran todas.",
+    "settings.tradeActionsTitle": "Acciones visibles de cada búsqueda",
+    "settings.tradeActionsDescription":
+      "Elegí qué acciones de cada búsqueda guardada quedan visibles fuera del menú tanto en el diseño clásico como en el compacto. Si no seleccionás ninguna, solo se ven los tres puntos.",
     "settings.compactTradeActionToggle": "Completar / Pendiente",
     "about.eyebrow": "Acerca de",
     "about.description":
@@ -516,9 +572,24 @@ const translations = {
     "bookmarks.toolbar.archive": "Archivo",
     "bookmarks.toolbar.showActive": "Mostrar activas",
     "bookmarks.toolbar.showArchived": "Mostrar archivadas",
+    "bookmarks.importTitle": "Importar carpeta",
+    "bookmarks.importDescription":
+      "Pegá abajo el texto exportado de una carpeta para restaurarla como favoritos guardados.",
     "bookmarks.importPlaceholder": "Pegá acá el texto de la carpeta...",
+    "bookmarks.importHint":
+      "Usá la cadena completa que se exportó previamente desde una carpeta.",
+    "bookmarks.emptyEyebrow": "Favoritos",
+    "bookmarks.emptyTitle": "Creá tu primera carpeta",
+    "bookmarks.emptyDescription":
+      "Guardá tus búsquedas de trade más usadas en carpetas para reabrirlas rápido cuando las necesites.",
+    "bookmarks.emptyArchivedTitle": "Todavía no hay carpetas archivadas",
+    "bookmarks.emptyArchivedDescription":
+      "Las carpetas archivadas van a aparecer acá cuando las saques de tu lista activa de favoritos.",
+    "bookmarks.emptyArchivedAction": "Mostrar carpetas activas",
     "bookmarks.confirmImport": "Confirmar importación",
     "bookmarks.backupTitle": "Respaldo y restauración",
+    "bookmarks.backupDescription":
+      "Guardá una copia en archivo de tus carpetas o restaurá una que hayas exportado antes.",
     "bookmarks.saveFile": "Guardar archivo",
     "bookmarks.restoreFile": "Restaurar desde archivo",
     "confirm.cancel": "Cancelar",
@@ -533,6 +604,8 @@ const translations = {
     "history.cleared": "¡Historial borrado!",
     "history.empty": ({ version }) =>
       `El historial está vacío para PoE ${version}.`,
+    "history.today": "Hoy",
+    "history.yesterday": "Ayer",
     "folder.metaSeparator": " • ",
     "folder.copiedTrade": ({ title }) => `Se copió ${title} al portapapeles`,
     "folder.copyTradeError": "No se pudo copiar la URL del trade.",
@@ -568,8 +641,11 @@ const translations = {
     "folder.deleteTrade": "Eliminar trade",
     "folder.actionsMenu": "Más acciones",
     "folder.renameFolder": "Renombrar carpeta",
+    "folder.chooseIcon": "Elegí un ícono para la carpeta",
+    "folder.noIcon": "Sin ícono",
     "folder.duplicateFolder": "Duplicar carpeta",
     "folder.duplicatedFolder": ({ title }) => `Carpeta "${title}" duplicada`,
+    "folder.saveFolderChanges": "Guardar carpeta",
     "folder.saveCurrentSearch": "Guardar búsqueda actual",
     "folder.loadTradesError": "No se pudieron cargar los trades.",
     "folder.deleteTradeError": "No se pudo eliminar el trade.",
@@ -610,6 +686,7 @@ const portugueseTranslations: Record<string, TranslationValue> = {
     "Escolha o idioma usado pela interface da extensão.",
   "settings.languageEnglish": "Inglês",
   "settings.languageSpanish": "Espanhol",
+  "settings.resultsTitle": "Ferramentas de resultados",
   "settings.equivalentTitle": "Preço equivalente",
   "settings.equivalentDescription":
     "Mostre ou oculte a linha extra com equivalência em chaos/divine nos resultados.",
@@ -666,6 +743,8 @@ const portugueseTranslations: Record<string, TranslationValue> = {
   "history.cleared": "Histórico limpo!",
   "history.empty": ({ version }) =>
     `O histórico está vazio para PoE ${version}.`,
+  "history.today": "Hoje",
+  "history.yesterday": "Ontem",
   "folder.copiedTrade": ({ title }) =>
     `${title} copiado para a área de transferência`,
   "folder.copyTradeError": "Não foi possível copiar a URL do trade.",
@@ -737,6 +816,7 @@ const germanTranslations: Record<string, TranslationValue> = {
     "Wähle die Sprache der Erweiterungsoberfläche.",
   "settings.languageEnglish": "Englisch",
   "settings.languageSpanish": "Spanisch",
+  "settings.resultsTitle": "Ergebniswerkzeuge",
   "settings.equivalentTitle": "Äquivalenzpreis",
   "settings.equivalentDescription":
     "Zeige oder verberge die zusätzliche Zeile mit Chaos/Divine-Äquivalenten in den Ergebnissen.",
@@ -792,6 +872,8 @@ const germanTranslations: Record<string, TranslationValue> = {
   "history.clear": "Verlauf löschen",
   "history.cleared": "Verlauf gelöscht!",
   "history.empty": ({ version }) => `Der Verlauf für PoE ${version} ist leer.`,
+  "history.today": "Heute",
+  "history.yesterday": "Gestern",
   "folder.copiedTrade": ({ title }) => `${title} in die Zwischenablage kopiert`,
   "folder.copyTradeError": "Die Trade-URL konnte nicht kopiert werden.",
   "folder.duplicatedTrade": ({ title }) => `${title} dupliziert`,
@@ -855,9 +937,10 @@ const frenchTranslations: Record<string, TranslationValue> = {
   "settings.resetWidth": "Réinitialiser la largeur",
   "settings.languageTitle": "Langue",
   "settings.languageDescription":
-    "Choisissez la langue utilisée par l’interface de l’extension.",
+    "Choisissez la langue utilisée par l'interface de l'extension.",
   "settings.languageEnglish": "Anglais",
   "settings.languageSpanish": "Espagnol",
+  "settings.resultsTitle": "Outils de résultats",
   "settings.equivalentTitle": "Prix équivalent",
   "settings.equivalentDescription":
     "Afficher ou masquer la ligne supplémentaire avec l’équivalent chaos/divine dans les résultats.",
@@ -915,6 +998,8 @@ const frenchTranslations: Record<string, TranslationValue> = {
   "history.cleared": "Historique effacé !",
   "history.empty": ({ version }) =>
     `L’historique est vide pour PoE ${version}.`,
+  "history.today": "Aujourd'hui",
+  "history.yesterday": "Hier",
   "folder.copiedTrade": ({ title }) => `${title} copié dans le presse-papiers`,
   "folder.copyTradeError": "Impossible de copier l’URL du trade.",
   "folder.duplicatedTrade": ({ title }) => `${title} dupliqué`,
@@ -982,6 +1067,7 @@ const russianTranslations: Record<string, TranslationValue> = {
   "settings.languageDescription": "Выберите язык интерфейса расширения.",
   "settings.languageEnglish": "Английский",
   "settings.languageSpanish": "Испанский",
+  "settings.resultsTitle": "Инструменты результатов",
   "settings.equivalentTitle": "Эквивалентная цена",
   "settings.equivalentDescription":
     "Показывать или скрывать дополнительную строку с эквивалентом в chaos/divine в результатах.",
@@ -1035,6 +1121,8 @@ const russianTranslations: Record<string, TranslationValue> = {
   "history.clear": "Очистить историю",
   "history.cleared": "История очищена!",
   "history.empty": ({ version }) => `История пуста для PoE ${version}.`,
+  "history.today": "Сегодня",
+  "history.yesterday": "Вчера",
   "folder.copiedTrade": ({ title }) => `${title} скопирован в буфер обмена`,
   "folder.copyTradeError": "Не удалось скопировать URL трейда.",
   "folder.duplicatedTrade": ({ title }) => `${title} дублирован`,
@@ -1100,6 +1188,7 @@ const thaiTranslations: Record<string, TranslationValue> = {
   "settings.languageDescription": "เลือกภาษาที่ใช้ในส่วนติดต่อของส่วนขยาย",
   "settings.languageEnglish": "อังกฤษ",
   "settings.languageSpanish": "สเปน",
+  "settings.resultsTitle": "เครื่องมือผลลัพธ์",
   "settings.equivalentTitle": "ราคาเทียบเท่า",
   "settings.equivalentDescription":
     "แสดงหรือซ่อนบรรทัดเพิ่มเติมที่แสดงราคาเทียบเท่า chaos/divine ในผลลัพธ์",
@@ -1153,6 +1242,8 @@ const thaiTranslations: Record<string, TranslationValue> = {
   "history.clear": "ล้างประวัติ",
   "history.cleared": "ล้างประวัติแล้ว!",
   "history.empty": ({ version }) => `ไม่มีประวัติสำหรับ PoE ${version}`,
+  "history.today": "วันนี้",
+  "history.yesterday": "เมื่อวาน",
   "folder.copiedTrade": ({ title }) => `คัดลอก ${title} ไปยังคลิปบอร์ดแล้ว`,
   "folder.copyTradeError": "ไม่สามารถคัดลอก URL ของ trade ได้",
   "folder.duplicatedTrade": ({ title }) => `คัดลอก ${title} แล้ว`,
@@ -1223,6 +1314,7 @@ const japaneseTranslations: Record<string, TranslationValue> = {
     "拡張機能のインターフェースで使用する言語を選択してください。",
   "settings.languageEnglish": "英語",
   "settings.languageSpanish": "スペイン語",
+  "settings.resultsTitle": "検索結果ツール",
   "settings.equivalentTitle": "等価価格",
   "settings.equivalentDescription":
     "検索結果に追加表示される chaos/divine 等価行を表示または非表示にします。",
@@ -1277,6 +1369,8 @@ const japaneseTranslations: Record<string, TranslationValue> = {
   "history.clear": "履歴を消去",
   "history.cleared": "履歴を消去しました！",
   "history.empty": ({ version }) => `PoE ${version} の履歴は空です。`,
+  "history.today": "今日",
+  "history.yesterday": "昨日",
   "folder.copiedTrade": ({ title }) =>
     `${title} をクリップボードにコピーしました`,
   "folder.copyTradeError": "トレード URL をコピーできませんでした。",
@@ -1351,6 +1445,7 @@ const koreanTranslations: Record<string, TranslationValue> = {
     "확장 프로그램 인터페이스에 사용할 언어를 선택하세요.",
   "settings.languageEnglish": "영어",
   "settings.languageSpanish": "스페인어",
+  "settings.resultsTitle": "결과 도구",
   "settings.equivalentTitle": "환산 가격",
   "settings.equivalentDescription":
     "결과에 추가로 표시되는 chaos/divine 환산 줄을 표시하거나 숨깁니다.",
@@ -1404,6 +1499,8 @@ const koreanTranslations: Record<string, TranslationValue> = {
   "history.clear": "기록 지우기",
   "history.cleared": "기록을 지웠습니다!",
   "history.empty": ({ version }) => `PoE ${version}의 기록이 비어 있습니다.`,
+  "history.today": "오늘",
+  "history.yesterday": "어제",
   "folder.copiedTrade": ({ title }) => `${title}을(를) 클립보드에 복사했습니다`,
   "folder.copyTradeError": "거래 URL을 복사할 수 없습니다.",
   "folder.duplicatedTrade": ({ title }) => `${title}을(를) 복제했습니다`,

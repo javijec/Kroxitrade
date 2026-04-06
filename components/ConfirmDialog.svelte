@@ -61,6 +61,7 @@
     padding: 16px;
     background: rgba($black, 0.72);
     backdrop-filter: blur(6px);
+    overscroll-behavior: contain;
   }
 
   .confirm-dialog {

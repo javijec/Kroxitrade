@@ -46,7 +46,6 @@
     border: 1px solid rgba($white, 0.1);
     background: rgba($white, 0.03);
     border-radius: 2px;
-    outline: none;
     text-decoration: none;
     font-family: $primary-font;
     font-size: 11px;
@@ -55,7 +54,12 @@
     font-weight: 600;
     color: rgba($white, 0.8);
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition:
+      background-color 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      border-color 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      color 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      box-shadow 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
 
     &:hover {
       background: rgba($white, 0.08);
@@ -65,6 +69,13 @@
 
     &:active {
       transform: translateY(1px);
+    }
+
+    &:focus-visible {
+      border-color: rgba($gold, 0.72);
+      box-shadow:
+        0 0 0 1px rgba($gold, 0.3),
+        0 0 0 3px rgba($gold, 0.14);
     }
 
     &.is-blue {

@@ -92,7 +92,12 @@
     border-radius: 4px;
     color: rgba($white, 0.72);
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition:
+      background-color 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      border-color 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      color 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      box-shadow 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
 
     .chev-icon {
       font-size: 10px;
@@ -103,6 +108,14 @@
       background: rgba($white, 0.1);
       border-color: rgba($gold, 0.4);
       color: $gold;
+    }
+
+    &:focus-visible {
+      border-color: rgba($gold, 0.62);
+      color: $gold;
+      box-shadow:
+        0 0 0 1px rgba($gold, 0.24),
+        0 0 0 3px rgba($gold, 0.12);
     }
   }
 </style>

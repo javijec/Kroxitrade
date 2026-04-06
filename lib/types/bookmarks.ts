@@ -32,16 +32,16 @@ export interface BookmarksFolderStruct {
 export type BookmarksFolderIcon = string; // Simplified for now, or use the enum
 
 export enum BookmarksFolderPoE1ItemIcon {
-  ALCHEMY = 'alchemy',
-  CHAOS = 'chaos',
-  EXALT = 'exalt',
-  DIVINE = 'divine',
-  MIRROR = 'mirror',
-  CARD = 'card',
-  ESSENCE = 'essence',
-  FOSSIL = 'fossil',
-  MAP = 'map',
-  SCARAB = 'scarab',
+  ALCHEMY = 'poe1-alchemy',
+  CHAOS = 'poe1-chaos',
+  EXALT = 'poe1-exalt',
+  DIVINE = 'poe1-divine',
+  MIRROR = 'poe1-mirror',
+  CARD = 'poe1-card',
+  ESSENCE = 'poe1-essence',
+  FOSSIL = 'poe1-fossil',
+  MAP = 'poe1-map',
+  SCARAB = 'poe1-scarab',
 }
 
 export enum BookmarksFolderPoE2ItemIcon {

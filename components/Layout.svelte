@@ -20,6 +20,7 @@
   import { settings } from "../lib/services/settings";
   import { storageService } from "../lib/services/storage";
   import { tradeLocationService } from "../lib/services/trade-location";
+  import { hasValidExtensionContext } from "../lib/utilities/extension-context";
   import type { BookmarksFolderStruct, BookmarksTradeStruct } from "../lib/types/bookmarks";
   import { onDestroy, onMount, tick } from "svelte";
   
@@ -27,6 +28,7 @@
   const WELCOME_SEEN_KEY = "layout-welcome-seen";
   const ONBOARDING_SEEN_KEY = "layout-onboarding-seen";
   const ONBOARDING_FOLDER_ID_KEY = "layout-onboarding-folder-id";
+  const VERSION_NOTICE_SEEN_KEY = "layout-version-notice-seen";
 
   let currentPage: 'bookmarks' | 'bulk' | 'history' | 'about' | 'settings' = 'bookmarks';
   let isMinimized = false;
@@ -51,6 +53,10 @@
     | 'settings-bookmarks'
     | null = null;
   let onboardingTutorialFolderId: string | null = null;
+  let appVersion = hasValidExtensionContext()
+    ? chrome.runtime.getManifest().version
+    : "dev";
+  let showVersionNotice = false;
 
   const MIN_SIDEBAR_WIDTH = 300;
   const MAX_SIDEBAR_WIDTH = 560;
@@ -190,6 +196,17 @@
     await settings.load();
     tradeLocationService.startPolling();
     welcomeLanguage = $settings.language;
+    appVersion = hasValidExtensionContext()
+      ? chrome.runtime.getManifest().version
+      : "dev";
+    const seenVersionNotice = storageService.getLocalValue(VERSION_NOTICE_SEEN_KEY);
+    if (appVersion !== "dev") {
+      if (seenVersionNotice && seenVersionNotice !== appVersion) {
+        showVersionNotice = true;
+      } else if (!seenVersionNotice) {
+        storageService.setLocalValue(VERSION_NOTICE_SEEN_KEY, appVersion);
+      }
+    }
     const shouldShowWelcome = storageService.getLocalValue(WELCOME_SEEN_KEY) !== "true";
     const shouldShowOnboarding = storageService.getLocalValue(ONBOARDING_SEEN_KEY) !== "true";
     if (shouldShowWelcome) {
@@ -228,6 +245,13 @@
 
     if (storageService.getLocalValue(ONBOARDING_SEEN_KEY) !== "true") {
       await openOnboarding();
+    }
+  };
+
+  const dismissVersionNotice = () => {
+    showVersionNotice = false;
+    if (appVersion !== "dev") {
+      storageService.setLocalValue(VERSION_NOTICE_SEEN_KEY, appVersion);
     }
   };
 
@@ -327,6 +351,29 @@
   {/if}
 
   <Header {logoUrl} {isMinimized} onToggleMinimize={toggleMinimize} sidebarSide={$settings.sidebarSide} />
+
+  {#if showVersionNotice}
+    <div class="version-notice" role="status" aria-live="polite">
+      <div class="version-notice__copy">
+        <span class="version-notice__eyebrow">
+          {translate($languageStore, "layout.versionNoticeEyebrow")}
+        </span>
+        <p class="version-notice__text">
+          {translate($languageStore, "layout.versionNoticeMessage", {
+            version: appVersion
+          })}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="version-notice__close"
+        aria-label={translate($languageStore, "layout.versionNoticeClose")}
+        on:click={dismissVersionNotice}
+      >
+        ×
+      </button>
+    </div>
+  {/if}
   
   <nav class="main-nav">
     <button 
@@ -376,7 +423,7 @@
     </button>
   </nav>
 
-  <div class="flash-messages">
+  <div class="flash-messages" aria-live="polite" aria-atomic="true">
     {#each $flashMessages as flash (flash.id)}
       <button 
         class="flash flash-{flash.type}" 
@@ -564,7 +611,12 @@
     gap: 8px;
     cursor: pointer;
     box-shadow: 2px 0 10px rgba($black, 0.5);
-    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition:
+      background-color 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      border-color 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      box-shadow 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+      padding 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
     z-index: 2147483647;
     pointer-events: auto;
 
@@ -613,6 +665,66 @@
     box-sizing: border-box;
   }
 
+  .version-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-top: 1px solid rgba($gold, 0.08);
+    border-bottom: 1px solid rgba($gold, 0.12);
+    background:
+      linear-gradient(180deg, rgba($gold, 0.08), rgba($gold, 0.04)),
+      rgba($black, 0.5);
+  }
+
+  .version-notice__copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .version-notice__eyebrow {
+    display: block;
+    margin-bottom: 2px;
+    color: rgba($gold-alt, 0.92);
+    font-family: $primary-font;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .version-notice__text {
+    margin: 0;
+    color: rgba($white, 0.84);
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .version-notice__close {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid rgba($gold, 0.18);
+    border-radius: 6px;
+    background: rgba($black, 0.22);
+    color: rgba($gold-alt, 0.88);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      color 0.15s ease;
+
+    &:hover,
+    &:focus-visible {
+      border-color: rgba($gold, 0.36);
+      background: rgba($black, 0.42);
+      color: $gold-alt;
+      outline: none;
+    }
+  }
+
   .nav-item {
     flex: 1;
     display: inline-flex;
@@ -623,18 +735,35 @@
     padding: 11px 4px 10px;
     background: transparent;
     border: 0;
+    border-radius: 0;
     color: rgba($white, 0.56);
     font-family: $primary-font;
     font-size: 11px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease,
+      border-bottom-color 0.2s ease,
+      box-shadow 0.2s ease;
     border-bottom: 1px solid transparent;
 
-    &:hover { color: $white; }
+    &:hover {
+      color: $white;
+      border-bottom-color: rgba($gold, 0.22);
+      background-color: rgba($white, 0.03);
+    }
+
     &.is-active { 
         color: $white; 
         border-bottom-color: $gold;
         background-color: rgba($white, 0.04);
+    }
+
+    &:focus-visible {
+      color: $white;
+      background-color: rgba($gold, 0.08);
+      border-bottom-color: rgba($gold, 0.72);
+      box-shadow: inset 0 0 0 1px rgba($gold, 0.22);
     }
 
     &.is-onboarding-focus {
@@ -706,11 +835,22 @@
     box-shadow: 0 2px 10px rgba(0,0,0,0.5);
     background: none;
     text-align: left;
-    outline: none;
+    border: 1px solid transparent;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
 
-    &-success { background-color: $green; border: 1px solid color.adjust($green, $lightness: 10%); }
-    &-alert { background-color: $red; border: 1px solid color.adjust($red, $lightness: 10%); }
-    &-info { background-color: $blue; border: 1px solid color.adjust($blue, $lightness: 10%); }
+    &:focus-visible {
+      border-color: rgba($white, 0.88);
+      box-shadow:
+        0 0 0 1px rgba($black, 0.48),
+        0 0 0 3px rgba($white, 0.18);
+    }
+
+    &-success { background-color: $green; border-color: color.adjust($green, $lightness: 10%); }
+    &-alert { background-color: $red; border-color: color.adjust($red, $lightness: 10%); }
+    &-info { background-color: $blue; border-color: color.adjust($blue, $lightness: 10%); }
   }
 
   main {
@@ -769,10 +909,13 @@
     justify-content: center;
     cursor: pointer;
     z-index: 2147483647;
-    transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+    transition:
+      background-color 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+      border-color 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+      box-shadow 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+      width 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
     box-shadow: 2px 0 8px rgba(0,0,0,0.4);
     padding: 0;
-    outline: none;
 
     &:hover {
       background: color.adjust($poe-black, $lightness: 5%);
@@ -783,6 +926,13 @@
         color: $gold;
         transform: scale(1.2);
       }
+    }
+
+    &:focus-visible {
+      border-color: rgba($gold, 0.8);
+      box-shadow:
+        0 0 0 1px rgba($gold, 0.26),
+        0 0 0 3px rgba($gold, 0.14);
     }
 
     &.side-right {
@@ -807,7 +957,21 @@
     .chev-icon {
       font-size: 12px;
       color: rgba($white, 0.4);
-      transition: all 0.2s ease;
+      transition:
+        color 0.2s ease,
+        transform 0.2s ease;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #kroxitrade-container,
+    .resize-handle::after,
+    .resize-handle::before,
+    .floating-restore-btn,
+    .floating-restore-btn .chev-icon,
+    .nav-item,
+    .flash {
+      transition: none !important;
     }
   }
 </style>

@@ -1,6 +1,10 @@
 <script lang="ts">
   import { languageStore, translate, type AppLanguage } from "../../lib/services/i18n";
+  import { bookmarksService } from "../../lib/services/bookmarks";
+  import { flashMessages } from "../../lib/services/flash";
+  import { itemResultsService } from "../../lib/services/item-results";
   import { settings, type BookmarkTradeActionId, type SidebarSide } from "../../lib/services/settings";
+  import { tradeLocationService } from "../../lib/services/trade-location";
   import Button from "../Button.svelte";
   import { onDestroy, onMount } from "svelte";
   import flagBR from "data-base64:../../assets/BR.png";
@@ -67,6 +71,7 @@
   };
 
   let isLanguageMenuOpen = false;
+  let isRefreshingEquivalentRatios = false;
   let languageSelectorEl: HTMLDivElement | null = null;
 
   async function handleSideChange(side: SidebarSide) {
@@ -75,6 +80,28 @@
 
   async function handleEquivalentPricingChange(showEquivalentPricing: boolean) {
     await settings.updateEquivalentPricingVisibility(showEquivalentPricing);
+  }
+
+  async function handleEquivalentPricingRefresh() {
+    if (isRefreshingEquivalentRatios) return;
+
+    const league = tradeLocationService.current.league;
+    if (!league) {
+      flashMessages.alert(translate($languageStore, "settings.equivalentRefreshUnavailable"));
+      return;
+    }
+
+    isRefreshingEquivalentRatios = true;
+    try {
+      await itemResultsService.forceRefreshEquivalentPricing();
+      flashMessages.success(
+        translate($languageStore, "settings.equivalentRefreshSuccess", { league })
+      );
+    } catch {
+      flashMessages.alert(translate($languageStore, "settings.equivalentRefreshError"));
+    } finally {
+      isRefreshingEquivalentRatios = false;
+    }
   }
 
   async function handleBulkSellersChange(showBulkSellers: boolean) {
@@ -115,6 +142,37 @@
 
   async function handleLanguageChange(language: AppLanguage) {
     await settings.updateLanguage(language);
+  }
+
+  async function exportBookmarksBackup() {
+    const dataString = await bookmarksService.generateBackupDataString();
+    const blob = new Blob([dataString], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `poe-trade-plus-backup-${new Date().toISOString().slice(0, 10)}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    flashMessages.success(translate($languageStore, "bookmarks.exported"));
+  }
+
+  function restoreBookmarksBackup(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (loadEvent) => {
+      const dataString = loadEvent.target?.result as string;
+      const success = await bookmarksService.restoreFromDataString(dataString);
+      if (success) {
+        flashMessages.success(translate($languageStore, "bookmarks.restored"));
+      } else {
+        flashMessages.alert(translate($languageStore, "bookmarks.restoreFailed"));
+      }
+      input.value = "";
+    };
+    reader.readAsText(file);
   }
 
   function toggleSwitchLabel(value: boolean) {
@@ -164,297 +222,108 @@
 </script>
 
 <div class="settings-page">
-  <section class="settings-section" data-tutorial="settings-tutorial">
-    <div class="section-heading">
-      <h3 class="section-title">{translate($languageStore, "settings.onboardingTitle")}</h3>
-      <div class="info-tooltip">
-        <button
-          type="button"
-          class="info-tooltip__trigger"
-          aria-label={translate($languageStore, "settings.onboardingDescription")}
-        >
-          i
-        </button>
-        <div class="info-tooltip__content">{translate($languageStore, "settings.onboardingDescription")}</div>
+  <div class="settings-grid">
+    <section class="settings-section settings-section--feature settings-section--wide" data-tutorial="settings-language">
+      <div class="section-heading">
+        <h3 class="section-title">{translate($languageStore, "settings.languageTitle")}</h3>
       </div>
-    </div>
+      <p class="section-description">{translate($languageStore, "settings.languageDescription")}</p>
 
-    <div class="side-selector">
-      <Button
-        label={translate($languageStore, "settings.reopenTutorial")}
-        theme="gold"
-        class="side-btn"
-        onClick={onOpenTutorial}
-      />
-    </div>
-  </section>
+      <div class="language-selector" bind:this={languageSelectorEl}>
+        <div class="language-preview">
+          <img class="language-flag" src={selectedLanguage.flag} alt={selectedLanguage.label} />
+        </div>
 
-  <section class="settings-section" data-tutorial="settings-sidebar">
-    <div class="section-heading">
-      <h3 class="section-title">{translate($languageStore, "settings.sidebarTitle")}</h3>
-      <div class="info-tooltip">
-        <button
-          type="button"
-          class="info-tooltip__trigger"
-          aria-label={translate($languageStore, "settings.sidebarDescription")}
-        >
-          i
-        </button>
-        <div class="info-tooltip__content">{translate($languageStore, "settings.sidebarDescription")}</div>
+        <div class="language-select-wrap">
+          <button
+            type="button"
+            class="language-select"
+            aria-haspopup="listbox"
+            aria-expanded={isLanguageMenuOpen}
+            on:click={toggleLanguageMenu}
+          >
+            <span class="language-option__native">{selectedLanguage.label}</span>
+            <span class="language-option__translated">{getLocalizedLanguageName(selectedLanguage.code)}</span>
+          </button>
+
+          {#if isLanguageMenuOpen}
+            <div class="language-menu" role="listbox" aria-label={translate($languageStore, "settings.languageTitle")}>
+              {#each languages as language (language.code)}
+                <button
+                  type="button"
+                  class="language-menu__item"
+                  class:is-active={language.code === $settings.language}
+                  role="option"
+                  aria-selected={language.code === $settings.language}
+                  on:click={(event) => selectLanguage(event, language.code)}
+                >
+                  <span class="language-menu__flag-wrap">
+                    <img class="language-flag" src={language.flag} alt={language.label} />
+                  </span>
+                  <span class="language-option__native">{language.label}</span>
+                  <span class="language-option__translated">{getLocalizedLanguageName(language.code)}</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
       </div>
-    </div>
+    </section>
+
+    <section class="settings-section settings-section--wide" data-tutorial="settings-sidebar">
+      <div class="section-heading">
+        <h3 class="section-title">{translate($languageStore, "settings.sidebarTitle")}</h3>
+      </div>
+      <p class="section-description">{translate($languageStore, "settings.sidebarDescription")}</p>
     
-    <div class="side-selector">
-      <Button 
-        label={translate($languageStore, "settings.left")} 
-        theme={$settings.sidebarSide === 'left' ? 'gold' : 'blue'}
-        class="side-btn"
-        onClick={() => handleSideChange('left')}
-      />
-      <Button 
-        label={translate($languageStore, "settings.right")} 
-        theme={$settings.sidebarSide === 'right' ? 'gold' : 'blue'}
-        class="side-btn"
-        onClick={() => handleSideChange('right')}
-      />
-      <Button
-        label={translate($languageStore, "settings.resetWidth")}
-        theme="blue"
-        class="side-btn reset-btn"
-        onClick={handleSidebarWidthReset}
-      />
-    </div>
-  </section>
-
-  <section class="settings-section" data-tutorial="settings-language">
-    <div class="section-heading">
-      <h3 class="section-title">{translate($languageStore, "settings.languageTitle")}</h3>
-      <div class="info-tooltip">
-        <button
-          type="button"
-          class="info-tooltip__trigger"
-          aria-label={translate($languageStore, "settings.languageDescription")}
-        >
-          i
-        </button>
-        <div class="info-tooltip__content">{translate($languageStore, "settings.languageDescription")}</div>
+      <div class="side-selector">
+        <Button 
+          label={translate($languageStore, "settings.left")} 
+          theme={$settings.sidebarSide === 'left' ? 'gold' : 'blue'}
+          class="side-btn"
+          onClick={() => handleSideChange('left')}
+        />
+        <Button 
+          label={translate($languageStore, "settings.right")} 
+          theme={$settings.sidebarSide === 'right' ? 'gold' : 'blue'}
+          class="side-btn"
+          onClick={() => handleSideChange('right')}
+        />
+        <Button
+          label={translate($languageStore, "settings.resetWidth")}
+          theme="blue"
+          class="side-btn reset-btn"
+          onClick={handleSidebarWidthReset}
+        />
       </div>
-    </div>
+    </section>
 
-    <div class="language-selector" bind:this={languageSelectorEl}>
-      <div class="language-preview">
-        <img class="language-flag" src={selectedLanguage.flag} alt={selectedLanguage.label} />
+    <section class="settings-section settings-section--wide settings-section--bookmarks-layout" data-tutorial="settings-bookmarks">
+      <div class="section-heading">
+        <h3 class="section-title">{translate($languageStore, "settings.compactActionsTitle")}</h3>
       </div>
+      <p class="section-description">{translate($languageStore, "settings.compactActionsDescription")}</p>
 
-      <div class="language-select-wrap">
-        <button
-          type="button"
-          class="language-select"
-          aria-haspopup="listbox"
-          aria-expanded={isLanguageMenuOpen}
-          on:click={toggleLanguageMenu}
-        >
-          <span class="language-option__native">{selectedLanguage.label}</span>
-          <span class="language-option__translated">{getLocalizedLanguageName(selectedLanguage.code)}</span>
-        </button>
-
-        {#if isLanguageMenuOpen}
-          <div class="language-menu" role="listbox" aria-label={translate($languageStore, "settings.languageTitle")}>
-            {#each languages as language (language.code)}
-              <button
-                type="button"
-                class="language-menu__item"
-                class:is-active={language.code === $settings.language}
-                role="option"
-                aria-selected={language.code === $settings.language}
-                on:click={(event) => selectLanguage(event, language.code)}
-              >
-                <span class="language-menu__flag-wrap">
-                  <img class="language-flag" src={language.flag} alt={language.label} />
-                </span>
-                <span class="language-option__native">{language.label}</span>
-                <span class="language-option__translated">{getLocalizedLanguageName(language.code)}</span>
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    </div>
-  </section>
-
-  <section class="settings-section" data-tutorial="settings-equivalent">
-    <div class="settings-inline-row">
-      <div class="section-heading section-heading--inline">
-        <h3 class="section-title">{translate($languageStore, "settings.equivalentTitle")}</h3>
-        <div class="info-tooltip">
-          <button
-            type="button"
-            class="info-tooltip__trigger"
-            aria-label={translate($languageStore, "settings.equivalentDescription")}
-          >
-            i
-          </button>
-          <div class="info-tooltip__content">{translate($languageStore, "settings.equivalentDescription")}</div>
-        </div>
+      <div class="side-selector side-selector--bookmark-layout">
+        <Button
+          label={translate($languageStore, "settings.compactActionsDefault")}
+          theme={$settings.compactActionsMenu ? 'blue' : 'gold'}
+          class="side-btn side-btn--bookmark-layout"
+          onClick={() => handleCompactActionsMenuChange(false)}
+        />
+        <Button
+          label={translate($languageStore, "settings.compactActionsCompact")}
+          theme={$settings.compactActionsMenu ? 'gold' : 'blue'}
+          class="side-btn side-btn--bookmark-layout"
+          onClick={() => handleCompactActionsMenuChange(true)}
+        />
       </div>
 
-      <button
-        type="button"
-        class="toggle-row toggle-row--inline"
-        class:is-active={$settings.showEquivalentPricing}
-        role="switch"
-        aria-checked={$settings.showEquivalentPricing}
-        aria-label={translate($languageStore, "settings.equivalentTitle")}
-        on:click={() => handleEquivalentPricingChange(!$settings.showEquivalentPricing)}
-      >
-        <span class="toggle-switch">
-          <span class="toggle-switch__thumb"></span>
-        </span>
-      </button>
-    </div>
-  </section>
-
-  <section class="settings-section" data-tutorial="settings-bulk">
-    <div class="settings-inline-row">
-      <div class="section-heading section-heading--inline">
-        <h3 class="section-title">{translate($languageStore, "settings.bulkTitle")}</h3>
-        <div class="info-tooltip">
-          <button
-            type="button"
-            class="info-tooltip__trigger"
-            aria-label={translate($languageStore, "settings.bulkDescription")}
-          >
-            i
-          </button>
-          <div class="info-tooltip__content">{translate($languageStore, "settings.bulkDescription")}</div>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="toggle-row toggle-row--inline"
-        class:is-active={$settings.showBulkSellers}
-        role="switch"
-        aria-checked={$settings.showBulkSellers}
-        aria-label={translate($languageStore, "settings.bulkTitle")}
-        on:click={() => handleBulkSellersChange(!$settings.showBulkSellers)}
-      >
-        <span class="toggle-switch">
-          <span class="toggle-switch__thumb"></span>
-        </span>
-      </button>
-    </div>
-  </section>
-
-  <section class="settings-section" data-tutorial="settings-history">
-    <div class="settings-inline-row">
-      <div class="section-heading section-heading--inline">
-        <h3 class="section-title">{translate($languageStore, "settings.historyTitle")}</h3>
-        <div class="info-tooltip">
-          <button
-            type="button"
-            class="info-tooltip__trigger"
-            aria-label={translate($languageStore, "settings.historyDescription")}
-          >
-            i
-          </button>
-          <div class="info-tooltip__content">{translate($languageStore, "settings.historyDescription")}</div>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="toggle-row toggle-row--inline"
-        class:is-active={$settings.showHistory}
-        role="switch"
-        aria-checked={$settings.showHistory}
-        aria-label={translate($languageStore, "settings.historyTitle")}
-        on:click={() => handleHistoryChange(!$settings.showHistory)}
-      >
-        <span class="toggle-switch">
-          <span class="toggle-switch__thumb"></span>
-        </span>
-      </button>
-    </div>
-  </section>
-
-  <section class="settings-section" data-tutorial="settings-filters">
-    <div class="settings-inline-row">
-      <div class="section-heading section-heading--inline">
-        <h3 class="section-title">{translate($languageStore, "settings.finerFiltersTitle")}</h3>
-        <div class="info-tooltip">
-          <button
-            type="button"
-            class="info-tooltip__trigger"
-            aria-label={translate($languageStore, "settings.finerFiltersDescription")}
-          >
-            i
-          </button>
-          <div class="info-tooltip__content">{translate($languageStore, "settings.finerFiltersDescription")}</div>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="toggle-row toggle-row--inline"
-        class:is-active={$settings.showFinerFilters}
-        role="switch"
-        aria-checked={$settings.showFinerFilters}
-        aria-label={translate($languageStore, "settings.finerFiltersTitle")}
-        on:click={() => handleFinerFiltersChange(!$settings.showFinerFilters)}
-      >
-        <span class="toggle-switch">
-          <span class="toggle-switch__thumb"></span>
-        </span>
-      </button>
-    </div>
-  </section>
-
-  <section class="settings-section" data-tutorial="settings-bookmarks">
-    <div class="section-heading">
-      <h3 class="section-title">{translate($languageStore, "settings.compactActionsTitle")}</h3>
-      <div class="info-tooltip">
-        <button
-          type="button"
-          class="info-tooltip__trigger"
-          aria-label={translate($languageStore, "settings.compactActionsDescription")}
-        >
-          i
-        </button>
-        <div class="info-tooltip__content">{translate($languageStore, "settings.compactActionsDescription")}</div>
-      </div>
-    </div>
-
-    <div class="side-selector">
-      <Button
-        label={translate($languageStore, "settings.compactActionsDefault")}
-        theme={$settings.compactActionsMenu ? 'blue' : 'gold'}
-        class="side-btn"
-        onClick={() => handleCompactActionsMenuChange(false)}
-      />
-      <Button
-        label={translate($languageStore, "settings.compactActionsCompact")}
-        theme={$settings.compactActionsMenu ? 'gold' : 'blue'}
-        class="side-btn"
-        onClick={() => handleCompactActionsMenuChange(true)}
-      />
-    </div>
-
-    {#if $settings.compactActionsMenu}
       <div class="compact-options">
         <div class="compact-options__heading">
-          <div class="compact-options__title">{translate($languageStore, "settings.compactTradeActionsTitle")}</div>
-          <div class="info-tooltip">
-            <button
-              type="button"
-              class="info-tooltip__trigger"
-              aria-label={translate($languageStore, "settings.compactTradeActionsDescription")}
-            >
-              i
-            </button>
-            <div class="info-tooltip__content">{translate($languageStore, "settings.compactTradeActionsDescription")}</div>
-          </div>
+          <div class="compact-options__title">{translate($languageStore, "settings.tradeActionsTitle")}</div>
         </div>
+        <p class="section-description section-description--compact">{translate($languageStore, "settings.tradeActionsDescription")}</p>
         <div class="compact-options__grid">
           {#each compactTradeActionOptions as option (option.id)}
             <label
@@ -473,9 +342,154 @@
           {/each}
         </div>
       </div>
-    {/if}
-  </section>
+    </section>
 
+    <section class="settings-section settings-section--wide">
+      <div class="section-heading">
+        <h3 class="section-title">{translate($languageStore, "bookmarks.backupTitle")}</h3>
+      </div>
+      <p class="section-description">{translate($languageStore, "bookmarks.backupDescription")}</p>
+
+      <div class="side-selector settings-actions-row">
+        <Button
+          label={translate($languageStore, "bookmarks.saveFile")}
+          theme="gold"
+          class="side-btn"
+          onClick={exportBookmarksBackup}
+        />
+        <Button
+          label={translate($languageStore, "bookmarks.restoreFile")}
+          theme="gold"
+          class="side-btn"
+          onFileChange={restoreBookmarksBackup}
+          fileAccept=".txt"
+        />
+      </div>
+    </section>
+
+    <section class="settings-section settings-section--wide">
+      <div class="section-heading">
+        <h3 class="section-title">{translate($languageStore, "settings.resultsTitle")}</h3>
+      </div>
+      <div class="settings-row-list">
+        <div class="settings-row" data-tutorial="settings-equivalent">
+          <div class="settings-row__copy">
+            <div class="settings-row__title">{translate($languageStore, "settings.equivalentTitle")}</div>
+            <div class="settings-row__description">{translate($languageStore, "settings.equivalentDescription")}</div>
+            <div class="settings-row__hint settings-row__hint--actions">
+              <span>{translate($languageStore, "settings.equivalentSource")}</span>
+              <button
+                type="button"
+                class="mini-action"
+                on:click={handleEquivalentPricingRefresh}
+                disabled={isRefreshingEquivalentRatios}
+              >
+                {translate(
+                  $languageStore,
+                  isRefreshingEquivalentRatios
+                    ? "settings.equivalentRefreshLoading"
+                    : "settings.equivalentRefresh"
+                )}
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="toggle-row toggle-row--inline"
+            class:is-active={$settings.showEquivalentPricing}
+            role="switch"
+            aria-checked={$settings.showEquivalentPricing}
+            aria-label={translate($languageStore, "settings.equivalentTitle")}
+            on:click={() => handleEquivalentPricingChange(!$settings.showEquivalentPricing)}
+          >
+            <span class="toggle-switch">
+              <span class="toggle-switch__thumb"></span>
+            </span>
+            <span class="toggle-state">{toggleSwitchLabel($settings.showEquivalentPricing)}</span>
+          </button>
+        </div>
+
+        <div class="settings-row" data-tutorial="settings-bulk">
+          <div class="settings-row__copy">
+            <div class="settings-row__title">{translate($languageStore, "settings.bulkTitle")}</div>
+            <div class="settings-row__description">{translate($languageStore, "settings.bulkDescription")}</div>
+          </div>
+          <button
+            type="button"
+            class="toggle-row toggle-row--inline"
+            class:is-active={$settings.showBulkSellers}
+            role="switch"
+            aria-checked={$settings.showBulkSellers}
+            aria-label={translate($languageStore, "settings.bulkTitle")}
+            on:click={() => handleBulkSellersChange(!$settings.showBulkSellers)}
+          >
+            <span class="toggle-switch">
+              <span class="toggle-switch__thumb"></span>
+            </span>
+            <span class="toggle-state">{toggleSwitchLabel($settings.showBulkSellers)}</span>
+          </button>
+        </div>
+
+        <div class="settings-row" data-tutorial="settings-history">
+          <div class="settings-row__copy">
+            <div class="settings-row__title">{translate($languageStore, "settings.historyTitle")}</div>
+            <div class="settings-row__description">{translate($languageStore, "settings.historyDescription")}</div>
+          </div>
+          <button
+            type="button"
+            class="toggle-row toggle-row--inline"
+            class:is-active={$settings.showHistory}
+            role="switch"
+            aria-checked={$settings.showHistory}
+            aria-label={translate($languageStore, "settings.historyTitle")}
+            on:click={() => handleHistoryChange(!$settings.showHistory)}
+          >
+            <span class="toggle-switch">
+              <span class="toggle-switch__thumb"></span>
+            </span>
+            <span class="toggle-state">{toggleSwitchLabel($settings.showHistory)}</span>
+          </button>
+        </div>
+
+        <div class="settings-row" data-tutorial="settings-filters">
+          <div class="settings-row__copy">
+            <div class="settings-row__title">{translate($languageStore, "settings.finerFiltersTitle")}</div>
+            <div class="settings-row__description">{translate($languageStore, "settings.finerFiltersDescription")}</div>
+          </div>
+          <button
+            type="button"
+            class="toggle-row toggle-row--inline"
+            class:is-active={$settings.showFinerFilters}
+            role="switch"
+            aria-checked={$settings.showFinerFilters}
+            aria-label={translate($languageStore, "settings.finerFiltersTitle")}
+            on:click={() => handleFinerFiltersChange(!$settings.showFinerFilters)}
+          >
+            <span class="toggle-switch">
+              <span class="toggle-switch__thumb"></span>
+            </span>
+            <span class="toggle-state">{toggleSwitchLabel($settings.showFinerFilters)}</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-section settings-section--feature settings-section--wide" data-tutorial="settings-tutorial">
+      <div class="section-heading">
+        <h3 class="section-title">{translate($languageStore, "settings.onboardingTitle")}</h3>
+      </div>
+      <p class="section-description">{translate($languageStore, "settings.onboardingDescription")}</p>
+
+      <div class="section-actions">
+        <Button
+          label={translate($languageStore, "settings.reopenTutorial")}
+          theme="gold"
+          class="side-btn"
+          onClick={onOpenTutorial}
+        />
+      </div>
+    </section>
+  </div>
 </div>
 
 <style lang="scss">
@@ -485,10 +499,15 @@
   .settings-page {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 14px;
     padding: 5px;
     color: $white;
     animation: fade-in 0.3s ease;
+  }
+
+  .settings-grid {
+    display: grid;
+    gap: 14px;
   }
 
   @keyframes fade-in {
@@ -497,15 +516,20 @@
   }
 
   .settings-section {
-    background: rgba($white, 0.02);
-    border: 1px solid rgba($white, 0.06);
+    background:
+      linear-gradient(180deg, rgba($white, 0.03), rgba($white, 0.015)),
+      rgba($white, 0.02);
+    border: 1px solid rgba($white, 0.07);
     padding: 16px;
-    border-radius: 4px;
+    border-radius: 8px;
+    box-shadow: inset 0 1px 0 rgba($white, 0.02);
+  }
 
-    &.info {
-      background: rgba($blue, 0.05);
-      border-color: rgba($blue, 0.2);
-    }
+  .settings-section--feature {
+    background:
+      linear-gradient(180deg, rgba($gold, 0.08), rgba($gold, 0.02)),
+      rgba($white, 0.02);
+    border-color: rgba($gold, 0.12);
   }
 
   .section-title {
@@ -521,12 +545,31 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     min-width: 0;
   }
 
   .section-heading--inline {
     margin-bottom: 0;
+  }
+
+  .section-description {
+    margin: 0;
+    color: rgba($white, 0.72);
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .section-description--compact {
+    margin-top: 8px;
+  }
+
+  .settings-section--bookmarks-layout {
+    text-align: left;
+  }
+
+  .section-actions {
+    margin-top: 14px;
   }
 
   .settings-inline-row {
@@ -536,20 +579,135 @@
     gap: 16px;
   }
 
+  .settings-row-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid rgba($white, 0.07);
+  }
+
+  .settings-row:first-child {
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .settings-row:last-child {
+    padding-bottom: 0;
+  }
+
+  .settings-row__copy {
+    min-width: 0;
+  }
+
+  .settings-row__title {
+    color: rgba($white, 0.94);
+    font-family: $primary-font;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .settings-row__description {
+    margin-top: 4px;
+    color: rgba($white, 0.66);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .settings-row__hint {
+    margin-top: 6px;
+    color: rgba($gold, 0.72);
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+  .settings-row__hint--actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .mini-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    padding: 0 8px;
+    border: 1px solid rgba($gold, 0.18);
+    border-radius: 4px;
+    background: rgba($gold, 0.07);
+    color: rgba($gold-alt, 0.92);
+    font-family: $primary-font;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      border-color 0.16s ease,
+      background-color 0.16s ease,
+      color 0.16s ease;
+
+    &:hover,
+    &:focus-visible {
+      border-color: rgba($gold, 0.34);
+      background: rgba($gold, 0.12);
+      color: $white;
+      outline: none;
+    }
+
+    &:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+  }
+
   .side-selector {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .side-selector--bookmark-layout {
+    justify-content: center;
+    margin-top: 18px;
+  }
+
+  .settings-actions-row {
+    margin-top: 14px;
   }
 
   .toggle-row {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 10px;
     padding: 0;
     border: none;
     background: transparent;
     cursor: pointer;
+
+    &:focus-visible {
+      .toggle-switch {
+        box-shadow:
+          0 0 0 1px rgba($gold, 0.28),
+          0 0 0 3px rgba($gold, 0.12);
+      }
+
+      .toggle-state {
+        color: $white;
+      }
+    }
   }
 
   .toggle-row--inline {
@@ -587,6 +745,17 @@
     transition: transform 0.16s ease, background 0.16s ease;
   }
 
+  .toggle-state {
+    min-width: 28px;
+    color: rgba($white, 0.68);
+    font-family: $primary-font;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-align: right;
+    text-transform: uppercase;
+  }
+
   .toggle-row.is-active .toggle-switch__thumb {
     transform: translateX(18px);
     background: #f7d08a;
@@ -595,6 +764,11 @@
   :global(.side-btn) {
     flex: 1;
     min-width: 0;
+  }
+
+  :global(.side-btn--bookmark-layout) {
+    flex: 0 1 170px;
+    min-width: 140px;
   }
 
   :global(.reset-btn) {
@@ -649,9 +823,7 @@
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    outline: none;
-
-    &:focus {
+    &:focus-visible {
       border-color: rgba($gold, 0.45);
       background: rgba($gold, 0.08);
       color: $gold;
@@ -787,6 +959,12 @@
     font-weight: 700;
     line-height: 1;
     cursor: help;
+
+    &:focus-visible {
+      box-shadow:
+        0 0 0 1px rgba($gold, 0.28),
+        0 0 0 3px rgba($gold, 0.12);
+    }
   }
 
   .info-tooltip__content {
@@ -837,6 +1015,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    justify-content: center;
   }
 
   .compact-option {
@@ -863,6 +1042,13 @@
       border-color: rgba($gold, 0.34);
       background: rgba($gold, 0.08);
       transform: translateY(-1px);
+    }
+
+    &:focus-within {
+      border-color: rgba($gold, 0.5);
+      box-shadow:
+        0 0 0 1px rgba($gold, 0.2),
+        0 0 0 3px rgba($gold, 0.1);
     }
 
     &.is-selected {
@@ -892,6 +1078,15 @@
   }
 
   @media (max-width: 430px) {
+    .settings-grid {
+      gap: 12px;
+    }
+
+    .settings-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
     .settings-inline-row {
       flex-direction: column;
       align-items: stretch;
@@ -900,6 +1095,29 @@
 
     .toggle-row--inline {
       width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .settings-page,
+    .toggle-switch,
+    .toggle-switch__thumb,
+    .language-select,
+    .language-menu__item,
+    .info-tooltip__content,
+    .compact-option {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+
+  @media (min-width: 520px) {
+    .settings-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .settings-section--wide {
+      grid-column: 1 / -1;
     }
   }
 </style>

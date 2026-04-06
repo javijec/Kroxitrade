@@ -27,7 +27,19 @@ export class PoeNinjaService {
   async fetchChaosRatiosFor(league: string): Promise<PoeNinjaCurrenciesRatios> {
     const cached = await storageService.getValue<PoeNinjaCurrenciesRatios>(RATIOS_CACHE_KEY, league);
     if (cached) return cached;
+    return this.fetchFreshChaosRatiosFor(league);
+  }
 
+  async fetchFreshChaosRatiosFor(league: string): Promise<PoeNinjaCurrenciesRatios> {
+    await storageService.deleteValue(RATIOS_CACHE_KEY, league);
+
+    const ratios = await this.requestChaosRatiosFor(league);
+    await storageService.setEphemeralValue(RATIOS_CACHE_KEY, ratios, dateDelta(RATIOS_CACHE_DURATION), league);
+
+    return ratios;
+  }
+
+  private async requestChaosRatiosFor(league: string): Promise<PoeNinjaCurrenciesRatios> {
     const uri = `${URIS.currencies}&league=${league}`;
     if (!hasValidExtensionContext()) {
       throw new Error("Extension context invalidated");
@@ -47,10 +59,7 @@ export class PoeNinjaService {
     
     if (!response) throw new Error("Failed to fetch from poe.ninja via background");
 
-    const ratios = this.parseChaosRatios(response);
-    await storageService.setEphemeralValue(RATIOS_CACHE_KEY, ratios, dateDelta(RATIOS_CACHE_DURATION), league);
-
-    return ratios;
+    return this.parseChaosRatios(response);
   }
 
   private parseChaosRatios(payload: PoeNinjaCurrenciesPayload): PoeNinjaCurrenciesRatios {

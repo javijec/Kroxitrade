@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, tick } from "svelte";
   import { normalizeIcon } from "~lib/utilities/icons";
 
   type ActionId = string;
@@ -16,7 +16,7 @@
   export let primaryActionIds: ActionId[];
   export let compactMode = false;
   export let compactText = "";
-  export let compactVisibleActionIds: ActionId[] = [];
+  export let compactVisibleActionIds: ActionId[] | undefined = undefined;
   export let dropdownLabel = "More";
   export let dropdownIcon: string;
   export let translate: ((key: string) => string) | undefined = undefined;
@@ -25,9 +25,49 @@
   let menuRef: HTMLDivElement;
   let isOpen = false;
   let isMounted = false;
+  let menuStyle = "";
+  const OPEN_EVENT_NAME = "poe-trade-plus:actions-menu-open";
 
-  const closeMenu = () => (isOpen = false);
-  const toggleMenu = () => (isOpen = !isOpen);
+  const closeMenu = () => {
+    isOpen = false;
+    menuStyle = "";
+  };
+
+  const updateMenuPosition = () => {
+    if (!triggerRef) return;
+
+    const rect = triggerRef.getBoundingClientRect();
+    const menuWidth = Math.max(menuRef?.offsetWidth || 0, 172);
+    const menuHeight = menuRef?.offsetHeight || 0;
+    const gap = 4;
+    const margin = 8;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let left = rect.right - menuWidth;
+    left = Math.max(margin, Math.min(left, viewportWidth - menuWidth - margin));
+
+    let top = rect.bottom + gap;
+    if (menuHeight && top + menuHeight > viewportHeight - margin) {
+      top = Math.max(margin, rect.top - menuHeight - gap);
+    }
+
+    menuStyle = `top: ${Math.round(top)}px; left: ${Math.round(left)}px;`;
+  };
+
+  const toggleMenu = async () => {
+    if (isOpen) {
+      closeMenu();
+      return;
+    }
+
+    document.dispatchEvent(new CustomEvent(OPEN_EVENT_NAME));
+    isOpen = true;
+    await tick();
+    window.requestAnimationFrame(() => {
+      if (isOpen) updateMenuPosition();
+    });
+  };
 
   const handleAction = (handler: () => void) => {
     handler();
@@ -55,23 +95,47 @@
     }
   };
 
+  const handleMenuOpen = () => {
+    if (!isMounted) return;
+    closeMenu();
+  };
+
+  const handleViewportChange = () => {
+    if (!isMounted || !isOpen) return;
+    updateMenuPosition();
+  };
+
   onMount(() => {
     isMounted = true;
     document.addEventListener("click", handleClickOutside);
     document.addEventListener("keydown", handleKeydown);
+    document.addEventListener(OPEN_EVENT_NAME, handleMenuOpen);
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
   });
 
   onDestroy(() => {
     isMounted = false;
     document.removeEventListener("click", handleClickOutside);
     document.removeEventListener("keydown", handleKeydown);
+    document.removeEventListener(OPEN_EVENT_NAME, handleMenuOpen);
+    window.removeEventListener("resize", handleViewportChange);
+    window.removeEventListener("scroll", handleViewportChange, true);
   });
 
+  $: hasConfiguredVisibility = compactVisibleActionIds !== undefined;
   $: compactVisibleActions = actions.filter((action) =>
-    compactVisibleActionIds.includes(action.id)
+    compactVisibleActionIds?.includes(action.id)
+  );
+  $: configuredInlineActions = actions.filter((action) =>
+    compactVisibleActionIds?.includes(action.id)
+  );
+  $: primaryInlineActions = actions.filter((action) =>
+    primaryActionIds.includes(action.id)
   );
   $: shouldShowAllCompactActions =
     compactMode &&
+    !!compactVisibleActionIds &&
     compactVisibleActionIds.length > 0 &&
     compactVisibleActions.length >= actions.length - 1;
   $: showAsCompact = compactMode && actions.length > 0;
@@ -79,13 +143,20 @@
     ? shouldShowAllCompactActions
       ? actions
       : compactVisibleActions
-    : actions;
+    : hasConfiguredVisibility
+      ? configuredInlineActions
+      : primaryInlineActions.length > 0
+      ? primaryInlineActions
+      : actions;
   $: dropdownActions = showAsCompact
     ? shouldShowAllCompactActions
       ? []
-      : actions.filter((action) => !compactVisibleActionIds.includes(action.id))
-    : [];
-
+      : actions.filter((action) => !compactVisibleActionIds?.includes(action.id))
+    : hasConfiguredVisibility
+      ? actions.filter((action) => !compactVisibleActionIds?.includes(action.id))
+      : primaryInlineActions.length > 0
+      ? actions.filter((action) => !primaryActionIds.includes(action.id))
+      : [];
   const getDisplayLabel = (action: typeof actions[0]) => {
     if (action.customLabel) return action.customLabel;
     if (translate && action.labelKey) return translate(action.labelKey);
@@ -93,7 +164,7 @@
   };
 </script>
 
-<div class="actions-container">
+<div class="actions-container" class:is-open={isOpen}>
   {#if showAsCompact}
     <div class="actions-inline actions-inline--compact">
       {#if compactText}
@@ -130,7 +201,7 @@
 
   {:else}
     <div class="actions-inline">
-      {#each actions as action}
+      {#each inlineActions as action}
         <button
           type="button"
           class="btn btn--icon"
@@ -142,11 +213,30 @@
           <span class="btn__icon" aria-hidden="true">{@html normalizeIcon(action.icon)}</span>
         </button>
       {/each}
+
+      {#if dropdownActions.length > 0}
+        <button
+          type="button"
+          class="btn btn--icon menu-trigger"
+          title={translate ? translate(dropdownLabel) : dropdownLabel}
+          aria-label={translate ? translate(dropdownLabel) : dropdownLabel}
+          aria-expanded={isOpen}
+          on:click|stopPropagation={toggleMenu}
+          bind:this={triggerRef}
+        >
+          <span class="btn__icon" aria-hidden="true">{@html normalizeIcon(dropdownIcon || "")}</span>
+        </button>
+      {/if}
     </div>
   {/if}
 
   {#if isOpen && dropdownActions.length > 0}
-    <div class="menu-dropdown" aria-label={translate ? translate(dropdownLabel) : dropdownLabel} bind:this={menuRef}>
+    <div
+      class="menu-dropdown"
+      style={menuStyle}
+      aria-label={translate ? translate(dropdownLabel) : dropdownLabel}
+      bind:this={menuRef}
+    >
       {#each dropdownActions as action}
         <button
           type="button"
@@ -170,8 +260,11 @@
     display: flex;
     align-items: center;
     min-width: 0;
-    isolation: isolate;
     z-index: 20;
+  }
+
+  .actions-container.is-open {
+    z-index: 40;
   }
 
   .actions-inline {
@@ -234,12 +327,13 @@
       justify-content: flex-start;
       width: 100%;
       gap: 10px;
-      padding: 8px 10px;
+      padding: 10px 12px;
       border: none;
       background: #0b0b0b;
       border-radius: 4px;
       text-align: left;
       font-size: 12px;
+      line-height: 1.35;
 
       &:hover {
         background-color: #171717;
@@ -265,21 +359,18 @@
   }
 
   .menu-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-90%);
-    z-index: 1000;
-    min-width: 160px;
-    margin-top: 4px;
+    position: fixed;
+    z-index: 10000;
+    min-width: 172px;
     background-color: #0b0b0b;
     opacity: 1;
     border: 1px solid rgba($gold, 0.3);
     border-radius: 6px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
     backdrop-filter: none;
-    padding: 4px;
+    padding: 6px;
     display: flex;
     flex-direction: column;
+    pointer-events: auto;
   }
 </style>

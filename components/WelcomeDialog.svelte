@@ -145,12 +145,24 @@
     font-size: 11px;
     letter-spacing: 0.04em;
     cursor: pointer;
-    transition: all 0.16s ease;
+    transition:
+      border-color 0.16s ease,
+      background-color 0.16s ease,
+      color 0.16s ease,
+      box-shadow 0.16s ease,
+      transform 0.16s ease;
 
     &:hover {
       border-color: rgba($gold, 0.34);
       background: rgba($gold, 0.08);
       color: $white;
+    }
+
+    &:focus-visible {
+      border-color: rgba($gold, 0.5);
+      box-shadow:
+        0 0 0 1px rgba($gold, 0.22),
+        0 0 0 3px rgba($gold, 0.1);
     }
 
     &.is-selected {
@@ -165,5 +177,11 @@
     display: flex;
     justify-content: flex-end;
     padding: 0 16px 16px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .welcome-language-button {
+      transition: none !important;
+    }
   }
 </style>
