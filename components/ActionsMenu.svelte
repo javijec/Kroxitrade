@@ -16,7 +16,7 @@
   export let primaryActionIds: ActionId[];
   export let compactMode = false;
   export let compactText = "";
-  export let compactVisibleActionIds: ActionId[] = [];
+  export let compactVisibleActionIds: ActionId[] | undefined = undefined;
   export let dropdownLabel = "More";
   export let dropdownIcon: string;
   export let translate: ((key: string) => string) | undefined = undefined;
@@ -67,17 +67,19 @@
     document.removeEventListener("keydown", handleKeydown);
   });
 
+  $: hasConfiguredVisibility = compactVisibleActionIds !== undefined;
   $: compactVisibleActions = actions.filter((action) =>
-    compactVisibleActionIds.includes(action.id)
+    compactVisibleActionIds?.includes(action.id)
   );
   $: configuredInlineActions = actions.filter((action) =>
-    compactVisibleActionIds.includes(action.id)
+    compactVisibleActionIds?.includes(action.id)
   );
   $: primaryInlineActions = actions.filter((action) =>
     primaryActionIds.includes(action.id)
   );
   $: shouldShowAllCompactActions =
     compactMode &&
+    !!compactVisibleActionIds &&
     compactVisibleActionIds.length > 0 &&
     compactVisibleActions.length >= actions.length - 1;
   $: showAsCompact = compactMode && actions.length > 0;
@@ -85,7 +87,7 @@
     ? shouldShowAllCompactActions
       ? actions
       : compactVisibleActions
-    : configuredInlineActions.length > 0
+    : hasConfiguredVisibility
       ? configuredInlineActions
       : primaryInlineActions.length > 0
       ? primaryInlineActions
@@ -93,9 +95,9 @@
   $: dropdownActions = showAsCompact
     ? shouldShowAllCompactActions
       ? []
-      : actions.filter((action) => !compactVisibleActionIds.includes(action.id))
-    : configuredInlineActions.length > 0
-      ? actions.filter((action) => !compactVisibleActionIds.includes(action.id))
+      : actions.filter((action) => !compactVisibleActionIds?.includes(action.id))
+    : hasConfiguredVisibility
+      ? actions.filter((action) => !compactVisibleActionIds?.includes(action.id))
       : primaryInlineActions.length > 0
       ? actions.filter((action) => !primaryActionIds.includes(action.id))
       : [];
