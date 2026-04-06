@@ -29,6 +29,10 @@ const translations = {
     "layout.removeAlert": "Remove alert",
     "layout.resizeSidebar": "Resize sidebar",
     "layout.restorePanel": "Restore Poe Trade Plus Panel",
+    "layout.versionNoticeEyebrow": "New Version",
+    "layout.versionNoticeMessage": ({ version }) =>
+      `Poe Trade Plus was updated to ${version}.`,
+    "layout.versionNoticeClose": "Close new version message",
     "welcome.title": "Welcome to Poe Trade Plus",
     "welcome.message":
       "Choose the language you want to use for the extension before you start.",
@@ -333,6 +337,10 @@ const translations = {
     "layout.removeAlert": "Quitar alerta",
     "layout.resizeSidebar": "Redimensionar panel",
     "layout.restorePanel": "Restaurar panel de Poe Trade Plus",
+    "layout.versionNoticeEyebrow": "Nueva versión",
+    "layout.versionNoticeMessage": ({ version }) =>
+      `Poe Trade Plus se actualizó a la versión ${version}.`,
+    "layout.versionNoticeClose": "Cerrar aviso de nueva versión",
     "welcome.title": "Bienvenido a Poe Trade Plus",
     "welcome.message":
       "Elegí el idioma que querés usar para la extensión antes de empezar.",

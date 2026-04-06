@@ -46,6 +46,7 @@
   let draggedFolderId: string | null = null;
   let dragOverFolderId: string | null = null;
   let folderPendingDelete: BookmarksFolderStruct | null = null;
+  let pendingEditFolderId: string | null = null;
   let toolbarStickyEl: HTMLDivElement | null = null;
   let toolbarRenderKey = 0;
   let toolbarRepairFrame = 0;
@@ -123,6 +124,7 @@
     if (folderId && !expandedFolderIds.includes(folderId)) {
       expandedFolderIds = [...expandedFolderIds, folderId];
     }
+    pendingEditFolderId = folderId;
     flashMessages.success(translate($languageStore, "bookmarks.folderCreated"));
   };
 
@@ -410,6 +412,10 @@
                 {folder} 
                 isExpanded={expandedFolderIds.includes(folder.id || "")}
                 isTutorialSaveTarget={tutorialStep === "save-search" && folder.id === tutorialTargetFolderId}
+                startInEditMode={pendingEditFolderId === folder.id}
+                onStartInEditModeHandled={() => {
+                  if (pendingEditFolderId === folder.id) pendingEditFolderId = null;
+                }}
                 onToggleExpansion={toggleExpansion}
                 onArchiveEvent={() => toggleArchive(folder)}
                  onDeleteEvent={() => requestFolderDelete(folder)}

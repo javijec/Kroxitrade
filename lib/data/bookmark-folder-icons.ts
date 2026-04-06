@@ -12,6 +12,7 @@ import iconPoe1Elementalist from "../../assets/images/bookmark-folder/poe1-eleme
 import iconPoe1Essence from "../../assets/images/bookmark-folder/poe1-essence.webp"
 import iconPoe1Exalt from "../../assets/images/bookmark-folder/poe1-exalt.webp"
 import iconPoe1Fossil from "../../assets/images/bookmark-folder/poe1-fossil.webp"
+import iconPoe1Gem from "../../assets/images/bookmark-folder/poe1-gem.webp"
 import iconPoe1Gladiator from "../../assets/images/bookmark-folder/poe1-gladiator.webp"
 import iconPoe1Guardian from "../../assets/images/bookmark-folder/poe1-guardian.webp"
 import iconPoe1Hierophant from "../../assets/images/bookmark-folder/poe1-hierophant.webp"
@@ -86,6 +87,7 @@ export const bookmarkFolderIconMap = new Map<string, string>([
   ["poe1-essence", iconPoe1Essence],
   ["poe1-exalt", iconPoe1Exalt],
   ["poe1-fossil", iconPoe1Fossil],
+  ["poe1-gem", iconPoe1Gem],
   ["poe1-gladiator", iconPoe1Gladiator],
   ["poe1-guardian", iconPoe1Guardian],
   ["poe1-hierophant", iconPoe1Hierophant],
@@ -147,11 +149,9 @@ export const bookmarkFolderIconOptions: BookmarkFolderIconOption[] = [
   { id: "poe1-card", label: "Card", version: "1", url: iconPoe1Card },
   { id: "poe1-essence", label: "Essence", version: "1", url: iconPoe1Essence },
   { id: "poe1-fossil", label: "Fossil", version: "1", url: iconPoe1Fossil },
-
   { id: "poe1-map", label: "Map", version: "1", url: iconPoe1Map },
-
   { id: "poe1-scarab", label: "Scarab", version: "1", url: iconPoe1Scarab },
-
+  { id: "poe1-gem", label: "Gem", version: "1", url: iconPoe1Gem },
   {
     id: "poe1-ascendant",
     label: "Ascendant",
@@ -170,14 +170,12 @@ export const bookmarkFolderIconOptions: BookmarkFolderIconOption[] = [
     version: "1",
     url: iconPoe1Berserker
   },
-
   {
     id: "poe1-champion",
     label: "Champion",
     version: "1",
     url: iconPoe1Champion
   },
-
   { id: "poe1-deadeye", label: "Deadeye", version: "1", url: iconPoe1Deadeye },
   {
     id: "poe1-elementalist",
@@ -185,7 +183,6 @@ export const bookmarkFolderIconOptions: BookmarkFolderIconOption[] = [
     version: "1",
     url: iconPoe1Elementalist
   },
-
   {
     id: "poe1-gladiator",
     label: "Gladiator",
@@ -286,12 +283,7 @@ export const bookmarkFolderIconOptions: BookmarkFolderIconOption[] = [
     url: iconPoe2Transmute
   },
   { id: "poe2-vaal", label: "Vaal", version: "2", url: iconPoe2Vaal },
-  {
-    id: "poe2-warbringer",
-    label: "Warbringer",
-    version: "2",
-    url: iconPoe2Warbringer
-  },
+
   {
     id: "poe2-waystone",
     label: "Waystone",
@@ -368,6 +360,12 @@ export const bookmarkFolderIconOptions: BookmarkFolderIconOption[] = [
     url: iconPoe2Tactician
   },
   { id: "poe2-titan", label: "Titan", version: "2", url: iconPoe2Titan },
+  {
+    id: "poe2-warbringer",
+    label: "Warbringer",
+    version: "2",
+    url: iconPoe2Warbringer
+  },
 
   {
     id: "poe2-witch-hunter",

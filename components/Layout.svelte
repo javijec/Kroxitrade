@@ -20,6 +20,7 @@
   import { settings } from "../lib/services/settings";
   import { storageService } from "../lib/services/storage";
   import { tradeLocationService } from "../lib/services/trade-location";
+  import { hasValidExtensionContext } from "../lib/utilities/extension-context";
   import type { BookmarksFolderStruct, BookmarksTradeStruct } from "../lib/types/bookmarks";
   import { onDestroy, onMount, tick } from "svelte";
   
@@ -27,6 +28,7 @@
   const WELCOME_SEEN_KEY = "layout-welcome-seen";
   const ONBOARDING_SEEN_KEY = "layout-onboarding-seen";
   const ONBOARDING_FOLDER_ID_KEY = "layout-onboarding-folder-id";
+  const VERSION_NOTICE_SEEN_KEY = "layout-version-notice-seen";
 
   let currentPage: 'bookmarks' | 'bulk' | 'history' | 'about' | 'settings' = 'bookmarks';
   let isMinimized = false;
@@ -51,6 +53,10 @@
     | 'settings-bookmarks'
     | null = null;
   let onboardingTutorialFolderId: string | null = null;
+  let appVersion = hasValidExtensionContext()
+    ? chrome.runtime.getManifest().version
+    : "dev";
+  let showVersionNotice = false;
 
   const MIN_SIDEBAR_WIDTH = 300;
   const MAX_SIDEBAR_WIDTH = 560;
@@ -190,6 +196,17 @@
     await settings.load();
     tradeLocationService.startPolling();
     welcomeLanguage = $settings.language;
+    appVersion = hasValidExtensionContext()
+      ? chrome.runtime.getManifest().version
+      : "dev";
+    const seenVersionNotice = storageService.getLocalValue(VERSION_NOTICE_SEEN_KEY);
+    if (appVersion !== "dev") {
+      if (seenVersionNotice && seenVersionNotice !== appVersion) {
+        showVersionNotice = true;
+      } else if (!seenVersionNotice) {
+        storageService.setLocalValue(VERSION_NOTICE_SEEN_KEY, appVersion);
+      }
+    }
     const shouldShowWelcome = storageService.getLocalValue(WELCOME_SEEN_KEY) !== "true";
     const shouldShowOnboarding = storageService.getLocalValue(ONBOARDING_SEEN_KEY) !== "true";
     if (shouldShowWelcome) {
@@ -228,6 +245,13 @@
 
     if (storageService.getLocalValue(ONBOARDING_SEEN_KEY) !== "true") {
       await openOnboarding();
+    }
+  };
+
+  const dismissVersionNotice = () => {
+    showVersionNotice = false;
+    if (appVersion !== "dev") {
+      storageService.setLocalValue(VERSION_NOTICE_SEEN_KEY, appVersion);
     }
   };
 
@@ -327,6 +351,29 @@
   {/if}
 
   <Header {logoUrl} {isMinimized} onToggleMinimize={toggleMinimize} sidebarSide={$settings.sidebarSide} />
+
+  {#if showVersionNotice}
+    <div class="version-notice" role="status" aria-live="polite">
+      <div class="version-notice__copy">
+        <span class="version-notice__eyebrow">
+          {translate($languageStore, "layout.versionNoticeEyebrow")}
+        </span>
+        <p class="version-notice__text">
+          {translate($languageStore, "layout.versionNoticeMessage", {
+            version: appVersion
+          })}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="version-notice__close"
+        aria-label={translate($languageStore, "layout.versionNoticeClose")}
+        on:click={dismissVersionNotice}
+      >
+        ×
+      </button>
+    </div>
+  {/if}
   
   <nav class="main-nav">
     <button 
@@ -616,6 +663,66 @@
     border-bottom: 1px solid rgba($white, 0.08);
     padding: 0 8px;
     box-sizing: border-box;
+  }
+
+  .version-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-top: 1px solid rgba($gold, 0.08);
+    border-bottom: 1px solid rgba($gold, 0.12);
+    background:
+      linear-gradient(180deg, rgba($gold, 0.08), rgba($gold, 0.04)),
+      rgba($black, 0.5);
+  }
+
+  .version-notice__copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .version-notice__eyebrow {
+    display: block;
+    margin-bottom: 2px;
+    color: rgba($gold-alt, 0.92);
+    font-family: $primary-font;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .version-notice__text {
+    margin: 0;
+    color: rgba($white, 0.84);
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .version-notice__close {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid rgba($gold, 0.18);
+    border-radius: 6px;
+    background: rgba($black, 0.22);
+    color: rgba($gold-alt, 0.88);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      color 0.15s ease;
+
+    &:hover,
+    &:focus-visible {
+      border-color: rgba($gold, 0.36);
+      background: rgba($black, 0.42);
+      color: $gold-alt;
+      outline: none;
+    }
   }
 
   .nav-item {

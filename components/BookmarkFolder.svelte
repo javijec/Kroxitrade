@@ -1,6 +1,7 @@
 <script lang="ts">
   import gripVerticalIcon from "data-text:lucide-static/icons/grip-vertical.svg"
   import { flip } from "svelte/animate"
+  import { tick } from "svelte"
   import { slide } from "svelte/transition"
 
   import {
@@ -49,6 +50,8 @@
   export let isFolderDragging = false
   export let isFolderDragOver = false
   export let isTutorialSaveTarget = false
+  export let startInEditMode = false
+  export let onStartInEditModeHandled: () => void = () => {}
 
   let trades: BookmarksTradeStruct[] = []
   let isLoading = false
@@ -59,6 +62,10 @@
   let loadRequestId = 0
 
   $: isArchived = !!folder.archivedAt
+  $: if (startInEditMode && !editingFolder) {
+    startEditingFolder()
+    onStartInEditModeHandled()
+  }
   $: if ((folder.id || null) !== currentFolderId) {
     currentFolderId = folder.id || null
     trades = []
@@ -305,6 +312,7 @@
   let editingFolder = false
   let folderEditTitle = ""
   let folderEditIcon: string | null = null
+  let folderEditInputEl: HTMLInputElement | null = null
   let isSavingFolderTitle = false
   $: visibleFolderIconOptions = bookmarkFolderIconOptions.filter(
     (option) => option.version === folder.version
@@ -312,10 +320,13 @@
   $: folderIconUrl = getBookmarkFolderIconUrl(folder.icon)
   $: folderEditIconUrl = getBookmarkFolderIconUrl(folderEditIcon)
 
-  const startEditingFolder = () => {
+  const startEditingFolder = async () => {
     folderEditTitle = folder.title
     folderEditIcon = folder.icon
     editingFolder = true
+    await tick()
+    folderEditInputEl?.focus()
+    folderEditInputEl?.select()
   }
 
   const saveFolderTitle = async () => {
@@ -455,6 +466,7 @@
         <input
           type="text"
           class="inline-edit-input"
+          bind:this={folderEditInputEl}
           bind:value={folderEditTitle}
           on:keydown={(e) => {
             if (e.key === "Enter") saveFolderTitle()
@@ -760,7 +772,7 @@
   .header-main {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     min-width: 0;
   }
 
@@ -768,9 +780,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
-    flex: 0 0 22px;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
     overflow: hidden;
     border-radius: 4px;
 
@@ -784,9 +796,9 @@
   }
 
   .folder-icon--preview {
-    width: 20px;
-    height: 20px;
-    flex-basis: 20px;
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
   }
 
   .header-label {
@@ -860,7 +872,7 @@
 
   .folder-edit-panel__top {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
     gap: 6px;
   }
 
@@ -869,7 +881,7 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: 30px;
+    min-height: 34px;
     padding: 4px;
     border: 1px solid rgba($white, 0.08);
     border-radius: 4px;
@@ -880,8 +892,8 @@
 
     img {
       display: block;
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       object-fit: cover;
       object-position: center;
       border-radius: 3px;
