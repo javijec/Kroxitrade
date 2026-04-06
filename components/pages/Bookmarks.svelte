@@ -193,37 +193,6 @@
     dragOverFolderId = null;
   };
 
-  const exportToFile = async () => {
-      const dataString = await bookmarksService.generateBackupDataString();
-      const blob = new Blob([dataString], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `poe-trade-plus-backup-${new Date().toISOString().slice(0,10)}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-      flashMessages.success(translate($languageStore, "bookmarks.exported"));
-  };
-
-  const restoreFromFile = (event: Event) => {
-      const input = event.target as HTMLInputElement;
-      const file = input.files?.[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-          const dataString = e.target?.result as string;
-          const success = await bookmarksService.restoreFromDataString(dataString);
-          if (success) {
-              flashMessages.success(translate($languageStore, "bookmarks.restored"));
-          } else {
-              flashMessages.alert(translate($languageStore, "bookmarks.restoreFailed"));
-          }
-          input.value = "";
-      };
-      reader.readAsText(file);
-  };
-
   const processTextImport = async () => {
       const serialized = importText.trim();
       if (!serialized) {
@@ -456,14 +425,6 @@
       {/if}
     </div>
   </LoadingContainer>
-
-  <section class="action-section backup-section">
-    <div class="section-heading">{translate($languageStore, "bookmarks.backupTitle")}</div>
-    <div class="button-row backup-row">
-        <Button label={translate($languageStore, "bookmarks.saveFile")} theme="gold" iconHtml={toolbarIcons.import} onClick={exportToFile} class="flex-1" />
-        <Button label={translate($languageStore, "bookmarks.restoreFile")} theme="gold" iconHtml={toolbarIcons.active} onFileChange={restoreFromFile} fileAccept=".txt" class="flex-1" />
-    </div>
-  </section>
 </div>
 
 <ConfirmDialog
@@ -527,20 +488,6 @@
     border-color: rgba($gold, 0.14);
     min-width: 0;
     box-shadow: inset 0 1px 0 rgba($white, 0.03);
-  }
-
-  .backup-section {
-    margin-top: auto;
-    margin-bottom: 0;
-    margin-left: 0;
-    margin-right: 0;
-    padding: 10px 15px;
-    background-color: rgba($black, 0.4);
-    border-top: 1px solid rgba($gold, 0.1);
-    border-bottom: none;
-    border-left: none;
-    border-right: none;
-    border-radius: 0;
   }
 
   .toolbar-row {
@@ -688,20 +635,6 @@
       gap: 6px;
       width: 100%;
       min-width: 0;
-  }
-
-  .backup-row {
-      :global(button) {
-          letter-spacing: 0.05em;
-      }
-
-      :global(.icon),
-      :global(.button-icon),
-      :global(.icon-slot),
-      :global([class*="icon"]) {
-          opacity: 0.68;
-          transform: scale(0.88);
-      }
   }
 
   .view-controls {

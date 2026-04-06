@@ -1,5 +1,7 @@
 <script lang="ts">
   import { languageStore, translate, type AppLanguage } from "../../lib/services/i18n";
+  import { bookmarksService } from "../../lib/services/bookmarks";
+  import { flashMessages } from "../../lib/services/flash";
   import { settings, type BookmarkTradeActionId, type SidebarSide } from "../../lib/services/settings";
   import Button from "../Button.svelte";
   import { onDestroy, onMount } from "svelte";
@@ -115,6 +117,37 @@
 
   async function handleLanguageChange(language: AppLanguage) {
     await settings.updateLanguage(language);
+  }
+
+  async function exportBookmarksBackup() {
+    const dataString = await bookmarksService.generateBackupDataString();
+    const blob = new Blob([dataString], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `poe-trade-plus-backup-${new Date().toISOString().slice(0, 10)}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    flashMessages.success(translate($languageStore, "bookmarks.exported"));
+  }
+
+  function restoreBookmarksBackup(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (loadEvent) => {
+      const dataString = loadEvent.target?.result as string;
+      const success = await bookmarksService.restoreFromDataString(dataString);
+      if (success) {
+        flashMessages.success(translate($languageStore, "bookmarks.restored"));
+      } else {
+        flashMessages.alert(translate($languageStore, "bookmarks.restoreFailed"));
+      }
+      input.value = "";
+    };
+    reader.readAsText(file);
   }
 
   function toggleSwitchLabel(value: boolean) {
@@ -283,6 +316,29 @@
             </label>
           {/each}
         </div>
+      </div>
+    </section>
+
+    <section class="settings-section settings-section--wide">
+      <div class="section-heading">
+        <h3 class="section-title">{translate($languageStore, "bookmarks.backupTitle")}</h3>
+      </div>
+      <p class="section-description">{translate($languageStore, "bookmarks.backupDescription")}</p>
+
+      <div class="side-selector settings-actions-row">
+        <Button
+          label={translate($languageStore, "bookmarks.saveFile")}
+          theme="gold"
+          class="side-btn"
+          onClick={exportBookmarksBackup}
+        />
+        <Button
+          label={translate($languageStore, "bookmarks.restoreFile")}
+          theme="gold"
+          class="side-btn"
+          onFileChange={restoreBookmarksBackup}
+          fileAccept=".txt"
+        />
       </div>
     </section>
 
@@ -526,6 +582,10 @@
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .settings-actions-row {
     margin-top: 14px;
   }
 

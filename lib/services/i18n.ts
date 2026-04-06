@@ -255,6 +255,8 @@ const translations = {
     "bookmarks.emptyArchivedAction": "Show active folders",
     "bookmarks.confirmImport": "Confirm Import",
     "bookmarks.backupTitle": "Backup & Restore",
+    "bookmarks.backupDescription":
+      "Save a file copy of your folders or restore one you exported earlier.",
     "bookmarks.saveFile": "Save File",
     "bookmarks.restoreFile": "Restore From File",
     "confirm.cancel": "Cancel",
@@ -555,6 +557,8 @@ const translations = {
     "bookmarks.emptyArchivedAction": "Mostrar carpetas activas",
     "bookmarks.confirmImport": "Confirmar importación",
     "bookmarks.backupTitle": "Respaldo y restauración",
+    "bookmarks.backupDescription":
+      "Guardá una copia en archivo de tus carpetas o restaurá una que hayas exportado antes.",
     "bookmarks.saveFile": "Guardar archivo",
     "bookmarks.restoreFile": "Restaurar desde archivo",
     "confirm.cancel": "Cancelar",
