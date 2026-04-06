@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, tick } from "svelte";
   import { normalizeIcon } from "~lib/utilities/icons";
 
   type ActionId = string;
@@ -25,10 +25,37 @@
   let menuRef: HTMLDivElement;
   let isOpen = false;
   let isMounted = false;
+  let menuStyle = "";
   const OPEN_EVENT_NAME = "poe-trade-plus:actions-menu-open";
 
-  const closeMenu = () => (isOpen = false);
-  const toggleMenu = () => {
+  const closeMenu = () => {
+    isOpen = false;
+    menuStyle = "";
+  };
+
+  const updateMenuPosition = () => {
+    if (!triggerRef) return;
+
+    const rect = triggerRef.getBoundingClientRect();
+    const menuWidth = Math.max(menuRef?.offsetWidth || 0, 172);
+    const menuHeight = menuRef?.offsetHeight || 0;
+    const gap = 4;
+    const margin = 8;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let left = rect.right - menuWidth;
+    left = Math.max(margin, Math.min(left, viewportWidth - menuWidth - margin));
+
+    let top = rect.bottom + gap;
+    if (menuHeight && top + menuHeight > viewportHeight - margin) {
+      top = Math.max(margin, rect.top - menuHeight - gap);
+    }
+
+    menuStyle = `top: ${Math.round(top)}px; left: ${Math.round(left)}px;`;
+  };
+
+  const toggleMenu = async () => {
     if (isOpen) {
       closeMenu();
       return;
@@ -36,6 +63,10 @@
 
     document.dispatchEvent(new CustomEvent(OPEN_EVENT_NAME));
     isOpen = true;
+    await tick();
+    window.requestAnimationFrame(() => {
+      if (isOpen) updateMenuPosition();
+    });
   };
 
   const handleAction = (handler: () => void) => {
@@ -69,11 +100,18 @@
     closeMenu();
   };
 
+  const handleViewportChange = () => {
+    if (!isMounted || !isOpen) return;
+    updateMenuPosition();
+  };
+
   onMount(() => {
     isMounted = true;
     document.addEventListener("click", handleClickOutside);
     document.addEventListener("keydown", handleKeydown);
     document.addEventListener(OPEN_EVENT_NAME, handleMenuOpen);
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
   });
 
   onDestroy(() => {
@@ -81,6 +119,8 @@
     document.removeEventListener("click", handleClickOutside);
     document.removeEventListener("keydown", handleKeydown);
     document.removeEventListener(OPEN_EVENT_NAME, handleMenuOpen);
+    window.removeEventListener("resize", handleViewportChange);
+    window.removeEventListener("scroll", handleViewportChange, true);
   });
 
   $: hasConfiguredVisibility = compactVisibleActionIds !== undefined;
@@ -191,7 +231,12 @@
   {/if}
 
   {#if isOpen && dropdownActions.length > 0}
-    <div class="menu-dropdown" aria-label={translate ? translate(dropdownLabel) : dropdownLabel} bind:this={menuRef}>
+    <div
+      class="menu-dropdown"
+      style={menuStyle}
+      aria-label={translate ? translate(dropdownLabel) : dropdownLabel}
+      bind:this={menuRef}
+    >
       {#each dropdownActions as action}
         <button
           type="button"
@@ -215,12 +260,11 @@
     display: flex;
     align-items: center;
     min-width: 0;
-    isolation: isolate;
     z-index: 20;
   }
 
   .actions-container.is-open {
-    z-index: 4000;
+    z-index: 40;
   }
 
   .actions-inline {
@@ -315,12 +359,9 @@
   }
 
   .menu-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    z-index: 1000;
+    position: fixed;
+    z-index: 10000;
     min-width: 172px;
-    margin-top: 4px;
     background-color: #0b0b0b;
     opacity: 1;
     border: 1px solid rgba($gold, 0.3);
@@ -331,15 +372,5 @@
     display: flex;
     flex-direction: column;
     pointer-events: auto;
-
-    &::before {
-      content: "";
-      position: absolute;
-      top: -8px;
-      right: 0;
-      width: 56px;
-      height: 8px;
-      pointer-events: auto;
-    }
   }
 </style>
