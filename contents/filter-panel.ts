@@ -267,35 +267,42 @@ if (!(window as any).__KROX_STARTED__) {
     descriptor?.set?.call(input, value);
   };
 
-  const ensureRegexPrefix = (input: HTMLInputElement, typedKey?: string) => {
+  const prefixingInputs = new WeakSet<HTMLInputElement>();
+
+  const ensureRegexPrefix = (input: HTMLInputElement, inputType?: string) => {
     const value = input.value ?? '';
     if (!value || value.startsWith('~') || value.startsWith(' ')) return;
-    if (typedKey === 'Backspace' || typedKey === 'Delete') return;
+    if (inputType?.startsWith('delete')) return;
+    if (prefixingInputs.has(input)) return;
 
-    const nextValue = `~${value}`;
-    const start = input.selectionStart ?? value.length;
-    const end = input.selectionEnd ?? value.length;
+    prefixingInputs.add(input);
 
-    setNativeInputValue(input, nextValue);
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+    try {
+      const start = input.selectionStart ?? value.length;
+      const end = input.selectionEnd ?? value.length;
+      const canUseRangeText = typeof input.setRangeText === 'function' && start !== null && end !== null;
 
-    requestAnimationFrame(() => {
-      const nextStart = Math.max(1, start + 1);
-      const nextEnd = Math.max(nextStart, end + 1);
-      input.setSelectionRange(nextStart, nextEnd);
-    });
+      if (canUseRangeText) {
+        input.setRangeText('~', 0, 0, 'preserve');
+      } else {
+        setNativeInputValue(input, `~${value}`);
+        input.setSelectionRange(start + 1, end + 1);
+      }
+
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    } finally {
+      queueMicrotask(() => {
+        prefixingInputs.delete(input);
+      });
+    }
   };
-
-  document.addEventListener('keyup', (e: KeyboardEvent) => {
-    const input = findTradeSearchInput(e.target);
-    if (!input) return;
-    ensureRegexPrefix(input, e.key);
-  }, true);
 
   document.addEventListener('input', (e: Event) => {
     const input = findTradeSearchInput(e.target);
     if (!input) return;
-    ensureRegexPrefix(input);
+    const inputEvent = e as InputEvent;
+    if (inputEvent.isComposing) return;
+    ensureRegexPrefix(input, inputEvent.inputType);
   }, true);
 
 
