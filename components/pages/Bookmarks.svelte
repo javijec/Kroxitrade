@@ -495,10 +495,11 @@
   }
 
   .toolbar-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    display: flex;
+    flex-wrap: nowrap;
     gap: 6px;
     align-items: start;
+    min-width: 0;
   }
 
   .bookmarks-page :global(.loading-container) {
@@ -510,6 +511,8 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .toolbar-actions--secondary {
@@ -602,25 +605,23 @@
   }
 
   @container (max-width: 359px) {
-    .toolbar-icon {
-      display: none;
-    }
-
-    .toolbar-button {
+    .toolbar-actions--secondary .toolbar-button {
       gap: 0;
       padding: 0 8px;
+    }
+
+    .toolbar-actions--secondary .toolbar-label {
+      display: none;
     }
   }
 
   @media (min-width: 520px) {
-    .toolbar-row {
-      grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+    .toolbar-actions--primary {
+      flex: 1.45 1 0;
     }
-  }
 
-  @container (max-width: 359px) {
-    .toolbar-row {
-      grid-template-columns: minmax(0, 1fr);
+    .toolbar-actions--secondary {
+      flex: 1 1 0;
     }
   }
 
