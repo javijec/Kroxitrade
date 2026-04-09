@@ -832,6 +832,8 @@
 
   .inline-edit-input {
     flex: 1;
+    width: 0;
+    min-width: 0;
     background: rgba($black, 0.4);
     border: 1px solid rgba($gold, 0.5);
     color: $white;
