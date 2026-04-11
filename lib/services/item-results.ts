@@ -107,45 +107,27 @@ export class ItemResultsService {
   }
 
   private injectEquivalentPricing(row: HTMLElement) {
-    // Busca explícitamente el div con class "price" como pidió el usuario
-    const priceContainer = row.querySelector("div.price, .details .price") as HTMLElement;
-    if (!priceContainer) {
-        console.debug("[Poe Trade Plus] Skipping pricing injection - Missing priceContainer for row", row);
-        return;
+    const priceInfo = this.extractPriceInfo(row);
+    if (!priceInfo) {
+      console.debug("[Poe Trade Plus] Skipping pricing injection - Missing price info for row", row);
+      return;
     }
+
+    const { container: priceContainer, amount, currencyText } = priceInfo;
 
     if (!this.chaosRatios) {
-        this.removeEquivalentPricing(row);
-        return;
+      this.removeEquivalentPricing(row);
+      return;
     }
-
-    // Buscar explícitamente el texto de la moneda
-    const currencyTextTag = row.querySelector('[data-field="price"] .currency-text span, .currency-text span, .currency-text');
-    const currencyText = currencyTextTag?.textContent?.trim() || "";
-                       
-    // Buscar la cantidad: Iterar por todos los nodos hoja para encontrar el primero que sea un número válido
-    let amountText = "";
-    const leafNodes = Array.from(priceContainer.querySelectorAll('span, div'));
-    for (const node of leafNodes) {
-        // Ignorar el nombre de la moneda
-        if (node.classList?.contains("currency-text") || node.closest('.currency-text')) continue;
-        // Ignorar nuestro propio bloque equivalente para no reparsear valores inyectados.
-        if (node.classList?.contains("bt-equivalent-pricings-equivalent") || node.closest('.bt-equivalent-pricings-equivalent')) continue;
-        
-        const text = node.textContent?.trim() || "";
-        const match = text.match(/[0-9]+(\.[0-9]+)?/);
-        if (match) {
-            amountText = match[0];
-            break;
-        }
-    }
-
-    const amount = parseFloat(amountText);
 
     if (!currencyText || isNaN(amount)) {
-        this.removeEquivalentPricing(row);
-        console.debug("[Poe Trade Plus] Skipping pricing injection - Missing details:", { currency: currencyText, amount: amountText, html: priceContainer.innerHTML });
-        return;
+      this.removeEquivalentPricing(row);
+      console.debug("[Poe Trade Plus] Skipping pricing injection - Missing details:", {
+        currency: currencyText,
+        amount,
+        html: priceContainer.innerHTML
+      });
+      return;
     }
 
     const slug = slugify(currencyText);
@@ -193,11 +175,67 @@ export class ItemResultsService {
         parts.push({ amount: chaosEquiv, slug: this.CHAOS_SLUG });
     } else {
         this.removeEquivalentPricing(row);
-        console.debug(`[Poe Trade Plus] Could not determine equivalence for ${amountText} ${currencyText} (slug: ${slug})`);
+        console.debug(`[Poe Trade Plus] Could not determine equivalence for ${amount} ${currencyText} (slug: ${slug})`);
         return;
     }
 
     this.renderEquivalentPricing(priceContainer, parts);
+  }
+
+  private extractPriceInfo(row: HTMLElement) {
+    const container = row.querySelector<HTMLElement>('[data-field="price"], .details .price, .itemHeader .lprice, .price');
+    if (!container) {
+      return null;
+    }
+
+    const normalizedLabel = this.extractNormalizedPriceLabel(container);
+    const amountMatch = normalizedLabel.match(/[0-9]+(?:\.[0-9]+)?/);
+    const amount = amountMatch ? parseFloat(amountMatch[0]) : Number.NaN;
+    const iconAlt = this.extractCurrencyAlt(container);
+
+    let currencyText = iconAlt || "";
+    if (!currencyText && amountMatch) {
+      currencyText = normalizedLabel
+        .slice(amountMatch.index! + amountMatch[0].length)
+        .replace(/^x\s*/i, "")
+        .trim();
+    }
+
+    if (!currencyText) {
+      const rawCurrencyText = row.querySelector<HTMLElement>(
+        '[data-field="price"] .currency-text span, .currency-text span, .currency-text'
+      )?.textContent;
+      currencyText = rawCurrencyText?.trim() || "";
+    }
+
+    return {
+      container,
+      amount,
+      currencyText
+    };
+  }
+
+  private extractNormalizedPriceLabel(container: HTMLElement) {
+    return (container.textContent || "")
+      .replace(/\s+/g, " ")
+      .replace(/^price\s*/i, "")
+      .replace(/^asking price\s*/i, "")
+      .replace(/asking price/gi, "")
+      .replace(/\s*fee.*$/i, "")
+      .replace(/^note\s*/i, "")
+      .trim();
+  }
+
+  private extractCurrencyAlt(container: HTMLElement) {
+    const icons = Array.from(container.querySelectorAll<HTMLImageElement>("img[alt]"));
+    for (const icon of icons) {
+      const alt = icon.alt?.trim();
+      if (!alt) continue;
+      if (/currency/i.test(alt)) continue;
+      return alt;
+    }
+
+    return "";
   }
 
   private renderEquivalentPricing(
