@@ -1,7 +1,7 @@
 <script lang="ts">
 import gripVerticalIcon from "lucide-static/icons/grip-vertical.svg?raw"
   import { flip } from "svelte/animate"
-  import { tick } from "svelte"
+  import { onDestroy, tick } from "svelte"
   import { slide } from "svelte/transition"
 
   import {
@@ -108,6 +108,36 @@ import gripVerticalIcon from "lucide-static/icons/grip-vertical.svg?raw"
     hasLoadedTrades = false
     await loadTrades(true)
   }
+
+  const syncTradesFromCache = () => {
+    if (!folder.id) return
+
+    const cachedTrades = bookmarksService.getCachedTradesByFolderId(folder.id)
+    if (cachedTrades) {
+      trades = cachedTrades
+      hasLoadedTrades = true
+      return
+    }
+
+    hasLoadedTrades = false
+    trades = []
+  }
+
+  const unsubscribeBookmarksChange = bookmarksService.onChange((event) => {
+    if (!folder.id || !event?.tradesChanged || event.folderId !== folder.id) {
+      return
+    }
+
+    if (isExpanded) {
+      syncTradesFromCache()
+    } else {
+      hasLoadedTrades = false
+    }
+  })
+
+  onDestroy(() => {
+    unsubscribeBookmarksChange()
+  })
 
   const formatTradeMeta = (trade: BookmarksTradeStruct) => {
     const meta: string[] = []
