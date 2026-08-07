@@ -6,6 +6,11 @@ import { buildChineseItemNameCache } from "~/lib/services/chinese-trade/item-nam
 import { loadChineseStatTemplates } from "~/lib/services/chinese-trade/stat-templates"
 import { getTradeTranslationState } from "~/lib/services/trade-translation"
 import { storageService } from "~/lib/services/storage"
+import {
+  BOOKMARK_SCROLL_RESTORE_MAX_AGE_MS,
+  bookmarkScrollMessage,
+  getBookmarkScrollRestoreKey
+} from "~/lib/services/bookmark-scroll"
 
 const getStorageUsage = async () => {
   const measure = async (
@@ -125,7 +130,68 @@ export default defineBackground({
     chrome.runtime.onInstalled.addListener(() => {
       void prepareChineseTradeCaches()
     })
-    chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      const tabId = sender.tab?.id
+      const bookmarkScrollKey =
+        typeof tabId === "number" ? getBookmarkScrollRestoreKey(tabId) : null
+
+      if (request?.type === bookmarkScrollMessage.save) {
+        const value = request.value
+        if (
+          !bookmarkScrollKey ||
+          typeof value?.top !== "number" ||
+          !Number.isFinite(value.top) ||
+          value.top < 0 ||
+          typeof value.savedAt !== "number"
+        ) {
+          sendResponse({ ok: false })
+          return false
+        }
+
+        storageService
+          .setValue(bookmarkScrollKey, { top: value.top, savedAt: value.savedAt })
+          .then((ok) => sendResponse({ ok }))
+          .catch(() => sendResponse({ ok: false }))
+        return true
+      }
+
+      if (request?.type === bookmarkScrollMessage.consume) {
+        if (!bookmarkScrollKey) {
+          sendResponse({ top: null })
+          return false
+        }
+
+        storageService
+          .getValue<{ top: number; savedAt: number }>(bookmarkScrollKey)
+          .then(async (saved) => {
+            if (
+              !saved ||
+              !Number.isFinite(saved.top) ||
+              saved.top < 0 ||
+              Date.now() - saved.savedAt > BOOKMARK_SCROLL_RESTORE_MAX_AGE_MS
+            ) {
+              if (saved) await storageService.deleteValue(bookmarkScrollKey)
+              sendResponse({ top: null })
+              return
+            }
+            sendResponse({ top: saved.top })
+          })
+          .catch(() => sendResponse({ top: null }))
+        return true
+      }
+
+      if (request?.type === bookmarkScrollMessage.clear) {
+        if (!bookmarkScrollKey) {
+          sendResponse({ ok: false })
+          return false
+        }
+        storageService
+          .deleteValue(bookmarkScrollKey)
+          .then((ok) => sendResponse({ ok }))
+          .catch(() => sendResponse({ ok: false }))
+        return true
+      }
+
       if (request?.type === chineseTradeMessage.rebuildCache) {
         prepareChineseTradeCaches(true, request.language, request.version)
           .then(async () => {

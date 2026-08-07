@@ -9,6 +9,10 @@
   import xIcon from "lucide-static/icons/x.svg?raw";
   import { languageStore, translate } from "../../lib/services/i18n";
   import { bookmarksService } from "../../lib/services/bookmarks";
+  import {
+    clearBookmarkScroll,
+    consumeBookmarkScroll
+  } from "../../lib/services/bookmark-scroll";
   import { tradeLocationService } from "../../lib/services/trade-location";
   import { flashMessages } from "../../lib/services/flash";
   import { storageService } from "../../lib/services/storage";
@@ -37,9 +41,14 @@
     | "settings-bookmarks"
     | null;
     tutorialFolderId?: string | null;
+    scrollContainer?: HTMLElement | null;
   }
 
-  let { tutorialStep = null, tutorialFolderId = null }: Props = $props();
+  let {
+    tutorialStep = null,
+    tutorialFolderId = null,
+    scrollContainer = null
+  }: Props = $props();
 
   let expandedFolderIds: string[] = $state([]);
   let isLoading = false;
@@ -228,6 +237,19 @@
     active: archiveRestoreIcon
   };
 
+  const restoreBookmarkScroll = async () => {
+    if (!scrollContainer) return true;
+
+    const top = await consumeBookmarkScroll();
+    if (top === null) return true;
+
+    scrollContainer.scrollTop = top;
+    const canReachSavedPosition =
+      scrollContainer.scrollHeight - scrollContainer.clientHeight >= top;
+    if (canReachSavedPosition) await clearBookmarkScroll();
+    return canReachSavedPosition;
+  };
+
   const clearToolbarRepairTimers = () => {
     if (toolbarRepairFrame) {
       window.cancelAnimationFrame(toolbarRepairFrame);
@@ -341,6 +363,31 @@
   onMount(() => {
     loadExpandedState();
   });
+
+  $effect(() => {
+    if (!scrollContainer) return;
+
+    const observer = new ResizeObserver(() => void restoreBookmarkScroll());
+    observer.observe(scrollContainer);
+    const restoreTimer = window.setInterval(() => {
+      void restoreBookmarkScroll().then((restored) => {
+        if (restored) window.clearInterval(restoreTimer);
+      });
+    }, 80);
+    const restoreTimeout = window.setTimeout(() => {
+      window.clearInterval(restoreTimer);
+      void clearBookmarkScroll();
+      observer.disconnect();
+    }, 3000);
+
+    void tick().then(() => restoreBookmarkScroll());
+
+    return () => {
+      window.clearInterval(restoreTimer);
+      window.clearTimeout(restoreTimeout);
+      observer.disconnect();
+    };
+  });
 </script>
 
 <div class="bookmarks-page" data-tutorial="bookmarks-panel">
@@ -425,6 +472,7 @@
           <div class="folder-shell" animate:flip={{ duration: 180 }}>
             <BookmarkFolder 
                 {folder} 
+                {scrollContainer}
                 isExpanded={expandedFolderIds.includes(folder.id || "")}
                 isTutorialSaveTarget={tutorialStep === "save-search" && folder.id === tutorialTargetFolderId}
                 startInEditMode={pendingEditFolderId === folder.id}

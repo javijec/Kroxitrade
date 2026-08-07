@@ -13,6 +13,7 @@
     openUrlInActiveTab,
     openUrlInNewTab
   } from "../lib/services/active-trade-tab"
+  import { saveBookmarkScroll } from "../lib/services/bookmark-scroll"
   import { bookmarksService } from "../lib/services/bookmarks"
   import {
     bookmarkFolderIconOptions,
@@ -38,6 +39,9 @@
   import SvgIcon from "./SvgIcon.svelte"
   import TradeActionsMenu from "./TradeActionsMenu.svelte"
 
+  const COLLAPSED_CATEGORIES_STORAGE_KEY = "bookmark-folder-collapsed-categories"
+  const UNCATEGORIZED_CATEGORY_ID = "__uncategorized__"
+
   interface Props {
     folder: BookmarksFolderStruct;
     previewTrades?: BookmarksTradeStruct[];
@@ -51,6 +55,7 @@
     onFolderDragEnd?: () => void;
     isFolderDragging?: boolean;
     isFolderDragOver?: boolean;
+    scrollContainer?: HTMLElement | null;
     isTutorialSaveTarget?: boolean;
     startInEditMode?: boolean;
     onStartInEditModeHandled?: () => void;
@@ -69,6 +74,7 @@
     onFolderDragEnd = () => {},
     isFolderDragging = false,
     isFolderDragOver = false,
+    scrollContainer = null,
     isTutorialSaveTarget = false,
     startInEditMode = false,
     onStartInEditModeHandled = () => {}
@@ -82,7 +88,8 @@
   let archiveCompletedPending = $state(false)
   let showArchivedTrades = $state(false)
   let categoryPendingDelete: BookmarksCategoryStruct | null = $state(null)
-  let currentFolderId: string | null = $state(folder.id || null)
+  let currentFolderId: string | null = $state(null)
+  let collapsedCategoryIds: string[] = $state([])
   let loadRequestId = 0
   type TradeListEntry =
     | {
@@ -90,6 +97,8 @@
         id: string
         title: string
         category: BookmarksCategoryStruct | null
+        categoryId: string
+        tradeCount: number
       }
     | {
         type: "trade"
@@ -174,6 +183,49 @@
 
   const normalizeCategoryTitle = (title: string) => title.trim()
 
+  const readCollapsedCategoryIds = (folderId: string | null) => {
+    if (!folderId) return []
+    try {
+      const stored = window.localStorage.getItem(COLLAPSED_CATEGORIES_STORAGE_KEY)
+      const allFolders = stored ? JSON.parse(stored) as Record<string, unknown> : {}
+      const collapsed = allFolders[folderId]
+      return Array.isArray(collapsed)
+        ? collapsed.filter((categoryId): categoryId is string => typeof categoryId === "string")
+        : []
+    } catch {
+      return []
+    }
+  }
+
+  const persistCollapsedCategoryIds = () => {
+    if (!folder.id) return
+    try {
+      const stored = window.localStorage.getItem(COLLAPSED_CATEGORIES_STORAGE_KEY)
+      const allFolders = stored ? JSON.parse(stored) as Record<string, string[]> : {}
+      if (collapsedCategoryIds.length > 0) {
+        allFolders[folder.id] = collapsedCategoryIds
+      } else {
+        delete allFolders[folder.id]
+      }
+      window.localStorage.setItem(
+        COLLAPSED_CATEGORIES_STORAGE_KEY,
+        JSON.stringify(allFolders)
+      )
+    } catch {
+      // Collapsing categories remains available for this visit if storage fails.
+    }
+  }
+
+  const isCategoryCollapsed = (categoryId: string) =>
+    collapsedCategoryIds.includes(categoryId)
+
+  const toggleCategoryCollapse = (categoryId: string) => {
+    collapsedCategoryIds = isCategoryCollapsed(categoryId)
+      ? collapsedCategoryIds.filter((id) => id !== categoryId)
+      : [...collapsedCategoryIds, categoryId]
+    persistCollapsedCategoryIds()
+  }
+
   const categoryIdForTrade = (trade: BookmarksTradeStruct) => {
     if (!trade.categoryId) return null
     return categoryById.has(trade.categoryId) ? trade.categoryId : null
@@ -240,29 +292,38 @@
         type: "category",
         id: "category-none",
         title: translate($languageStore, "folder.uncategorized"),
-        category: null
+        category: null,
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        tradeCount: uncategorized.length
       })
-      entries.push(...uncategorized.map((trade) => ({
-        type: "trade" as const,
-        id: trade.id || `trade-${displayedTrades.indexOf(trade)}`,
-        trade,
-        displayIndex: displayedTrades.indexOf(trade)
-      })))
+      if (!isCategoryCollapsed(UNCATEGORIZED_CATEGORY_ID)) {
+        entries.push(...uncategorized.map((trade) => ({
+          type: "trade" as const,
+          id: trade.id || `trade-${displayedTrades.indexOf(trade)}`,
+          trade,
+          displayIndex: displayedTrades.indexOf(trade)
+        })))
+      }
     }
 
     for (const category of categoryOptions) {
+      const categoryTrades = tradesByCategory.get(category.id) || []
       entries.push({
         type: "category",
         id: `category-${category.id}`,
         title: category.title,
-        category
+        category,
+        categoryId: category.id,
+        tradeCount: categoryTrades.length
       })
-      entries.push(...(tradesByCategory.get(category.id) || []).map((trade) => ({
-        type: "trade" as const,
-        id: trade.id || `trade-${displayedTrades.indexOf(trade)}`,
-        trade,
-        displayIndex: displayedTrades.indexOf(trade)
-      })))
+      if (!isCategoryCollapsed(category.id)) {
+        entries.push(...categoryTrades.map((trade) => ({
+          type: "trade" as const,
+          id: trade.id || `trade-${displayedTrades.indexOf(trade)}`,
+          trade,
+          displayIndex: displayedTrades.indexOf(trade)
+        })))
+      }
     }
 
     return entries
@@ -311,6 +372,8 @@
     if (!folder.id) return
     trades = await bookmarksService.deleteCategory(folder, category.id)
     folder.categories = (folder.categories || []).filter((entry) => entry.id !== category.id)
+    collapsedCategoryIds = collapsedCategoryIds.filter((id) => id !== category.id)
+    persistCollapsedCategoryIds()
     categoryPendingDelete = null
     hasLoadedTrades = true
     flashMessages.success(
@@ -500,6 +563,11 @@
   }
 
   const openTrade = async (trade: BookmarksTradeStruct, inNewTab = false) => {
+    if (!inNewTab) {
+      if (scrollContainer) {
+        await saveBookmarkScroll(scrollContainer.scrollTop)
+      }
+    }
     await tradeLocationService.stashPendingBookmarkTitles({
       [trade.location.slug]: trade.title
     })
@@ -788,6 +856,7 @@
   $effect(() => {
     if ((folder.id || null) !== currentFolderId) {
       currentFolderId = folder.id || null
+      collapsedCategoryIds = readCollapsedCategoryIds(currentFolderId)
       trades = []
       hasLoadedTrades = false
       isLoading = false
@@ -1035,8 +1104,18 @@
             {#if entry.type === "category"}
               <li class="category-row">
                 <div class="category-heading">
+                  <button
+                    type="button"
+                    class="category-toggle"
+                    aria-expanded={!isCategoryCollapsed(entry.categoryId)}
+                    aria-label={`${isCategoryCollapsed(entry.categoryId) ? translate($languageStore, "folder.expand") : translate($languageStore, "folder.collapse")} ${entry.title}`}
+                    onclick={() => toggleCategoryCollapse(entry.categoryId)}
+                  >
+                    {isCategoryCollapsed(entry.categoryId) ? "▸" : "▾"}
+                  </button>
                   <span class="category-heading__rule" aria-hidden="true"></span>
                   <span class="category-heading__title">{entry.title}</span>
+                  <span class="category-heading__count">{entry.tradeCount}</span>
                   <span class="category-heading__rule" aria-hidden="true"></span>
                   {#if entry.category}
                     <div class="category-heading__actions">
@@ -1563,6 +1642,32 @@
   text-transform: uppercase;
 }
 
+.category-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  min-width: 18px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(238, 238, 238, 0.68);
+  cursor: pointer;
+  font-size: calc(15px * var(--bt-text-scale, 1));
+  line-height: 1;
+}
+
+.category-toggle:hover,
+.category-toggle:focus-visible {
+  color: #eeeeee;
+}
+
+.category-toggle:focus-visible {
+  outline: 1px solid rgba(163, 141, 109, 0.65);
+  border-radius: 3px;
+}
+
 .category-heading__rule {
   height: 1px;
   min-width: 14px;
@@ -1575,6 +1680,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.category-heading__count {
+  color: rgba(238, 238, 238, 0.48);
+  font-size: calc(10px * var(--bt-text-scale, 1));
 }
 
 .category-heading__actions {

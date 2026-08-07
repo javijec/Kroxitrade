@@ -65,6 +65,7 @@ export class BookmarksService {
   private listeners = new Set<(event?: BookmarksChangeEvent) => void>()
   private tradesCache = new Map<string, BookmarksTradeStruct[]>()
   private tradesRequests = new Map<string, Promise<BookmarksTradeStruct[]>>()
+  private tradesWriteQueues = new Map<string, Promise<unknown>>()
   private foldersMigration: Promise<void> | null = null
   private tradesMigrations = new Map<string, Promise<void>>()
   public subscribe = this.foldersStore.subscribe
@@ -424,6 +425,76 @@ export class BookmarksService {
     await this.deleteSynced(`${TRADES_PREFIX_KEY}--${folderId}`)
   }
 
+  private async persistTradeToAffectedChunk(
+    folderId: string,
+    trade: BookmarksTradeStruct
+  ): Promise<boolean> {
+    const manifest = await storageService.getValue<FoldersManifest>(
+      this.tradesManifestKey(folderId),
+      null,
+      BOOKMARKS_STORAGE_AREA
+    )
+    if (!manifest || manifest.version !== 1 || manifest.chunkKeys.length === 0) {
+      return false
+    }
+
+    const chunks = await Promise.all(
+      manifest.chunkKeys.map((key) =>
+        storageService.getValue<BookmarksTradeStruct[]>(
+          key,
+          null,
+          BOOKMARKS_STORAGE_AREA
+        )
+      )
+    )
+    if (chunks.some((chunk) => chunk === null)) return false
+
+    let chunkIndex = chunks.findIndex((chunk) =>
+      chunk?.some((entry) => entry.id === trade.id)
+    )
+    if (chunkIndex < 0) chunkIndex = chunks.length - 1
+
+    const current = chunks[chunkIndex] || []
+    const existingIndex = current.findIndex((entry) => entry.id === trade.id)
+    const next = existingIndex < 0
+      ? [...current, trade]
+      : current.map((entry, index) => index === existingIndex ? trade : entry)
+    const key = manifest.chunkKeys[chunkIndex]
+
+    if (this.storagePayloadBytes(key, next) <= FOLDERS_CHUNK_TARGET_BYTES) {
+      return storageService.setValue(key, next, null, BOOKMARKS_STORAGE_AREA)
+    }
+
+    if (existingIndex >= 0) return false
+
+    const nextKey = this.tradesChunkKey(folderId, manifest.chunkKeys.length)
+    const saved = await storageService.setValue(
+      nextKey,
+      [trade],
+      null,
+      BOOKMARKS_STORAGE_AREA
+    )
+    if (!saved) return false
+
+    await this.persistSynced(this.tradesManifestKey(folderId), {
+      version: 1,
+      chunkKeys: [...manifest.chunkKeys, nextKey]
+    })
+    return true
+  }
+
+  private enqueueTradesWrite<T>(folderId: string, write: () => Promise<T>) {
+    const previous = this.tradesWriteQueues.get(folderId) ?? Promise.resolve()
+    const queued = previous.catch(() => undefined).then(write)
+    this.tradesWriteQueues.set(folderId, queued)
+    void queued.finally(() => {
+      if (this.tradesWriteQueues.get(folderId) === queued) {
+        this.tradesWriteQueues.delete(folderId)
+      }
+    }).catch(() => undefined)
+    return queued
+  }
+
   private async deleteChunkedTrades(folderId: string): Promise<void> {
     const manifestKey = this.tradesManifestKey(folderId)
     const manifest = await storageService.getValue<FoldersManifest>(
@@ -644,30 +715,39 @@ export class BookmarksService {
     trade: BookmarksTradeStruct,
     folderId: string
   ): Promise<string> {
-    const trades = await this.fetchTradesByFolderId(folderId, { force: true })
-    let updated: BookmarksTradeStruct[]
-    const id = trade.id || uniqueId()
+    return this.enqueueTradesWrite(folderId, async () => {
+      const trades = await this.fetchTradesByFolderId(folderId, { force: true })
+      const id = trade.id || uniqueId()
+      const nextTrade = { ...trade, id }
+      const updated = trade.id
+        ? trades.map((entry) => entry.id === trade.id ? { ...entry, ...nextTrade } : entry)
+        : [...trades, nextTrade]
 
-    if (!trade.id) {
-      updated = [...trades, { ...trade, id }]
-    } else {
-      updated = trades.map((t) => (t.id === trade.id ? { ...t, ...trade } : t))
-    }
-    await this.persistTrades(updated, folderId)
-    await this.refresh()
-    return id
+      const savedIncrementally = await this.persistTradeToAffectedChunk(
+        folderId,
+        this.normalizeTrades([nextTrade])[0]
+      )
+      if (!savedIncrementally) {
+        await this.persistTradesToChunks(folderId, this.normalizeTrades(updated))
+      }
+      this.tradesCache.set(folderId, this.normalizeTrades(updated))
+      await this.refresh()
+      return id
+    })
   }
 
   async persistTrades(
     trades: BookmarksTradeStruct[],
     folderId: string
   ): Promise<BookmarksTradeStruct[]> {
-    const safeTrades = this.normalizeTrades(
-      trades.map((t) => ({ ...t, id: t.id || uniqueId() }))
-    )
-    this.tradesCache.set(folderId, safeTrades)
-    await this.persistTradesToChunks(folderId, safeTrades)
-    return [...safeTrades]
+    return this.enqueueTradesWrite(folderId, async () => {
+      const safeTrades = this.normalizeTrades(
+        trades.map((t) => ({ ...t, id: t.id || uniqueId() }))
+      )
+      this.tradesCache.set(folderId, safeTrades)
+      await this.persistTradesToChunks(folderId, safeTrades)
+      return [...safeTrades]
+    })
   }
 
   async deleteTrade(

@@ -185,6 +185,8 @@ export class StorageService {
   private static instance: StorageService
   private syncRecoveryTimer: ReturnType<typeof setTimeout> | null = null
   private syncRecoveryInitialized = false
+  private syncOperationQueue: Promise<void> = Promise.resolve()
+  private lastSyncOperationAt = 0
 
   static getInstance() {
     if (!this.instance) this.instance = new StorageService()
@@ -369,7 +371,7 @@ export class StorageService {
   ): Promise<boolean> {
     const storageArea = this.getStorageArea(area)
     if (!storageArea) return false
-    try {
+    const operation = async () => {
       const storedValue =
         area === "sync" ? await encodeSyncValue(value.value) : value
       await storageArea.set({
@@ -377,6 +379,13 @@ export class StorageService {
           area === "sync" ? { ...value, value: storedValue } : value
       })
       if (area === "sync") void this.snapshotManagedSyncData()
+    }
+    try {
+      if (area === "sync") {
+        await this.enqueueSyncOperation(operation)
+      } else {
+        await operation()
+      }
       return true
     } catch (error) {
       if (!isExtensionContextInvalidatedError(error)) {
@@ -392,9 +401,16 @@ export class StorageService {
   ): Promise<boolean> {
     const storageArea = this.getStorageArea(area)
     if (!storageArea) return false
-    try {
+    const operation = async () => {
       await storageArea.remove(keys)
       if (area === "sync") void this.snapshotManagedSyncData()
+    }
+    try {
+      if (area === "sync") {
+        await this.enqueueSyncOperation(operation)
+      } else {
+        await operation()
+      }
       return true
     } catch (error) {
       if (!isExtensionContextInvalidatedError(error)) {
@@ -402,6 +418,17 @@ export class StorageService {
       }
       return false
     }
+  }
+
+  private enqueueSyncOperation(operation: () => Promise<void>): Promise<void> {
+    const queued = this.syncOperationQueue.then(async () => {
+      const delay = Math.max(0, 550 - (Date.now() - this.lastSyncOperationAt))
+      if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
+      await operation()
+      this.lastSyncOperationAt = Date.now()
+    })
+    this.syncOperationQueue = queued.catch(() => undefined)
+    return queued
   }
 }
 
