@@ -478,6 +478,8 @@
 
   let draggedIndex: number | null = $state(null)
   let dragOverIndex: number | null = $state(null)
+  let draggedCategoryIndex: number | null = $state(null)
+  let dragOverCategoryIndex: number | null = $state(null)
   let suppressNextTradeOpen = false
   let suppressNextFolderToggle = false
 
@@ -490,10 +492,25 @@
     }
   }
 
+  const handleCategoryDragStart = (e: DragEvent, index: number) => {
+    draggedCategoryIndex = index
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move"
+      e.dataTransfer.setData("text/plain", index.toString())
+    }
+  }
+
   const handleDragEnter = (e: DragEvent, index: number) => {
     e.preventDefault()
     if (draggedIndex !== null && draggedIndex !== index) {
       dragOverIndex = index
+    }
+  }
+
+  const handleCategoryDragEnter = (e: DragEvent, index: number) => {
+    e.preventDefault()
+    if (draggedCategoryIndex !== null && draggedCategoryIndex !== index) {
+      dragOverCategoryIndex = index
     }
   }
 
@@ -523,12 +540,36 @@
     dragOverIndex = null
   }
 
+  const handleCategoryDrop = async (e: DragEvent, index: number) => {
+    e.preventDefault()
+    if (draggedCategoryIndex !== null && draggedCategoryIndex !== index && folder.id) {
+      const categories = [...(folder.categories || [])]
+      if (index < 0 || index > categories.length) {
+        draggedCategoryIndex = null
+        dragOverCategoryIndex = null
+        return
+      }
+
+      const [moved] = categories.splice(draggedCategoryIndex, 1)
+      categories.splice(index, 0, moved)
+      folder.categories = categories
+      await bookmarksService.persistFolder({ ...folder, categories })
+    }
+    draggedCategoryIndex = null
+    dragOverCategoryIndex = null
+  }
+
   const handleDragEnd = () => {
     draggedIndex = null
     dragOverIndex = null
     window.setTimeout(() => {
       suppressNextTradeOpen = false
     }, 0)
+  }
+
+  const handleCategoryDragEnd = () => {
+    draggedCategoryIndex = null
+    dragOverCategoryIndex = null
   }
 
   const createTradeFromCurrent = async () => {
@@ -1102,7 +1143,20 @@
         <ul class="trades-list">
           {#each tradeListEntries as entry (entry.id)}
             {#if entry.type === "category"}
-              <li class="category-row">
+              {@const categoryIndex = entry.category ? categoryOptions.findIndex((category) => category.id === entry.category.id) : -1}
+              <li
+                class="category-row"
+                class:is-drag-over={entry.category && dragOverCategoryIndex === categoryIndex}
+                class:is-dragging={entry.category && draggedCategoryIndex === categoryIndex}
+                draggable={!!entry.category}
+                ondragstart={entry.category ? (e) => handleCategoryDragStart(e, categoryIndex) : undefined}
+                ondragenter={entry.category ? (e) => handleCategoryDragEnter(e, categoryIndex) : undefined}
+                ondragover={(event) => event.preventDefault()}
+                ondrop={entry.category ? (event) => {
+                  event.preventDefault()
+                  void handleCategoryDrop(event, categoryIndex)
+                } : undefined}
+                ondragend={entry.category ? handleCategoryDragEnd : undefined}>
                 <div class="category-heading">
                   <button
                     type="button"
@@ -1626,6 +1680,15 @@
 
 .category-row {
   list-style: none;
+}
+
+.category-row.is-drag-over {
+  background: rgba(163, 141, 109, 0.08);
+  border-radius: 6px;
+}
+
+.category-row.is-dragging {
+  opacity: 0.7;
 }
 
 .category-heading {
