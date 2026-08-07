@@ -125,11 +125,8 @@ export class BookmarksService {
     const chunkedFolders = await this.fetchChunkedFolders()
     if (chunkedFolders !== null) return this.normalizeFolders(chunkedFolders)
 
-    const legacyFolders = await this.fetchSynced<
-      Partial<BookmarksFolderStruct>[]
-    >(
-      FOLDERS_KEY
-    )
+    const legacyFolders =
+      await this.fetchSynced<Partial<BookmarksFolderStruct>[]>(FOLDERS_KEY)
     if (legacyFolders && legacyFolders.length > 0) {
       await this.migrateFoldersToChunks(legacyFolders)
     }
@@ -168,14 +165,15 @@ export class BookmarksService {
   }
 
   private chunkFolders(
-    folders: BookmarksFolderStruct[]
+    folders: BookmarksFolderStruct[],
+    generation = ""
   ): Partial<BookmarksFolderStruct>[][] {
     const chunks: Partial<BookmarksFolderStruct>[][] = []
     let current: Partial<BookmarksFolderStruct>[] = []
 
     for (const folder of folders) {
       const candidate = [...current, folder]
-      const key = `${FOLDERS_CHUNK_PREFIX}${chunks.length}`
+      const key = this.foldersChunkKey(chunks.length, generation)
       if (
         current.length > 0 &&
         this.storagePayloadBytes(key, candidate) > FOLDERS_CHUNK_TARGET_BYTES
@@ -188,7 +186,7 @@ export class BookmarksService {
 
       if (
         this.storagePayloadBytes(
-          `${FOLDERS_CHUNK_PREFIX}${chunks.length}`,
+          this.foldersChunkKey(chunks.length, generation),
           current
         ) > 8192
       ) {
@@ -198,6 +196,12 @@ export class BookmarksService {
 
     if (current.length > 0) chunks.push(current)
     return chunks
+  }
+
+  private foldersChunkKey(index: number, generation = "") {
+    return generation
+      ? `${FOLDERS_CHUNK_PREFIX}${generation}-${index}`
+      : `${FOLDERS_CHUNK_PREFIX}${index}`
   }
 
   private storagePayloadBytes(key: string, value: unknown): number {
@@ -223,10 +227,13 @@ export class BookmarksService {
   private async persistFoldersToChunks(
     folders: BookmarksFolderStruct[]
   ): Promise<void> {
-    const chunks = this.chunkFolders(folders)
+    const generation = uniqueId()
+    const chunks = this.chunkFolders(folders, generation)
     const manifest: FoldersManifest = {
       version: 1,
-      chunkKeys: chunks.map((_, index) => `${FOLDERS_CHUNK_PREFIX}${index}`)
+      chunkKeys: chunks.map((_, index) =>
+        this.foldersChunkKey(index, generation)
+      )
     }
     const previous = await storageService.getValue<FoldersManifest>(
       FOLDERS_MANIFEST_KEY,
@@ -237,7 +244,7 @@ export class BookmarksService {
     const savedChunks = await Promise.all(
       chunks.map((chunk, index) =>
         storageService.setValue(
-          `${FOLDERS_CHUNK_PREFIX}${index}`,
+          this.foldersChunkKey(index, generation),
           chunk,
           null,
           BOOKMARKS_STORAGE_AREA
@@ -261,11 +268,7 @@ export class BookmarksService {
 
     await Promise.all([
       storageService.deleteValue(FOLDERS_KEY),
-      storageService.deleteValue(
-        FOLDERS_KEY,
-        null,
-        BOOKMARKS_STORAGE_AREA
-      )
+      storageService.deleteValue(FOLDERS_KEY, null, BOOKMARKS_STORAGE_AREA)
     ])
   }
 
@@ -273,8 +276,10 @@ export class BookmarksService {
     return `${TRADES_MANIFEST_PREFIX}${folderId}`
   }
 
-  private tradesChunkKey(folderId: string, index: number) {
-    return `${TRADES_CHUNK_PREFIX}${folderId}--${index}`
+  private tradesChunkKey(folderId: string, index: number, generation = "") {
+    return generation
+      ? `${TRADES_CHUNK_PREFIX}${folderId}--${generation}-${index}`
+      : `${TRADES_CHUNK_PREFIX}${folderId}--${index}`
   }
 
   private getTradeFolderIdFromStorageKey(key: string): string | null {
@@ -336,14 +341,15 @@ export class BookmarksService {
 
   private chunkTrades(
     folderId: string,
-    trades: BookmarksTradeStruct[]
+    trades: BookmarksTradeStruct[],
+    generation = ""
   ): BookmarksTradeStruct[][] {
     const chunks: BookmarksTradeStruct[][] = []
     let current: BookmarksTradeStruct[] = []
 
     for (const trade of trades) {
       const candidate = [...current, trade]
-      const key = this.tradesChunkKey(folderId, chunks.length)
+      const key = this.tradesChunkKey(folderId, chunks.length, generation)
       if (
         current.length > 0 &&
         this.storagePayloadBytes(key, candidate) > FOLDERS_CHUNK_TARGET_BYTES
@@ -356,7 +362,7 @@ export class BookmarksService {
 
       if (
         this.storagePayloadBytes(
-          this.tradesChunkKey(folderId, chunks.length),
+          this.tradesChunkKey(folderId, chunks.length, generation),
           current
         ) > 8192
       ) {
@@ -386,10 +392,13 @@ export class BookmarksService {
     folderId: string,
     trades: BookmarksTradeStruct[]
   ): Promise<void> {
-    const chunks = this.chunkTrades(folderId, trades)
+    const generation = uniqueId()
+    const chunks = this.chunkTrades(folderId, trades, generation)
     const manifest: FoldersManifest = {
       version: 1,
-      chunkKeys: chunks.map((_, index) => this.tradesChunkKey(folderId, index))
+      chunkKeys: chunks.map((_, index) =>
+        this.tradesChunkKey(folderId, index, generation)
+      )
     }
     const manifestKey = this.tradesManifestKey(folderId)
     const previous = await storageService.getValue<FoldersManifest>(
@@ -400,7 +409,7 @@ export class BookmarksService {
     const savedChunks = await Promise.all(
       chunks.map((chunk, index) =>
         storageService.setValue(
-          this.tradesChunkKey(folderId, index),
+          this.tradesChunkKey(folderId, index, generation),
           chunk,
           null,
           BOOKMARKS_STORAGE_AREA
@@ -434,7 +443,11 @@ export class BookmarksService {
       null,
       BOOKMARKS_STORAGE_AREA
     )
-    if (!manifest || manifest.version !== 1 || manifest.chunkKeys.length === 0) {
+    if (
+      !manifest ||
+      manifest.version !== 1 ||
+      manifest.chunkKeys.length === 0
+    ) {
       return false
     }
 
@@ -456,9 +469,12 @@ export class BookmarksService {
 
     const current = chunks[chunkIndex] || []
     const existingIndex = current.findIndex((entry) => entry.id === trade.id)
-    const next = existingIndex < 0
-      ? [...current, trade]
-      : current.map((entry, index) => index === existingIndex ? trade : entry)
+    const next =
+      existingIndex < 0
+        ? [...current, trade]
+        : current.map((entry, index) =>
+            index === existingIndex ? trade : entry
+          )
     const key = manifest.chunkKeys[chunkIndex]
 
     if (this.storagePayloadBytes(key, next) <= FOLDERS_CHUNK_TARGET_BYTES) {
@@ -467,7 +483,11 @@ export class BookmarksService {
 
     if (existingIndex >= 0) return false
 
-    const nextKey = this.tradesChunkKey(folderId, manifest.chunkKeys.length)
+    const nextKey = this.tradesChunkKey(
+      folderId,
+      manifest.chunkKeys.length,
+      uniqueId()
+    )
     const saved = await storageService.setValue(
       nextKey,
       [trade],
@@ -487,11 +507,13 @@ export class BookmarksService {
     const previous = this.tradesWriteQueues.get(folderId) ?? Promise.resolve()
     const queued = previous.catch(() => undefined).then(write)
     this.tradesWriteQueues.set(folderId, queued)
-    void queued.finally(() => {
-      if (this.tradesWriteQueues.get(folderId) === queued) {
-        this.tradesWriteQueues.delete(folderId)
-      }
-    }).catch(() => undefined)
+    void queued
+      .finally(() => {
+        if (this.tradesWriteQueues.get(folderId) === queued) {
+          this.tradesWriteQueues.delete(folderId)
+        }
+      })
+      .catch(() => undefined)
     return queued
   }
 
@@ -720,7 +742,9 @@ export class BookmarksService {
       const id = trade.id || uniqueId()
       const nextTrade = { ...trade, id }
       const updated = trade.id
-        ? trades.map((entry) => entry.id === trade.id ? { ...entry, ...nextTrade } : entry)
+        ? trades.map((entry) =>
+            entry.id === trade.id ? { ...entry, ...nextTrade } : entry
+          )
         : [...trades, nextTrade]
 
       const savedIncrementally = await this.persistTradeToAffectedChunk(
@@ -728,7 +752,10 @@ export class BookmarksService {
         this.normalizeTrades([nextTrade])[0]
       )
       if (!savedIncrementally) {
-        await this.persistTradesToChunks(folderId, this.normalizeTrades(updated))
+        await this.persistTradesToChunks(
+          folderId,
+          this.normalizeTrades(updated)
+        )
       }
       this.tradesCache.set(folderId, this.normalizeTrades(updated))
       await this.refresh()
@@ -786,10 +813,7 @@ export class BookmarksService {
       0,
       newTrade
     )
-    const persisted = await this.persistTrades(
-      updatedTrades,
-      targetFolderId
-    )
+    const persisted = await this.persistTrades(updatedTrades, targetFolderId)
     await this.refresh()
     return persisted
   }
