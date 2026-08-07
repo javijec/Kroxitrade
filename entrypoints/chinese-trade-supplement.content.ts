@@ -1,7 +1,7 @@
 import { MERCENARY_SKILL_NAMES, MERCENARY_SUPPORT_TW } from "~/data/chinese-trade/mercenary-names"
 import { UI_STRINGS } from "~/data/chinese-trade/ui-strings"
 import { tradeHosts } from "~/lib/config/trade-hosts"
-import { chineseTradeStorage } from "~/lib/services/chinese-trade/contract"
+import { chineseTradeStorageFor } from "~/lib/services/chinese-trade/contract"
 import { toSimplifiedChinese } from "~/lib/services/chinese-trade/simplifier"
 import { getChineseSupplementState } from "~/lib/services/trade-translation"
 
@@ -18,7 +18,6 @@ type ModifierMap = Record<string, { us?: string; tw?: string }>
 export default defineContentScript({
   matches: tradeHosts,
   excludeMatches: [
-    "*://*/trade2/*",
     "https://poe.kakaogames.com/*",
     "https://poe2.kakaogames.com/*"
   ],
@@ -30,7 +29,8 @@ export default defineContentScript({
 
     const simplified = state.language === "zh-cn"
     const convert = simplified ? toSimplifiedChinese : (value: string) => value
-    const locale = simplified ? chineseTradeStorage.simplified : chineseTradeStorage.traditional
+    const storage = chineseTradeStorageFor(state.version)
+    const locale = simplified ? storage.simplified : storage.traditional
     let names: Record<string, string> = {}
     let reverse: Record<string, string> = {}
     let mercenaryNames: Record<string, string> = {}

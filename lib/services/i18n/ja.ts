@@ -16,7 +16,7 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.reducedPermissionsDescription": "拡張機能は Chrome のスクリプト実行権限と無制限ストレージ権限を必要としなくなりました。中国語 Trade データはより小さいローカルキャッシュを使用します。",
   "settings.tradeTranslationTitle": "トレードサイトを中国語化",
   "settings.tradeTranslationDescription": "公式のフィルターと選択項目を中国語で表示します。モッドは中国語と英語の両方で検索できます。",
-  "settings.tradeTranslationHint": "国際版のPath of Exile 1トレードサイトでのみ利用できます。変更時にページが再読み込みされます。",
+  "settings.tradeTranslationHint": "国際版のPath of Exile 1およびPath of Exile 2のトレードサイトで利用できます。変更時にページが再読み込みされます。",
   "whatsNew.item.mediumTextSizeTitle": "中サイズの文字が正しく機能するようになりました",
   "whatsNew.item.mediumTextSizeDescription":
     "一般設定で中を選択すると、拡張機能を再読み込みした後も文字サイズの設定が保持されます。",

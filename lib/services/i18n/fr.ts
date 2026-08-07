@@ -16,7 +16,7 @@ export const frenchTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.reducedPermissionsDescription": "L’extension ne nécessite plus les autorisations Chrome de script ni de stockage illimité. Les données de trade chinoises utilisent désormais un cache local plus léger.",
   "settings.tradeTranslationTitle": "Traduire le site de commerce",
   "settings.tradeTranslationDescription": "Affiche les filtres et sélecteurs officiels en chinois. Les modificateurs restent recherchables en chinois et en anglais.",
-  "settings.tradeTranslationHint": "Disponible uniquement sur le site international de Path of Exile 1. La page se recharge après la modification.",
+  "settings.tradeTranslationHint": "Disponible sur les sites de commerce internationaux de Path of Exile 1 et Path of Exile 2. La page se recharge après la modification.",
   "whatsNew.item.mediumTextSizeTitle": "La taille de texte moyenne fonctionne correctement",
   "whatsNew.item.mediumTextSizeDescription":
     "Sélectionner Moyenne dans les paramètres généraux conserve désormais votre taille de texte après le rechargement de l’extension.",

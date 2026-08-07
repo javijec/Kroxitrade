@@ -13,8 +13,9 @@
   import { itemResultsService } from "../../lib/services/item-results";
   import {
     chineseTradeMessage,
-    chineseTradePageStorage,
-    chineseTradeStorage
+    chineseTradePageStorageFor,
+    chineseTradeStorageFor,
+    type ChineseTradeVersion
   } from "../../lib/services/chinese-trade/contract";
   import { DEFAULT_SIDEBAR_WIDTH, settings, type BookmarkLayout, type BookmarkTradeActionId, type QuickFiltersPlacement, type SidebarSide, type TextSizePreference } from "../../lib/services/settings";
   import { tradeLocationService } from "../../lib/services/trade-location";
@@ -153,9 +154,10 @@
   ];
   const canTranslateTradeSite = $derived(
     ($settings.language === "zh-tw" || $settings.language === "zh-cn") &&
-      window.location.hostname !== "pathofexile.tw" &&
-      !window.location.pathname.startsWith("/trade2/")
+      window.location.hostname !== "pathofexile.tw"
   );
+  const currentChineseTradeVersion = (): ChineseTradeVersion =>
+    window.location.pathname.startsWith("/trade2/") ? "poe2" : "poe1";
 
   const localizedLanguageNames: Record<AppLanguage, Record<AppLanguage, string>> = {
     en: { en: "English", es: "Spanish", pt: "Portuguese", ru: "Russian", th: "Thai", de: "German", fr: "French", ja: "Japanese", ko: "Korean", "zh-tw": "Traditional Chinese", "zh-cn": "Simplified Chinese" },
@@ -263,21 +265,24 @@
     }
 
     if (translateTradeSite && ($settings.language === "zh-tw" || $settings.language === "zh-cn")) {
-      if (!(await prepareChineseTradeCache($settings.language))) {
+      if (!(await prepareChineseTradeCache($settings.language, currentChineseTradeVersion()))) {
         flashMessages.alert(translate($languageStore, "settings.saveFailed"));
         return;
       }
     }
 
-    if (!(await reloadChineseTradeTabs())) {
+    if (!(await reloadChineseTradeTabs(currentChineseTradeVersion()))) {
       window.location.reload();
     }
   }
 
-  function rebuildChineseTradeData(language?: "zh-tw" | "zh-cn"): Promise<boolean> {
+  function rebuildChineseTradeData(
+    language: "zh-tw" | "zh-cn" | undefined,
+    version: ChineseTradeVersion
+  ): Promise<boolean> {
     return new Promise((resolve) => {
       try {
-        chrome.runtime.sendMessage({ type: chineseTradeMessage.rebuildCache, language }, (reply) => {
+        chrome.runtime.sendMessage({ type: chineseTradeMessage.rebuildCache, language, version }, (reply) => {
           if (reply?.ok !== true) {
             console.error("[PoeTradePlus] Chinese Trade cache rebuild failed", {
               error: reply?.error ?? chrome.runtime.lastError?.message ?? "No response from background",
@@ -292,10 +297,10 @@
     });
   }
 
-  function reloadChineseTradeTabs(): Promise<boolean> {
+  function reloadChineseTradeTabs(version: ChineseTradeVersion): Promise<boolean> {
     return new Promise((resolve) => {
       try {
-        chrome.runtime.sendMessage({ type: chineseTradeMessage.reloadTradeTabs }, (reply) => {
+        chrome.runtime.sendMessage({ type: chineseTradeMessage.reloadTradeTabs, version }, (reply) => {
           resolve(reply?.ok === true);
         });
       } catch {
@@ -314,19 +319,26 @@
     });
   }
 
-  async function prepareChineseTradeCache(language: "zh-tw" | "zh-cn") {
-    if (!(await rebuildChineseTradeData(language))) return false;
+  async function prepareChineseTradeCache(
+    language: "zh-tw" | "zh-cn",
+    version = currentChineseTradeVersion()
+  ) {
+    if (!(await rebuildChineseTradeData(language, version))) return false;
 
+    const storage = chineseTradeStorageFor(version);
+    const pageStorage = chineseTradePageStorageFor(version);
     const source = language === "zh-cn"
-      ? chineseTradeStorage.simplified
-      : chineseTradeStorage.traditional;
-    const sourceKeys = [source.stats];
+      ? storage.simplified
+      : storage.traditional;
+    const targets = version === "poe2"
+      ? { stats: "lscache-trade2stats", static: "lscache-trade2data", filters: "lscache-trade2filters", items: "lscache-trade2items" }
+      : { stats: "lscache-tradestats", static: "lscache-tradedata", filters: "lscache-tradefilters" };
+    const sourceKeys = Object.keys(targets).map((key) => source[key as keyof typeof source]);
     const cache = await readChineseTradeCache(sourceKeys);
-    const targets: Record<string, string> = { stats: "lscache-tradestats" };
 
     let injected = false;
-    for (const [[, target], sourceKey] of Object.entries(targets).map(
-      (entry, index) => [entry, sourceKeys[index]] as const
+    for (const [sourceKey, target] of Object.entries(targets).map(
+      ([sourceName, target]) => [source[sourceName as keyof typeof source], target] as const
     )) {
       const value = cache[sourceKey];
       if (!Array.isArray(value)) continue;
@@ -335,7 +347,7 @@
       injected = true;
     }
 
-    if (injected) window.localStorage.setItem(chineseTradePageStorage.injected, "1");
+    if (injected) window.localStorage.setItem(pageStorage.injected, "1");
     return Array.isArray(cache[source.stats]);
   }
 
@@ -411,7 +423,7 @@
       $settings.translateTradeSite && wasChinese && !isChinese;
 
     if (reloadIntoChinese) {
-      if (!(await prepareChineseTradeCache(language))) {
+      if (!(await prepareChineseTradeCache(language, currentChineseTradeVersion()))) {
         flashMessages.alert(translate($languageStore, "settings.saveFailed"));
         return;
       }
@@ -419,7 +431,7 @@
         flashMessages.alert(translate($languageStore, "settings.saveFailed"));
         return;
       }
-      if (!(await reloadChineseTradeTabs())) {
+      if (!(await reloadChineseTradeTabs(currentChineseTradeVersion()))) {
         window.location.reload();
       }
       return;
@@ -432,18 +444,17 @@
 
     if (resetTradeSiteLanguage) {
       if (wasChinese && !isChinese) {
-        for (const key of [
-          "lscache-tradestats",
-          "lscache-tradedata",
-          "lscache-tradefilters",
-          "lscache-tradeitems"
-        ]) {
+        const version = currentChineseTradeVersion();
+        const keys = version === "poe2"
+          ? ["lscache-trade2stats", "lscache-trade2data", "lscache-trade2filters", "lscache-trade2items"]
+          : ["lscache-tradestats", "lscache-tradedata", "lscache-tradefilters", "lscache-tradeitems"];
+        for (const key of keys) {
           window.localStorage.removeItem(key);
           window.localStorage.removeItem(`${key}-cacheexpiration`);
         }
-        window.localStorage.removeItem(chineseTradePageStorage.injected);
+        window.localStorage.removeItem(chineseTradePageStorageFor(version).injected);
       }
-      if (!(await reloadChineseTradeTabs())) {
+      if (!(await reloadChineseTradeTabs(currentChineseTradeVersion()))) {
         window.location.reload();
       }
     }

@@ -1,25 +1,34 @@
 import { tradeHosts } from "~/lib/config/trade-hosts"
 import {
   chineseTradeMessage,
-  chineseTradePageStorage,
-  chineseTradeStorage
+  chineseTradePageStorageFor,
+  chineseTradeStorageFor
 } from "~/lib/services/chinese-trade/contract"
 import { getTradeTranslationState } from "~/lib/services/trade-translation"
 
-const tradeCacheKeys = [
-  "lscache-tradestats",
-  "lscache-tradedata",
-  "lscache-tradefilters",
-  "lscache-tradeitems"
-] as const
+const tradeCacheKeysFor = (version: "poe1" | "poe2") =>
+  version === "poe2"
+    ? [
+        "lscache-trade2stats",
+        "lscache-trade2data",
+        "lscache-trade2filters",
+        "lscache-trade2items"
+      ]
+    : [
+        "lscache-tradestats",
+        "lscache-tradedata",
+        "lscache-tradefilters",
+        "lscache-tradeitems"
+      ]
 
-const removeTranslatedTradeCache = () => {
-  if (!localStorage.getItem(chineseTradePageStorage.injected)) return
-  for (const key of tradeCacheKeys) {
+const removeTranslatedTradeCache = (version: "poe1" | "poe2") => {
+  const pageStorage = chineseTradePageStorageFor(version)
+  if (!localStorage.getItem(pageStorage.injected)) return
+  for (const key of tradeCacheKeysFor(version)) {
     localStorage.removeItem(key)
     localStorage.removeItem(`${key}-cacheexpiration`)
   }
-  localStorage.removeItem(chineseTradePageStorage.injected)
+  localStorage.removeItem(pageStorage.injected)
 }
 
 const storageValues = (keys: string[]) =>
@@ -29,10 +38,10 @@ const storageValues = (keys: string[]) =>
     )
   )
 
-const requestCacheBuild = () =>
+const requestCacheBuild = (version: "poe1" | "poe2") =>
   new Promise<boolean>((resolve) => {
     chrome.runtime.sendMessage(
-      { type: chineseTradeMessage.rebuildCache },
+      { type: chineseTradeMessage.rebuildCache, version },
       (reply) => resolve(reply?.ok === true)
     )
   })
@@ -50,22 +59,25 @@ export default defineContentScript({
     const state = await getTradeTranslationState()
     if (!state.enabled) {
       try {
-        removeTranslatedTradeCache()
+        removeTranslatedTradeCache(state.version)
       } catch {
         // Page storage can be unavailable during browser shutdown.
       }
       return
     }
 
+    const storage = chineseTradeStorageFor(state.version)
+    const pageStorage = chineseTradePageStorageFor(state.version)
     const locale =
       state.language === "zh-cn"
-        ? chineseTradeStorage.simplified
-        : chineseTradeStorage.traditional
-    const targets: Array<[string, (typeof tradeCacheKeys)[number]]> = [
-      [locale.stats, "lscache-tradestats"],
-      [locale.static, "lscache-tradedata"],
-      [locale.filters, "lscache-tradefilters"]
+        ? storage.simplified
+        : storage.traditional
+    const targets: Array<[string, string]> = [
+      [locale.stats, state.version === "poe2" ? "lscache-trade2stats" : "lscache-tradestats"],
+      [locale.static, state.version === "poe2" ? "lscache-trade2data" : "lscache-tradedata"],
+      [locale.filters, state.version === "poe2" ? "lscache-trade2filters" : "lscache-tradefilters"]
     ]
+    if (state.version === "poe2") targets.push([locale.items, "lscache-trade2items"])
 
     let values: Record<string, unknown>
     try {
@@ -74,7 +86,7 @@ export default defineContentScript({
       return
     }
 
-    const serialized = new Map<(typeof tradeCacheKeys)[number], string>()
+    const serialized = new Map<string, string>()
     for (const [source, target] of targets) {
       const value = values[source]
       if (!Array.isArray(value)) continue
@@ -85,22 +97,24 @@ export default defineContentScript({
       }
     }
 
-    const stats = serialized.get("lscache-tradestats")
+    const stats = serialized.get(
+      state.version === "poe2" ? "lscache-trade2stats" : "lscache-tradestats"
+    )
     const isComplete = targets.every(([, target]) => serialized.has(target))
     if (!stats || !isComplete) {
       try {
         if (
-          sessionStorage.getItem(chineseTradePageStorage.rebuildGuard) === "1"
+          sessionStorage.getItem(pageStorage.rebuildGuard) === "1"
         )
           return
-        sessionStorage.setItem(chineseTradePageStorage.rebuildGuard, "1")
-        if (await requestCacheBuild()) location.reload()
+        sessionStorage.setItem(pageStorage.rebuildGuard, "1")
+        if (await requestCacheBuild(state.version)) location.reload()
       } catch {
         // No cache build is better than an interrupted Trade page.
       }
       return
     }
-    sessionStorage.removeItem(chineseTradePageStorage.rebuildGuard)
+    sessionStorage.removeItem(pageStorage.rebuildGuard)
 
     const bootCache = new Map(
       targets.map(([, target]) => [target, localStorage.getItem(target)])
@@ -114,7 +128,7 @@ export default defineContentScript({
         wroteValue = true
       }
       if (wroteValue)
-        localStorage.setItem(chineseTradePageStorage.injected, "1")
+        localStorage.setItem(pageStorage.injected, "1")
     }
 
     try {
@@ -125,12 +139,12 @@ export default defineContentScript({
       )
       if (
         changedAtBoot &&
-        sessionStorage.getItem(chineseTradePageStorage.reloadGuard) !== "1"
+        sessionStorage.getItem(pageStorage.reloadGuard) !== "1"
       ) {
-        sessionStorage.setItem(chineseTradePageStorage.reloadGuard, "1")
+        sessionStorage.setItem(pageStorage.reloadGuard, "1")
         setTimeout(() => location.reload(), 50)
       } else if (!changedAtBoot) {
-        sessionStorage.removeItem(chineseTradePageStorage.reloadGuard)
+        sessionStorage.removeItem(pageStorage.reloadGuard)
       }
     } catch {
       // The native Trade cache remains available if page storage rejects writes.
