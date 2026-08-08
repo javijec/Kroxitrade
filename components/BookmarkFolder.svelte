@@ -8,6 +8,7 @@
   import { onDestroy, tick } from "svelte"
   import { slide } from "svelte/transition"
 
+
   import {
     getActiveTradeTabTitle,
     openUrlInActiveTab,
@@ -544,10 +545,9 @@
             : categoryIdForTrade(moved)
         })
         trades = orderedTrades
-        // Background sync
-        trades = await bookmarksService.persistTrades(orderedTrades, folder.id)
-        await bookmarksService.refresh()
         hasLoadedTrades = true
+        // Persist in the background so rapid reorders stay responsive.
+        void bookmarksService.persistTrades(orderedTrades, folder.id)
       }
     }
     draggedIndex = null

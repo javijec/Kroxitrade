@@ -249,7 +249,7 @@
     }
 
     if (payload.type === "trade" && payload.sourceFolderId !== folderId) {
-      await bookmarksService.moveTradeBetweenFolders(
+      void bookmarksService.moveTradeBetweenFolders(
         payload.tradeId,
         payload.sourceFolderId,
         folderId

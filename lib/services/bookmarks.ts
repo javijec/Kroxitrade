@@ -66,6 +66,10 @@ export class BookmarksService {
   private tradesCache = new Map<string, BookmarksTradeStruct[]>()
   private tradesRequests = new Map<string, Promise<BookmarksTradeStruct[]>>()
   private tradesWriteQueues = new Map<string, Promise<unknown>>()
+  private tradesCacheEpoch = new Map<string, number>()
+  private localTradesDirty = new Set<string>()
+  private pendingTradesPersist = new Set<string>()
+  private tradesMutationTail: Promise<void> = Promise.resolve()
   private foldersMigration: Promise<void> | null = null
   private tradesMigrations = new Map<string, Promise<void>>()
   public subscribe = this.foldersStore.subscribe
@@ -112,6 +116,8 @@ export class BookmarksService {
         if (folderId) changedTradeFolderIds.add(folderId)
       }
       for (const folderId of changedTradeFolderIds) {
+        // Keep optimistic local state while queued writes are still draining.
+        if (this.hasLocalTradesEdits(folderId)) continue
         this.tradesCache.delete(folderId)
         this.tradesRequests.delete(folderId)
         void this.refreshTradesFromStorage(folderId)
@@ -517,6 +523,63 @@ export class BookmarksService {
     return queued
   }
 
+  private bumpTradesCacheEpoch(folderId: string) {
+    const next = (this.tradesCacheEpoch.get(folderId) ?? 0) + 1
+    this.tradesCacheEpoch.set(folderId, next)
+    this.localTradesDirty.add(folderId)
+    return next
+  }
+
+  private hasLocalTradesEdits(folderId: string) {
+    return (
+      this.localTradesDirty.has(folderId) ||
+      this.tradesWriteQueues.has(folderId)
+    )
+  }
+
+  private setTradesCache(
+    folderId: string,
+    trades: BookmarksTradeStruct[]
+  ): number {
+    this.tradesCache.set(folderId, trades)
+    return this.bumpTradesCacheEpoch(folderId)
+  }
+
+  private enqueueTradesMutation<T>(run: () => T | Promise<T>): Promise<T> {
+    const result = this.tradesMutationTail.then(run, run)
+    this.tradesMutationTail = result.then(
+      () => undefined,
+      () => undefined
+    )
+    return result
+  }
+
+  private queuePersistLatestTrades(folderId: string) {
+    if (this.pendingTradesPersist.has(folderId)) return
+    this.pendingTradesPersist.add(folderId)
+
+    void this.enqueueTradesWrite(folderId, async () => {
+      this.pendingTradesPersist.delete(folderId)
+
+      const epoch = this.tradesCacheEpoch.get(folderId) ?? 0
+      const trades = this.tradesCache.get(folderId)
+      if (!trades) {
+        this.localTradesDirty.delete(folderId)
+        return
+      }
+
+      await this.persistTradesToChunks(folderId, [...trades])
+
+      if ((this.tradesCacheEpoch.get(folderId) ?? 0) === epoch) {
+        this.localTradesDirty.delete(folderId)
+        return
+      }
+
+      // Newer local edits landed while this write was in flight.
+      this.queuePersistLatestTrades(folderId)
+    })
+  }
+
   private async deleteChunkedTrades(folderId: string): Promise<void> {
     const manifestKey = this.tradesManifestKey(folderId)
     const manifest = await storageService.getValue<FoldersManifest>(
@@ -596,6 +659,9 @@ export class BookmarksService {
     const request = this.fetchTrades(folderId)
       .then((trades) => {
         const normalized = this.normalizeTrades(trades)
+        if (this.hasLocalTradesEdits(folderId) && this.tradesCache.has(folderId)) {
+          return [...(this.tradesCache.get(folderId) || [])]
+        }
         this.tradesCache.set(folderId, normalized)
         return [...normalized]
       })
@@ -608,7 +674,11 @@ export class BookmarksService {
   }
 
   private async refreshTradesFromStorage(folderId: string) {
+    if (this.hasLocalTradesEdits(folderId)) return
+
     const trades = await this.fetchTradesByFolderId(folderId, { force: true })
+    if (this.hasLocalTradesEdits(folderId)) return
+
     this.tradesCache.set(folderId, trades)
     this.notifyChange({ tradesChanged: true, folderId })
   }
@@ -767,14 +837,12 @@ export class BookmarksService {
     trades: BookmarksTradeStruct[],
     folderId: string
   ): Promise<BookmarksTradeStruct[]> {
-    return this.enqueueTradesWrite(folderId, async () => {
-      const safeTrades = this.normalizeTrades(
-        trades.map((t) => ({ ...t, id: t.id || uniqueId() }))
-      )
-      this.tradesCache.set(folderId, safeTrades)
-      await this.persistTradesToChunks(folderId, safeTrades)
-      return [...safeTrades]
-    })
+    const safeTrades = this.normalizeTrades(
+      trades.map((t) => ({ ...t, id: t.id || uniqueId() }))
+    )
+    this.setTradesCache(folderId, safeTrades)
+    this.queuePersistLatestTrades(folderId)
+    return [...safeTrades]
   }
 
   async deleteTrade(
@@ -794,6 +862,9 @@ export class BookmarksService {
     await this.persistFolders(updated)
     this.tradesCache.delete(folderId)
     this.tradesRequests.delete(folderId)
+    this.tradesCacheEpoch.delete(folderId)
+    this.localTradesDirty.delete(folderId)
+    this.pendingTradesPersist.delete(folderId)
     await this.deleteChunkedTrades(folderId)
     await this.refresh()
   }
@@ -918,43 +989,56 @@ export class BookmarksService {
     targetTrades: BookmarksTradeStruct[];
   }> {
     if (sourceFolderId === targetFolderId) {
-      const trades = await this.fetchTradesByFolderId(sourceFolderId, { force: true })
+      const trades = await this.fetchTradesByFolderId(sourceFolderId)
       return { sourceTrades: trades, targetTrades: trades }
     }
 
-    const sourceTrades = await this.fetchTradesByFolderId(sourceFolderId, {
-      force: true
+    await Promise.all([
+      this.fetchTradesByFolderId(sourceFolderId),
+      this.fetchTradesByFolderId(targetFolderId)
+    ])
+
+    const result = await this.enqueueTradesMutation(() => {
+      const sourceTrades = this.getCachedTradesByFolderId(sourceFolderId)
+      const targetTrades = this.getCachedTradesByFolderId(targetFolderId)
+      if (!sourceTrades || !targetTrades) {
+        return {
+          sourceTrades: sourceTrades ?? [],
+          targetTrades: targetTrades ?? []
+        }
+      }
+
+      const sourceIndex = sourceTrades.findIndex((t) => t.id === tradeId)
+      if (sourceIndex === -1) {
+        return { sourceTrades, targetTrades }
+      }
+
+      const [movedTrade] = sourceTrades.splice(sourceIndex, 1)
+      const safeTargetIndex = typeof targetIndex === "number"
+        ? Math.max(0, Math.min(targetIndex, targetTrades.length))
+        : targetTrades.length
+      const updatedTargetTrades = [...targetTrades]
+      updatedTargetTrades.splice(safeTargetIndex, 0, movedTrade)
+
+      const normalizedSourceTrades = this.normalizeTrades(sourceTrades)
+      const normalizedTargetTrades = this.normalizeTrades(updatedTargetTrades)
+
+      this.setTradesCache(sourceFolderId, normalizedSourceTrades)
+      this.setTradesCache(targetFolderId, normalizedTargetTrades)
+
+      this.notifyChange({ tradesChanged: true, folderId: sourceFolderId })
+      this.notifyChange({ tradesChanged: true, folderId: targetFolderId })
+
+      return {
+        sourceTrades: normalizedSourceTrades,
+        targetTrades: normalizedTargetTrades
+      }
     })
-    const targetTrades = await this.fetchTradesByFolderId(targetFolderId, {
-      force: true
-    })
 
-    const sourceIndex = sourceTrades.findIndex((t) => t.id === tradeId)
-    if (sourceIndex === -1) {
-      return { sourceTrades, targetTrades }
-    }
+    this.queuePersistLatestTrades(sourceFolderId)
+    this.queuePersistLatestTrades(targetFolderId)
 
-    const [movedTrade] = sourceTrades.splice(sourceIndex, 1)
-    const safeTargetIndex = typeof targetIndex === "number"
-      ? Math.max(0, Math.min(targetIndex, targetTrades.length))
-      : targetTrades.length
-    const updatedTargetTrades = [...targetTrades]
-    updatedTargetTrades.splice(safeTargetIndex, 0, movedTrade)
-
-    const normalizedSourceTrades = this.normalizeTrades(sourceTrades)
-    const normalizedTargetTrades = this.normalizeTrades(updatedTargetTrades)
-
-    this.tradesCache.set(sourceFolderId, normalizedSourceTrades)
-    this.tradesCache.set(targetFolderId, normalizedTargetTrades)
-
-    await this.persistTradesToChunks(sourceFolderId, normalizedSourceTrades)
-    await this.persistTradesToChunks(targetFolderId, normalizedTargetTrades)
-    await this.refresh()
-
-    return {
-      sourceTrades: normalizedSourceTrades,
-      targetTrades: normalizedTargetTrades
-    }
+    return result
   }
 
   async moveFolder(
