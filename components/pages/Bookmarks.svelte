@@ -162,43 +162,101 @@
       expandedFolderIds = [];
   };
 
+  const parseDragPayload = (event: DragEvent) => {
+    if (!event.dataTransfer) return null;
+    const raw = event.dataTransfer.getData("text/plain");
+    if (!raw) return null;
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed?.type === "trade") {
+        return {
+          type: "trade" as const,
+          tradeId: parsed.tradeId,
+          sourceFolderId: parsed.sourceFolderId
+        };
+      }
+      if (parsed?.type === "folder") {
+        return {
+          type: "folder" as const,
+          folderId: parsed.folderId
+        };
+      }
+    } catch {
+      // Fall back to legacy folder drag payload.
+    }
+
+    return {
+      type: "folder" as const,
+      folderId: raw
+    };
+  };
+
   const handleFolderDragStart = (event: DragEvent, folderId: string) => {
     draggedFolderId = folderId;
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", folderId);
+      event.dataTransfer.setData(
+        "text/plain",
+        JSON.stringify({ type: "folder", folderId })
+      );
     }
   };
 
   const handleFolderDragEnter = (event: DragEvent, folderId: string) => {
+    const payload = parseDragPayload(event);
+    if (!payload) return;
+
     event.preventDefault();
-    if (draggedFolderId && draggedFolderId !== folderId) {
+    if (payload.type === "folder" && draggedFolderId && draggedFolderId !== folderId) {
+      dragOverFolderId = folderId;
+      return;
+    }
+
+    if (payload.type === "trade" && payload.sourceFolderId !== folderId) {
       dragOverFolderId = folderId;
     }
   };
 
   const handleFolderDrop = async (event: DragEvent, folderId: string) => {
     event.preventDefault();
-    if (!draggedFolderId || draggedFolderId === folderId) {
+    dragOverFolderId = null;
+
+    const payload = parseDragPayload(event);
+    if (!payload) {
       draggedFolderId = null;
-      dragOverFolderId = null;
       return;
     }
 
-    const targetIndex = displayedFolderIndexById.get(folderId) ?? -1;
-    if (targetIndex === -1) {
+    if (payload.type === "folder") {
+      if (!draggedFolderId || draggedFolderId === folderId) {
+        draggedFolderId = null;
+        return;
+      }
+
+      const targetIndex = displayedFolderIndexById.get(folderId) ?? -1;
+      if (targetIndex === -1) {
+        draggedFolderId = null;
+        return;
+      }
+
+      await bookmarksService.moveFolder(draggedFolderId, targetIndex, {
+        version: currentVersion,
+        archived: showArchived
+      });
       draggedFolderId = null;
-      dragOverFolderId = null;
       return;
     }
 
-    await bookmarksService.moveFolder(draggedFolderId, targetIndex, {
-      version: currentVersion,
-      archived: showArchived
-    });
+    if (payload.type === "trade" && payload.sourceFolderId !== folderId) {
+      await bookmarksService.moveTradeBetweenFolders(
+        payload.tradeId,
+        payload.sourceFolderId,
+        folderId
+      );
+    }
 
     draggedFolderId = null;
-    dragOverFolderId = null;
   };
 
   const handleFolderDragEnd = () => {

@@ -908,6 +908,55 @@ export class BookmarksService {
     return persisted
   }
 
+  async moveTradeBetweenFolders(
+    tradeId: string,
+    sourceFolderId: string,
+    targetFolderId: string,
+    targetIndex?: number
+  ): Promise<{
+    sourceTrades: BookmarksTradeStruct[];
+    targetTrades: BookmarksTradeStruct[];
+  }> {
+    if (sourceFolderId === targetFolderId) {
+      const trades = await this.fetchTradesByFolderId(sourceFolderId, { force: true })
+      return { sourceTrades: trades, targetTrades: trades }
+    }
+
+    const sourceTrades = await this.fetchTradesByFolderId(sourceFolderId, {
+      force: true
+    })
+    const targetTrades = await this.fetchTradesByFolderId(targetFolderId, {
+      force: true
+    })
+
+    const sourceIndex = sourceTrades.findIndex((t) => t.id === tradeId)
+    if (sourceIndex === -1) {
+      return { sourceTrades, targetTrades }
+    }
+
+    const [movedTrade] = sourceTrades.splice(sourceIndex, 1)
+    const safeTargetIndex = typeof targetIndex === "number"
+      ? Math.max(0, Math.min(targetIndex, targetTrades.length))
+      : targetTrades.length
+    const updatedTargetTrades = [...targetTrades]
+    updatedTargetTrades.splice(safeTargetIndex, 0, movedTrade)
+
+    const normalizedSourceTrades = this.normalizeTrades(sourceTrades)
+    const normalizedTargetTrades = this.normalizeTrades(updatedTargetTrades)
+
+    this.tradesCache.set(sourceFolderId, normalizedSourceTrades)
+    this.tradesCache.set(targetFolderId, normalizedTargetTrades)
+
+    await this.persistTradesToChunks(sourceFolderId, normalizedSourceTrades)
+    await this.persistTradesToChunks(targetFolderId, normalizedTargetTrades)
+    await this.refresh()
+
+    return {
+      sourceTrades: normalizedSourceTrades,
+      targetTrades: normalizedTargetTrades
+    }
+  }
+
   async moveFolder(
     folderId: string,
     newIndex: number,

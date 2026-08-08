@@ -484,15 +484,29 @@
   let suppressNextFolderToggle = false
 
   const handleDragStart = (e: DragEvent, index: number) => {
+    e.stopPropagation()
     draggedIndex = index
     suppressNextTradeOpen = true
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = "move"
-      e.dataTransfer.setData("text/plain", index.toString())
+      const trade = displayedTrades[index]
+      if (trade?.id && folder.id) {
+        e.dataTransfer.setData(
+          "text/plain",
+          JSON.stringify({
+            type: "trade",
+            tradeId: trade.id,
+            sourceFolderId: folder.id
+          })
+        )
+      } else {
+        e.dataTransfer.setData("text/plain", index.toString())
+      }
     }
   }
 
   const handleCategoryDragStart = (e: DragEvent, index: number) => {
+    e.stopPropagation()
     draggedCategoryIndex = index
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = "move"
@@ -956,18 +970,18 @@
   class:is-editing={editingFolder}
   class:is-folder-dragging={isFolderDragging}
   class:is-folder-drag-over={isFolderDragOver}
-  draggable="true"
-  ondragstart={(e) => onFolderDragStart(e, folder.id || "")}
   ondragenter={(e) => onFolderDragEnter(e, folder.id || "")}
   ondragover={(event) => event.preventDefault()}
   ondrop={(event) => {
     event.preventDefault()
     onFolderDrop(event, folder.id || "")
-  }}
-  ondragend={onFolderDragEnd}>
+  }}>
   <div class="folder-header">
     <div
       class="folder-drag-handle"
+      draggable="true"
+      ondragstart={(e) => onFolderDragStart(e, folder.id || "")}
+      ondragend={onFolderDragEnd}
       title={translate($languageStore, "folder.dragReorder")}
       aria-hidden="true">
       <span class="action-icon"><SvgIcon svg={gripVerticalIcon} /></span>
