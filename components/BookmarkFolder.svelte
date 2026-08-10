@@ -4,7 +4,6 @@
   import trashIcon from "lucide-static/icons/trash-2.svg?raw";
   import xIcon from "lucide-static/icons/x.svg?raw";
   import imageIcon from "lucide-static/icons/image.svg?raw";
-  import externalLinkIcon from "lucide-static/icons/external-link.svg?raw";
   import { onDestroy, tick } from "svelte"
   import { slide } from "svelte/transition"
 
@@ -479,7 +478,6 @@
   let draggedIndex: number | null = $state(null)
   let dragOverIndex: number | null = $state(null)
   let suppressNextTradeOpen = false
-  let suppressNextFolderToggle = false
 
   const handleDragStart = (e: DragEvent, index: number) => {
     draggedIndex = index
@@ -582,20 +580,6 @@
     if (showArchivedTrades && !trades.some((entry) => entry.archivedAt)) {
       showArchivedTrades = false
     }
-  }
-
-  const openAllTradesInNewTabs = async () => {
-    await loadTrades()
-    if (displayedTrades.length === 0) {
-      flashMessages.alert(translate($languageStore, "folder.noTradesToOpen"))
-      return
-    }
-    for (const trade of displayedTrades) {
-      await openTrade(trade, true)
-    }
-    flashMessages.success(
-      translate($languageStore, "folder.openedTabs", { count: displayedTrades.length })
-    )
   }
 
   const requestArchiveCompleted = () => {
@@ -788,20 +772,6 @@
     }
   }
 
-  const handleFolderHeaderPointerDown = (event: PointerEvent) => {
-    if (event.button === 1) event.preventDefault()
-  }
-
-  const handleFolderHeaderPointerUp = (event: PointerEvent) => {
-    if (event.button !== 1 || editingFolder) return
-    event.preventDefault()
-    suppressNextFolderToggle = true
-    window.setTimeout(() => {
-      suppressNextFolderToggle = false
-    }, 0)
-    void openAllTradesInNewTabs()
-  }
-
   const handleTradeCardClick = (event: MouseEvent | PointerEvent, trade: BookmarksTradeStruct) => {
     if (shouldIgnoreTradeCardClick(event.target)) return
     if (event.button === 1) {
@@ -934,14 +904,8 @@
     <button
       type="button"
       class="expansion-wrapper"
-      onpointerdown={handleFolderHeaderPointerDown}
-      onpointerup={handleFolderHeaderPointerUp}
       onclick={(e) => {
         e.stopPropagation()
-        if (suppressNextFolderToggle) {
-          suppressNextFolderToggle = false
-          return
-        }
         if (!editingFolder) onToggleExpansion(folder.id || "")
       }}
       aria-expanded={isExpanded}
@@ -979,17 +943,6 @@
     </button>
 
     <div class="header-actions">
-      {#if !previewTrades && displayedTrades.length > 0}
-        <button
-          type="button"
-          class="category-action"
-          title={translate($languageStore, "folder.openAllInNewTabs")}
-          aria-label={translate($languageStore, "folder.openAllInNewTabs")}
-          onclick={() => void openAllTradesInNewTabs()}
-        >
-          <span class="action-icon"><SvgIcon svg={externalLinkIcon} /></span>
-        </button>
-      {/if}
       <FolderActionsMenu
         {folder}
         onRename={startEditingFolder}

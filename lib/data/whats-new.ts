@@ -178,6 +178,14 @@ const version1123Fixes: WhatsNewItem[] = [
   }
 ];
 
+const version1124Fixes: WhatsNewItem[] = [
+  {
+    title: "Bulk folder opening is temporarily disabled",
+    description:
+      "Opening every saved search in a folder is temporarily disabled to avoid Path of Exile Trade rate limits. Individual searches can still be opened in a new background tab with middle-click."
+  }
+];
+
 const version112Features: WhatsNewItem[] = [
   {
     title: "External reference links in the popup",
@@ -430,9 +438,18 @@ const version1110Features: WhatsNewItem[] = [
 ];
 
 export const latestWhatsNew: WhatsNewEntry = {
-  version: "1.1.23",
-  date: "2026-08-05",
+  version: "1.1.24",
+  date: "2026-08-10",
   sections: [
+    {
+      title: "1.1.24",
+      groups: [
+        {
+          titleKey: "whatsNew.section.fixes",
+          items: version1124Fixes
+        }
+      ]
+    },
     {
       title: "1.1.23",
       groups: [
