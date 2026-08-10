@@ -15,7 +15,7 @@ export const englishTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.reducedPermissionsDescription": "The extension no longer requires Chrome's scripting or unlimited storage permissions. Chinese Trade data now uses a smaller local cache.",
   "settings.tradeTranslationTitle": "Translate the trade site",
   "settings.tradeTranslationDescription": "Show official trade filters and selectors in Chinese. Modifiers remain searchable in Chinese and English.",
-  "settings.tradeTranslationHint": "Only available on the international Path of Exile 1 trade site. The page reloads when you change it.",
+  "settings.tradeTranslationHint": "Available on the international Path of Exile 1 and Path of Exile 2 trade sites. The page reloads when you change it.",
   "whatsNew.item.mediumTextSizeTitle": "Medium text size works correctly",
   "whatsNew.item.mediumTextSizeDescription":
     "Selecting Medium in General settings now keeps your preferred text size after the extension reloads.",

@@ -1,10 +1,16 @@
 import { registerBackgroundHandlers } from "~/lib/background"
 import { refreshChineseTradeCache } from "~/lib/services/chinese-trade/cache-builder"
 import { chineseTradeMessage } from "~/lib/services/chinese-trade/contract"
+import type { ChineseTradeVersion } from "~/lib/services/chinese-trade/contract"
 import { buildChineseItemNameCache } from "~/lib/services/chinese-trade/item-name-cache"
 import { loadChineseStatTemplates } from "~/lib/services/chinese-trade/stat-templates"
 import { getTradeTranslationState } from "~/lib/services/trade-translation"
 import { storageService } from "~/lib/services/storage"
+import {
+  BOOKMARK_SCROLL_RESTORE_MAX_AGE_MS,
+  bookmarkScrollMessage,
+  getBookmarkScrollRestoreKey
+} from "~/lib/services/bookmark-scroll"
 
 const getStorageUsage = async () => {
   const measure = async (
@@ -46,7 +52,8 @@ const getErrorMessage = (error: unknown) =>
 
 const prepareChineseTradeCaches = async (
   force = false,
-  requestedLanguage?: unknown
+  requestedLanguage?: unknown,
+  requestedVersion?: unknown
 ) => {
   const state = await getTradeTranslationState()
   const language =
@@ -55,51 +62,52 @@ const prepareChineseTradeCaches = async (
       : state.language
   if (language !== "zh-cn" && language !== "zh-tw") return
   if (!force && !state.enabled) return
+  const version: ChineseTradeVersion =
+    requestedVersion === "poe1" || requestedVersion === "poe2"
+      ? requestedVersion
+      : state.version
   const [cacheReady] = await Promise.all([
-    refreshChineseTradeCache(force, language),
-    buildChineseItemNameCache(force, language)
+    refreshChineseTradeCache(force, language, version),
+    version === "poe1"
+      ? buildChineseItemNameCache(force, language)
+      : Promise.resolve()
   ])
   if (!cacheReady) throw new Error("Chinese Trade cache could not be prepared")
 }
 
-const isInternationalPoe1Trade = (url: string | undefined) => {
+const isInternationalTrade = (url: URL) =>
+  /^(?:(?:www|br|ru|th|de|fr|es|jp)\.)?pathofexile\.com$/i.test(
+    url.hostname
+  )
+
+const isTaiwanTrade = (url: URL) => url.hostname === "pathofexile.tw"
+
+const isTradeVersion = (
+  url: string | undefined,
+  version: ChineseTradeVersion
+) => {
   if (!url) return false
   try {
     const parsed = new URL(url)
+    const tradePath = version === "poe2" ? "/trade2" : "/trade"
     return (
-      /^(?:(?:www|br|ru|th|de|fr|es|jp)\.)?pathofexile\.com$/i.test(
-        parsed.hostname
-      ) &&
-      parsed.pathname.startsWith("/trade") &&
-      !parsed.pathname.startsWith("/trade2/")
+      (isInternationalTrade(parsed) || isTaiwanTrade(parsed)) &&
+      (parsed.pathname === tradePath ||
+        parsed.pathname.startsWith(`${tradePath}/`))
     )
   } catch {
     return false
   }
 }
 
-const isTaiwanPoe1Trade = (url: string | undefined) => {
-  if (!url) return false
-  try {
-    const parsed = new URL(url)
-    return (
-      parsed.hostname === "pathofexile.tw" &&
-      parsed.pathname.startsWith("/trade") &&
-      !parsed.pathname.startsWith("/trade2/")
-    )
-  } catch {
-    return false
-  }
-}
-
-const reloadPoe1TradeTabs = async () => {
+const reloadTranslatedTradeTabs = async (version: ChineseTradeVersion) => {
   const tabs = await chrome.tabs.query({})
   await Promise.all(
     tabs
       .filter(
         (tab) =>
           typeof tab.id === "number" &&
-          (isInternationalPoe1Trade(tab.url) || isTaiwanPoe1Trade(tab.url))
+          isTradeVersion(tab.url, version)
       )
       .map(async (tab) => {
         const tabId = tab.id
@@ -122,9 +130,70 @@ export default defineBackground({
     chrome.runtime.onInstalled.addListener(() => {
       void prepareChineseTradeCaches()
     })
-    chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      const tabId = sender.tab?.id
+      const bookmarkScrollKey =
+        typeof tabId === "number" ? getBookmarkScrollRestoreKey(tabId) : null
+
+      if (request?.type === bookmarkScrollMessage.save) {
+        const value = request.value
+        if (
+          !bookmarkScrollKey ||
+          typeof value?.top !== "number" ||
+          !Number.isFinite(value.top) ||
+          value.top < 0 ||
+          typeof value.savedAt !== "number"
+        ) {
+          sendResponse({ ok: false })
+          return false
+        }
+
+        storageService
+          .setValue(bookmarkScrollKey, { top: value.top, savedAt: value.savedAt })
+          .then((ok) => sendResponse({ ok }))
+          .catch(() => sendResponse({ ok: false }))
+        return true
+      }
+
+      if (request?.type === bookmarkScrollMessage.consume) {
+        if (!bookmarkScrollKey) {
+          sendResponse({ top: null })
+          return false
+        }
+
+        storageService
+          .getValue<{ top: number; savedAt: number }>(bookmarkScrollKey)
+          .then(async (saved) => {
+            if (
+              !saved ||
+              !Number.isFinite(saved.top) ||
+              saved.top < 0 ||
+              Date.now() - saved.savedAt > BOOKMARK_SCROLL_RESTORE_MAX_AGE_MS
+            ) {
+              if (saved) await storageService.deleteValue(bookmarkScrollKey)
+              sendResponse({ top: null })
+              return
+            }
+            sendResponse({ top: saved.top })
+          })
+          .catch(() => sendResponse({ top: null }))
+        return true
+      }
+
+      if (request?.type === bookmarkScrollMessage.clear) {
+        if (!bookmarkScrollKey) {
+          sendResponse({ ok: false })
+          return false
+        }
+        storageService
+          .deleteValue(bookmarkScrollKey)
+          .then((ok) => sendResponse({ ok }))
+          .catch(() => sendResponse({ ok: false }))
+        return true
+      }
+
       if (request?.type === chineseTradeMessage.rebuildCache) {
-        prepareChineseTradeCaches(true, request.language)
+        prepareChineseTradeCaches(true, request.language, request.version)
           .then(async () => {
             const storage = await getStorageUsage()
             console.info("[PoeTradePlus] Chrome storage usage", storage)
@@ -143,7 +212,7 @@ export default defineBackground({
       if (request?.type === chineseTradeMessage.getTemplates) {
         getTradeTranslationState()
           .then(async (state) => {
-            if (!state.enabled) return {}
+            if (!state.enabled || request.version === "poe2") return {}
             const templates = await loadChineseStatTemplates()
             return state.language === "zh-cn"
               ? (templates.cn ?? {})
@@ -155,7 +224,9 @@ export default defineBackground({
       }
 
       if (request?.type === chineseTradeMessage.reloadTradeTabs) {
-        reloadPoe1TradeTabs()
+        reloadTranslatedTradeTabs(
+          request.version === "poe2" ? "poe2" : "poe1"
+        )
           .then(() => sendResponse({ ok: true }))
           .catch(() => sendResponse({ ok: false }))
         return true

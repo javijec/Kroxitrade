@@ -1,7 +1,10 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { resolve } from "node:path"
 
-const OUTPUT_DIR = resolve("data/trade-locales")
+const OUTPUT_DIRS = {
+  poe1: resolve("data/trade-locales"),
+  poe2: resolve("data/trade2-locales")
+}
 const ENDPOINTS = ["stats", "static", "filters", "items"]
 
 // Every UI locale has a snapshot. Locales without their own official Trade
@@ -20,15 +23,15 @@ const LOCALES = {
   "zh-tw": "https://pathofexile.tw"
 }
 
-const fetchOfficial = async (origin, endpoint) => {
-  const response = await fetch(`${origin}/api/trade/data/${endpoint}`, {
+const fetchOfficial = async (origin, endpoint, version) => {
+  const response = await fetch(`${origin}/api/${version}/data/${endpoint}`, {
     headers: { "user-agent": "PoeTradePlus locale snapshot generator" }
   })
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`)
   return response.json()
 }
 
-const writeSnapshot = async (locale, origin, data, sourceLocale = locale) => {
+const writeSnapshot = async (outputDir, locale, origin, data, sourceLocale = locale) => {
   const snapshot = {
     format: 1,
     locale,
@@ -38,33 +41,35 @@ const writeSnapshot = async (locale, origin, data, sourceLocale = locale) => {
     data
   }
   await writeFile(
-    resolve(OUTPUT_DIR, `${locale}.json`),
+    resolve(outputDir, `${locale}.json`),
     `${JSON.stringify(snapshot)}\n`,
     "utf8"
   )
 }
 
-await mkdir(OUTPUT_DIR, { recursive: true })
-
-const snapshots = new Map()
-for (const [locale, origin] of Object.entries(LOCALES)) {
-  try {
-    const entries = await Promise.all(
-      ENDPOINTS.map(async (endpoint) => [endpoint, await fetchOfficial(origin, endpoint)])
-    )
-    const data = Object.fromEntries(entries)
-    snapshots.set(locale, { origin, data })
-    await writeSnapshot(locale, origin, data)
-    console.log(`Updated ${locale}`)
-  } catch (error) {
-    console.warn(`Skipped ${locale}: ${error.message}`)
+for (const [game, outputDir] of Object.entries(OUTPUT_DIRS)) {
+  const version = game === "poe2" ? "trade2" : "trade"
+  await mkdir(outputDir, { recursive: true })
+  const snapshots = new Map()
+  for (const [locale, origin] of Object.entries(LOCALES)) {
+    try {
+      const entries = await Promise.all(
+        ENDPOINTS.map(async (endpoint) => [endpoint, await fetchOfficial(origin, endpoint, version)])
+      )
+      const data = Object.fromEntries(entries)
+      snapshots.set(locale, { origin, data })
+      await writeSnapshot(outputDir, locale, origin, data)
+      console.log(`Updated ${game}/${locale}`)
+    } catch (error) {
+      console.warn(`Skipped ${game}/${locale}: ${error.message}`)
+    }
   }
-}
 
-// Simplified Chinese has no public international Trade host. Keep a local
-// snapshot with the same official Taiwan data; runtime conversion remains local.
-const tw = snapshots.get("zh-tw")
-if (tw) {
-  await writeSnapshot("zh-cn", tw.origin, tw.data, "zh-tw")
-  console.log("Updated zh-cn from zh-tw")
+  // Simplified Chinese has no public international Trade host. Keep a local
+  // snapshot with the same official Taiwan data; runtime conversion remains local.
+  const tw = snapshots.get("zh-tw")
+  if (tw) {
+    await writeSnapshot(outputDir, "zh-cn", tw.origin, tw.data, "zh-tw")
+    console.log(`Updated ${game}/zh-cn from zh-tw`)
+  }
 }

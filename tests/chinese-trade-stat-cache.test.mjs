@@ -3,6 +3,7 @@ import test from "node:test"
 
 import {
   buildLocalizedStatCache,
+  buildLocalizedItemCache,
   buildModifierTranslationMap
 } from "../lib/services/chinese-trade/stat-cache-transform.ts"
 
@@ -67,4 +68,15 @@ test("pairs item-result modifiers by stat id and option id", () => {
     us: "+#% to Fire Resistance",
     opt: { Any: "任何" }
   })
+})
+
+test("keeps Trade2 item ids while making their labels bilingual", () => {
+  const [group] = buildLocalizedItemCache(
+    [{ id: "weapon", label: "武器", entries: [{ id: "wand", text: "魔杖" }] }],
+    [{ id: "weapon", label: "Weapon", entries: [{ id: "wand", text: "Wand" }] }],
+    "tw"
+  )
+  assert.equal(group.label, "武器")
+  assert.equal(group.entries[0].id, "wand")
+  assert.equal(group.entries[0].text, "魔杖 (Wand)")
 })

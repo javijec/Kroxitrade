@@ -16,7 +16,7 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.reducedPermissionsDescription": "A extensão não exige mais as permissões de scripting nem de armazenamento ilimitado do Chrome. Os dados do Trade chinês agora usam um cache local menor.",
   "settings.tradeTranslationTitle": "Traduzir o site de trade",
   "settings.tradeTranslationDescription": "Mostra filtros e seletores oficiais em chinês. Modificadores continuam pesquisáveis em chinês e inglês.",
-  "settings.tradeTranslationHint": "Disponível apenas no site internacional de trade do Path of Exile 1. A página recarrega ao alterar.",
+  "settings.tradeTranslationHint": "Disponível nos sites internacionais de trade do Path of Exile 1 e Path of Exile 2. A página recarrega ao alterar.",
   "whatsNew.item.mediumTextSizeTitle": "O tamanho de texto Médio funciona corretamente",
   "whatsNew.item.mediumTextSizeDescription":
     "Selecionar Médio nas configurações Gerais agora mantém o tamanho de texto preferido depois que a extensão é recarregada.",

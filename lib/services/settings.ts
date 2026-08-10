@@ -28,6 +28,11 @@ const DEFAULT_CLASSIC_BOOKMARK_TRADE_ACTIONS: BookmarkTradeActionId[] = [
 ]
 
 export interface VersionSettings {
+  sidebarSide: SidebarSide
+  sidebarWidth: number
+  language: AppLanguage
+  textSize: TextSizePreference
+  translateTradeSite: boolean
   showEquivalentPricing: boolean
   showValdoRewardPricing: boolean
   showMagebloodLegacyDescriptions: boolean
@@ -46,21 +51,7 @@ export interface VersionSettings {
   bookmarkCategoriesEnabled: boolean
 }
 
-export interface AppSettings extends VersionSettings {
-  sidebarSide: SidebarSide
-  sidebarWidth: number
-  language: AppLanguage
-  textSize: TextSizePreference
-  translateTradeSite: boolean
-}
-
-interface GlobalSettings {
-  sidebarSide: SidebarSide
-  sidebarWidth: number
-  language: AppLanguage
-  textSize: TextSizePreference
-  translateTradeSite: boolean
-}
+export interface AppSettings extends VersionSettings {}
 
 const GLOBAL_SETTINGS_KEY = "app-settings"
 const SETTINGS_STORAGE_AREA: StorageArea = "sync"
@@ -72,7 +63,14 @@ const versionSettingsKey = (version: TradeSiteVersion) =>
 function getInitialLanguage(): AppLanguage {
   if (typeof window === "undefined") return "en"
 
+  const version = inferTradeVersion()
+  const sessionKey = `${LANGUAGE_SESSION_KEY}-poe${version}`
+  const localKey = `bt-language-poe${version}`
   const stored =
+    window.sessionStorage.getItem(sessionKey) ??
+    window.localStorage.getItem(localKey) ??
+    // One-time UI fallback for installations created before settings were
+    // separated by game. Sync migration remains the authoritative source.
     window.sessionStorage.getItem(LANGUAGE_SESSION_KEY) ??
     window.localStorage.getItem("bt-language")
   return stored === "en" ||
@@ -90,15 +88,12 @@ function getInitialLanguage(): AppLanguage {
     : "en"
 }
 
-const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
+const DEFAULT_VERSION_SETTINGS: VersionSettings = {
   sidebarSide: "right",
   sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
   language: getInitialLanguage(),
   textSize: DEFAULT_TEXT_SIZE,
-  translateTradeSite: false
-}
-
-const DEFAULT_VERSION_SETTINGS: VersionSettings = {
+  translateTradeSite: false,
   showEquivalentPricing: false,
   showValdoRewardPricing: false,
   showMagebloodLegacyDescriptions: true,
@@ -142,40 +137,20 @@ function getStorageChangeValue<T>(
 }
 
 let activeVersion: TradeSiteVersion = inferTradeVersion()
-let globalSettings: GlobalSettings = DEFAULT_GLOBAL_SETTINGS
 let activeVersionSettings: VersionSettings = DEFAULT_VERSION_SETTINGS
 const versionCache = new Map<TradeSiteVersion, VersionSettings>()
-let currentSettings: AppSettings = combineSettings(
-  globalSettings,
-  activeVersionSettings
-)
+let currentSettings: AppSettings = activeVersionSettings
 let versionRequestId = 0
 
 const { subscribe, set } = writable<AppSettings>(currentSettings)
-
-function normalizeGlobalSettings(
-  value?: Partial<AppSettings> | null
-): GlobalSettings {
-  return {
-    sidebarSide: value?.sidebarSide ?? DEFAULT_GLOBAL_SETTINGS.sidebarSide,
-    sidebarWidth: value?.sidebarWidth ?? DEFAULT_GLOBAL_SETTINGS.sidebarWidth,
-    language: value?.language ?? DEFAULT_GLOBAL_SETTINGS.language,
-    textSize: normalizeTextSize(value?.textSize),
-    translateTradeSite: value?.translateTradeSite === true
-  }
-}
 
 function inferTradeVersion(): TradeSiteVersion {
   if (typeof window === "undefined") return "1"
   return window.location.pathname.startsWith("/trade2/") ? "2" : "1"
 }
 
-function combineSettings(
-  global: GlobalSettings,
-  version: VersionSettings
-): AppSettings {
+function copyVersionSettings(version: VersionSettings): AppSettings {
   return {
-    ...global,
     ...version,
     classicBookmarkTradeActions: [...version.classicBookmarkTradeActions],
     compactBookmarkTradeActions: [...version.compactBookmarkTradeActions],
@@ -212,6 +187,11 @@ function legacyVersionSettings(
   value?: Partial<AppSettings> | null
 ): VersionSettings {
   return normalizeVersionSettings({
+    sidebarSide: value?.sidebarSide,
+    sidebarWidth: value?.sidebarWidth,
+    language: value?.language,
+    textSize: value?.textSize,
+    translateTradeSite: value?.translateTradeSite === true,
     showEquivalentPricing: value?.showEquivalentPricing,
     showValdoRewardPricing: value?.showValdoRewardPricing,
     showMagebloodLegacyDescriptions: value?.showMagebloodLegacyDescriptions,
@@ -232,7 +212,8 @@ function legacyVersionSettings(
 }
 
 function publish() {
-  currentSettings = combineSettings(globalSettings, activeVersionSettings)
+  currentSettings = copyVersionSettings(activeVersionSettings)
+  setLanguage(currentSettings.language)
   if (typeof window !== "undefined") {
     const quickFiltersStorageKey = `bt-quick-filters-visible-poe${activeVersion}`
     window.localStorage.setItem(
@@ -243,9 +224,12 @@ function publish() {
       `bt-quick-filters-placement-poe${activeVersion}`,
       currentSettings.quickFiltersPlacement
     )
-    window.localStorage.setItem("bt-language", currentSettings.language)
+    window.localStorage.setItem(
+      `bt-language-poe${activeVersion}`,
+      currentSettings.language
+    )
     window.sessionStorage.setItem(
-      LANGUAGE_SESSION_KEY,
+      `${LANGUAGE_SESSION_KEY}-poe${activeVersion}`,
       currentSettings.language
     )
     window.dispatchEvent(
@@ -267,15 +251,6 @@ function bindStorageSync() {
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== SETTINGS_STORAGE_AREA) return
-
-    const globalChange = changes[GLOBAL_SETTINGS_KEY]
-    if (globalChange) {
-      globalSettings = normalizeGlobalSettings(
-        getStorageChangeValue<Partial<AppSettings>>(globalChange)
-      )
-      setLanguage(globalSettings.language)
-      publish()
-    }
 
     for (const version of ["1", "2"] as const) {
       const change = changes[versionSettingsKey(version)]
@@ -345,13 +320,19 @@ async function loadVersionSettings(
   const stored = await fetchSynced<VersionSettings>(
     versionSettingsKey(version)
   )
+  const hasIndependentInterfaceSettings =
+    typeof stored?.sidebarSide === "string" &&
+    typeof stored?.sidebarWidth === "number" &&
+    typeof stored?.language === "string" &&
+    typeof stored?.textSize === "string"
+  const legacySettings = legacyVersionSettings(legacy)
   const next = stored
-    ? normalizeVersionSettings(stored)
-    : legacyVersionSettings(legacy)
+    ? normalizeVersionSettings({ ...legacySettings, ...stored })
+    : legacySettings
 
   versionCache.set(version, next)
 
-  if (!stored) {
+  if (!stored || !hasIndependentInterfaceSettings) {
     await persistSynced(versionSettingsKey(version), next)
   }
 
@@ -361,45 +342,39 @@ async function loadVersionSettings(
 async function load() {
   const requestedVersion = inferTradeVersion()
   const requestId = ++versionRequestId
-  const stored = await fetchSynced<Partial<AppSettings>>(GLOBAL_SETTINGS_KEY)
-
-  globalSettings = normalizeGlobalSettings(stored)
+  const legacySettings = await fetchSynced<Partial<AppSettings>>(GLOBAL_SETTINGS_KEY)
 
   const [poe1Settings, poe2Settings] = await Promise.all([
-    loadVersionSettings("1", stored),
-    loadVersionSettings("2", stored)
+    loadVersionSettings("1", legacySettings),
+    loadVersionSettings("2", legacySettings)
   ])
   if (requestId !== versionRequestId) return
 
   activeVersion = requestedVersion
   activeVersionSettings = requestedVersion === "2" ? poe2Settings : poe1Settings
   publish()
-  setLanguage(globalSettings.language)
 }
 
-async function saveGlobal(next: GlobalSettings) {
-  const saved = await persistSynced(GLOBAL_SETTINGS_KEY, next)
+async function saveVersionForReload(next: VersionSettings) {
+  const saved = await persistSynced(versionSettingsKey(activeVersion), next)
   if (!saved) {
-    console.warn("[Poe Trade Plus] Failed to persist global settings")
+    console.warn(
+      `[Poe Trade Plus] Failed to persist PoE ${activeVersion} settings`
+    )
     return false
   }
 
-  globalSettings = next
-  publish()
-  return true
-}
-
-async function saveGlobalForReload(next: GlobalSettings) {
-  const saved = await persistSynced(GLOBAL_SETTINGS_KEY, next)
-  if (!saved) {
-    console.warn("[Poe Trade Plus] Failed to persist global settings")
-    return false
-  }
-
-  globalSettings = next
+  activeVersionSettings = next
+  versionCache.set(activeVersion, next)
   if (typeof window !== "undefined") {
-    window.localStorage.setItem("bt-language", next.language)
-    window.sessionStorage.setItem(LANGUAGE_SESSION_KEY, next.language)
+    window.localStorage.setItem(
+      `bt-language-poe${activeVersion}`,
+      next.language
+    )
+    window.sessionStorage.setItem(
+      `${LANGUAGE_SESSION_KEY}-poe${activeVersion}`,
+      next.language
+    )
   }
   return true
 }
@@ -445,7 +420,7 @@ export const settings = {
     publish()
   },
   async updateSide(sidebarSide: SidebarSide) {
-    return saveGlobal({ ...globalSettings, sidebarSide })
+    return saveVersion({ ...activeVersionSettings, sidebarSide })
   },
   async updateEquivalentPricingVisibility(showEquivalentPricing: boolean) {
     return saveVersion({ ...activeVersionSettings, showEquivalentPricing })
@@ -485,24 +460,22 @@ export const settings = {
     return saveVersion({ ...activeVersionSettings, autoFuzzySearch })
   },
   async updateSidebarWidth(sidebarWidth: number) {
-    return saveGlobal({ ...globalSettings, sidebarWidth })
+    return saveVersion({ ...activeVersionSettings, sidebarWidth })
   },
   async updateTextSize(textSize: TextSizePreference) {
-    return saveGlobal({
-      ...globalSettings,
+    return saveVersion({
+      ...activeVersionSettings,
       textSize: normalizeTextSize(textSize)
     })
   },
   async updateLanguage(language: AppLanguage) {
-    const saved = await saveGlobal({ ...globalSettings, language })
-    if (saved) setLanguage(language)
-    return saved
+    return saveVersion({ ...activeVersionSettings, language })
   },
   async updateLanguageForReload(language: AppLanguage) {
-    return saveGlobalForReload({ ...globalSettings, language })
+    return saveVersionForReload({ ...activeVersionSettings, language })
   },
   async updateTradeSiteTranslation(translateTradeSite: boolean) {
-    return saveGlobal({ ...globalSettings, translateTradeSite })
+    return saveVersion({ ...activeVersionSettings, translateTradeSite })
   },
   async updateCompactActionsMenu(compactActionsMenu: boolean) {
     return saveVersion({ ...activeVersionSettings, compactActionsMenu })

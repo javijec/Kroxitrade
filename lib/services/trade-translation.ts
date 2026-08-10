@@ -5,6 +5,7 @@ export const TRADE_TRANSLATION_LANGS = new Set(["zh-tw", "zh-cn"])
 export interface TradeTranslationState {
   language: string
   enabled: boolean
+  version: "poe1" | "poe2"
 }
 
 const getStoredTradeLanguage = async () => {
@@ -16,8 +17,31 @@ const getStoredTradeLanguage = async () => {
   const settings = syncedSettings ?? await storageService.getValue<Record<string, unknown>>(
     "app-settings"
   )
-  const language = String(settings?.language ?? "en")
-  return { language, translateTradeSite: settings?.translateTradeSite === true }
+  const version = isPoe2TradeSite() ? "poe2" : "poe1"
+  const versionSettingsKey = `app-settings-${version}`
+  const syncedVersionSettings = await storageService.getValue<Record<string, unknown>>(
+    versionSettingsKey,
+    null,
+    "sync"
+  )
+  const versionSettings =
+    syncedVersionSettings ??
+    await storageService.getValue<Record<string, unknown>>(versionSettingsKey)
+  // The current game's record is authoritative. The legacy global record is
+  // only consulted until Settings has migrated an older installation.
+  const language = String(
+    versionSettings?.language ??
+      (versionSettings == null ? settings?.language : "en")
+  )
+  return {
+    language,
+    version,
+    // The fallback preserves an existing enabled installation until Settings
+    // migrates the old global value into each game-specific settings record.
+    translateTradeSite:
+      versionSettings?.translateTradeSite === true ||
+      (versionSettings == null && settings?.translateTradeSite === true)
+  }
 }
 
 export const getChineseTradeLanguage = async (): Promise<string | null> => {
@@ -29,11 +53,10 @@ export const getTradeTranslationState = async (): Promise<TradeTranslationState>
   const { language, translateTradeSite } = await getStoredTradeLanguage()
   const enabled =
     !isNativeChineseTradeSite() &&
-    !isPoe2TradeSite() &&
     TRADE_TRANSLATION_LANGS.has(language) &&
     translateTradeSite
 
-  return { language, enabled }
+  return { language, enabled, version: isPoe2TradeSite() ? "poe2" : "poe1" }
 }
 
 // The Taiwan trade site is already Chinese, but its Quick Filters are injected
@@ -47,7 +70,8 @@ export const getChineseSupplementState = async (): Promise<TradeTranslationState
     language,
     enabled:
       chinese &&
-      (isNativeChineseTradeSite() || (!isPoe2TradeSite() && translateTradeSite))
+      (isNativeChineseTradeSite() || translateTradeSite),
+    version: isPoe2TradeSite() ? "poe2" : "poe1"
   }
 }
 

@@ -16,7 +16,7 @@ export const germanTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.reducedPermissionsDescription": "Die Erweiterung benötigt keine Chrome-Berechtigungen für Scripting oder unbegrenzten Speicher mehr. Chinesische Trade-Daten verwenden jetzt einen kleineren lokalen Cache.",
   "settings.tradeTranslationTitle": "Handelsseite übersetzen",
   "settings.tradeTranslationDescription": "Zeigt offizielle Filter und Auswahlfelder auf Chinesisch. Modifikatoren bleiben auf Chinesisch und Englisch suchbar.",
-  "settings.tradeTranslationHint": "Nur auf der internationalen Path of Exile 1-Handelsseite verfügbar. Die Seite wird bei einer Änderung neu geladen.",
+  "settings.tradeTranslationHint": "Auf den internationalen Handelsseiten von Path of Exile 1 und Path of Exile 2 verfügbar. Die Seite wird bei einer Änderung neu geladen.",
   "whatsNew.item.mediumTextSizeTitle": "Mittlere Textgröße funktioniert korrekt",
   "whatsNew.item.mediumTextSizeDescription":
     "Die Auswahl von Mittel in den allgemeinen Einstellungen bleibt jetzt auch nach dem Neuladen der Erweiterung erhalten.",

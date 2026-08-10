@@ -37,6 +37,7 @@ import About from "./pages/About.svelte";
   let currentPage: 'bookmarks' | 'bulk' | 'pinned' | 'history' | 'about' | 'settings' = $state('bookmarks');
   let currentTradeVersion: "1" | "2" = $state(tradeLocationService.current.version);
   let isMinimized = $state(false);
+  let mainContentEl: HTMLElement | null = $state(null);
   let isResizing = $state(false);
   let liveSidebarWidth: number | null = null;
   let loadedMinimizedStateKey: string | null = $state(null);
@@ -483,9 +484,10 @@ import About from "./pages/About.svelte";
     {/each}
   </div>
 
-  <main>
+  <main bind:this={mainContentEl}>
     {#if currentPage === 'bookmarks'}
         <Bookmarks
+          scrollContainer={mainContentEl}
           tutorialStep={showOnboarding ? onboardingCurrentStepId : null}
           tutorialFolderId={showOnboarding ? onboardingTutorialFolderId : null} />
     {:else if currentPage === 'bulk' && $settings.showBulkSellers}

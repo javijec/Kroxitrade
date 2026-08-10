@@ -64,7 +64,11 @@ export default defineContentScript({
     }
 
     const buildNameMap = () => {
-      const snapshot = localStorage.getItem("lscache-tradeitems")
+      const snapshot = localStorage.getItem(
+        location.pathname.startsWith("/trade2/")
+          ? "lscache-trade2items"
+          : "lscache-tradeitems"
+      )
       if (!snapshot || snapshot === itemDataSnapshot) return
       itemDataSnapshot = snapshot
 

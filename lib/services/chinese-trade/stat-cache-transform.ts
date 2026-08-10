@@ -103,6 +103,39 @@ export const buildLocalizedStatCache = (
   return result
 }
 
+/**
+ * Localize an item dataset by stable entry id without changing the value that
+ * Trade sends back to its API. Trade2 uses the same group/entry shape as PoE1.
+ */
+export const buildLocalizedItemCache = (
+  taiwanItems: TradeStatGroup[],
+  internationalItems: TradeStatGroup[] | null,
+  language: "tw" | "cn"
+): TradeStatGroup[] => {
+  if (!internationalItems) return taiwanItems
+
+  const chineseGroups = new Map(taiwanItems.map((group) => [group.id, group]))
+  return internationalItems.map((group) => {
+    const localizedGroup = chineseGroups.get(group.id)
+    const chineseEntries = new Map(
+      (localizedGroup?.entries ?? [])
+        .filter((entry) => entry.id)
+        .map((entry) => [entry.id as string, entry])
+    )
+    return {
+      ...group,
+      label: localizedGroup?.label || group.label,
+      entries: (group.entries ?? []).map((entry) => {
+        const localized = entry.id ? chineseEntries.get(entry.id) : undefined
+        if (!localized?.text || localized.text === entry.text) return entry
+        const english = entry.text ?? entry.type ?? ""
+        const chinese = language === "cn" ? localized.text : localized.text
+        return { ...entry, text: `${chinese} (${english})` }
+      })
+    }
+  })
+}
+
 /** Preserve Taiwan-only flattened options in the API-safe base-id form. */
 const appendTaiwanOnlyOptions = (
   result: TradeStatGroup[],

@@ -1,7 +1,7 @@
 import { tradeHosts } from "~/lib/config/trade-hosts"
 import {
   chineseTradeMessage,
-  chineseTradeStorage
+  chineseTradeStorageFor
 } from "~/lib/services/chinese-trade/contract"
 import {
   applyTradeTemplate,
@@ -12,10 +12,10 @@ import { getTradeTranslationState } from "~/lib/services/trade-translation"
 
 type Modifier = { tw: string; us?: string; opt?: Record<string, string> }
 
-const requestTemplates = () =>
+const requestTemplates = (version: "poe1" | "poe2") =>
   new Promise<Record<string, string>>((resolve) => {
     chrome.runtime.sendMessage(
-      { type: chineseTradeMessage.getTemplates },
+      { type: chineseTradeMessage.getTemplates, version },
       (reply) => resolve(reply?.templates ?? {})
     )
   })
@@ -65,13 +65,13 @@ export default defineContentScript({
 
     const locale =
       state.language === "zh-cn"
-        ? chineseTradeStorage.simplified
-        : chineseTradeStorage.traditional
+        ? chineseTradeStorageFor(state.version).simplified
+        : chineseTradeStorageFor(state.version).traditional
     let templates: Record<string, string> = {}
     let modifiers: Record<string, Modifier> = {}
 
     try {
-      templates = await requestTemplates()
+      templates = await requestTemplates(state.version)
     } catch {
       // Result modifiers still use the smaller stat-id cache as a fallback.
     }
