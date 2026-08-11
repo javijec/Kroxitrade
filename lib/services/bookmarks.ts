@@ -66,6 +66,7 @@ export class BookmarksService {
   private tradesCache = new Map<string, BookmarksTradeStruct[]>()
   private tradesRequests = new Map<string, Promise<BookmarksTradeStruct[]>>()
   private tradesWriteQueues = new Map<string, Promise<unknown>>()
+  private foldersWriteDepth = 0
   private foldersMigration: Promise<void> | null = null
   private tradesMigrations = new Map<string, Promise<void>>()
   public subscribe = this.foldersStore.subscribe
@@ -102,7 +103,7 @@ export class BookmarksService {
           key === FOLDERS_MANIFEST_KEY ||
           key.startsWith(FOLDERS_CHUNK_PREFIX)
       )
-      if (foldersChanged) {
+      if (foldersChanged && this.foldersWriteDepth === 0) {
         void this.refresh()
       }
 
@@ -112,6 +113,7 @@ export class BookmarksService {
         if (folderId) changedTradeFolderIds.add(folderId)
       }
       for (const folderId of changedTradeFolderIds) {
+        if (this.tradesWriteQueues.has(folderId)) continue
         this.tradesCache.delete(folderId)
         this.tradesRequests.delete(folderId)
         void this.refreshTradesFromStorage(folderId)
@@ -730,7 +732,12 @@ export class BookmarksService {
   }
 
   async persistFolders(folders: BookmarksFolderStruct[]) {
-    await this.persistFoldersToChunks(folders)
+    this.foldersWriteDepth++
+    try {
+      await this.persistFoldersToChunks(folders)
+    } finally {
+      this.foldersWriteDepth--
+    }
   }
 
   async persistTrade(

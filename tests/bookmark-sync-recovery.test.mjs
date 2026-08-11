@@ -252,15 +252,23 @@ test("removes a folder from the visible store before its Sync cleanup completes"
   await bookmarks.refresh()
 
   let visibleFolders = []
+  const visibleFolderSnapshots = []
   const unsubscribe = bookmarks.subscribe((folders) => {
     visibleFolders = folders
+    visibleFolderSnapshots.push(folders.map(({ id }) => id))
   })
 
   const deletion = bookmarks.deleteFolder("optimistic")
+  const snapshotsAfterDeletionStarted = visibleFolderSnapshots.length
   assert.deepEqual(visibleFolders, [])
 
   await deletion
   unsubscribe()
+  assert.ok(
+    visibleFolderSnapshots
+      .slice(snapshotsAfterDeletionStarted)
+      .every((ids) => !ids.includes("optimistic"))
+  )
   assert.deepEqual(await bookmarks.fetchFolders(), [])
 })
 
