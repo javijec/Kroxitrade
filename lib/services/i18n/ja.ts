@@ -250,6 +250,11 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "folder.updatedSearchLocation": ({ title }) =>
     `「${title}」の検索場所を更新しました`,
   "folder.dragReorder": "ドラッグしてフォルダーを並べ替え",
+  "folder.dragCategory": "ドラッグしてカテゴリを並べ替え",
+  "folder.moveCategoryUp": "カテゴリを上へ移動",
+  "folder.moveCategoryDown": "カテゴリを下へ移動",
+  "folder.dropCategoryAtEnd": "ドロップしてカテゴリを最後に配置",
+  "folder.dragSaveError": "新しい順序を保存できませんでした。",
   "folder.editFolder": "フォルダーを編集",
   "folder.restoreFolder": "フォルダーを復元",
   "folder.archiveFolder": "フォルダー全体をアーカイブ",

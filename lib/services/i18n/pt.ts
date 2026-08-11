@@ -252,6 +252,11 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "folder.updatedSearchLocation": ({ title }) =>
     `A localização de busca de "${title}" foi atualizada`,
   "folder.dragReorder": "Arrastar para reordenar pasta",
+  "folder.dragCategory": "Arraste para reordenar a categoria",
+  "folder.moveCategoryUp": "Mover categoria para cima",
+  "folder.moveCategoryDown": "Mover categoria para baixo",
+  "folder.dropCategoryAtEnd": "Solte para colocar a categoria no final",
+  "folder.dragSaveError": "Não foi possível salvar a nova ordem.",
   "folder.collapse": "Recolher",
   "folder.expand": "Expandir",
   "folder.editFolder": "Editar pasta",

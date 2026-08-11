@@ -241,6 +241,11 @@ export const russianTranslations: Record<string, TranslationValue> = {
   "folder.updatedSearchLocation": ({ title }) =>
     `Местоположение поиска "${title}" обновлено`,
   "folder.dragReorder": "Перетащите для изменения порядка папки",
+  "folder.dragCategory": "Перетащите, чтобы изменить порядок категории",
+  "folder.moveCategoryUp": "Переместить категорию вверх",
+  "folder.moveCategoryDown": "Переместить категорию вниз",
+  "folder.dropCategoryAtEnd": "Отпустите, чтобы поместить категорию в конец",
+  "folder.dragSaveError": "Не удалось сохранить новый порядок.",
   "folder.editFolder": "Редактировать папку",
   "folder.restoreFolder": "Восстановить папку",
   "folder.archiveFolder": "Архивировать всю папку",

@@ -244,6 +244,11 @@ export const germanTranslations: Record<string, TranslationValue> = {
   "folder.updatedSearchLocation": ({ title }) =>
     `Suchort von "${title}" aktualisiert`,
   "folder.dragReorder": "Ziehen, um Ordner neu anzuordnen",
+  "folder.dragCategory": "Ziehen, um die Kategorie neu anzuordnen",
+  "folder.moveCategoryUp": "Kategorie nach oben verschieben",
+  "folder.moveCategoryDown": "Kategorie nach unten verschieben",
+  "folder.dropCategoryAtEnd": "Ablegen, um die Kategorie ans Ende zu setzen",
+  "folder.dragSaveError": "Die neue Reihenfolge konnte nicht gespeichert werden.",
   "folder.editFolder": "Ordner bearbeiten",
   "folder.restoreFolder": "Ordner wiederherstellen",
   "folder.archiveFolder": "Gesamten Ordner archivieren",

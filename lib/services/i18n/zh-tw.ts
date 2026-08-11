@@ -411,6 +411,11 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
     "folder.updatedSearchLocation": ({ title }) =>
       `已更新「${title}」的搜尋位置`,
     "folder.dragReorder": "拖曳以重新排序資料夾",
+  "folder.dragCategory": "拖曳以重新排序分類",
+  "folder.moveCategoryUp": "上移分類",
+  "folder.moveCategoryDown": "下移分類",
+  "folder.dropCategoryAtEnd": "放下以將分類置於最後",
+  "folder.dragSaveError": "無法儲存新順序。",
     "folder.collapse": "收合",
     "folder.expand": "展開",
     "folder.editFolder": "編輯資料夾",

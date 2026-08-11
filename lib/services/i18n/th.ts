@@ -242,6 +242,11 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "folder.updatedSearchLocation": ({ title }) =>
     `อัปเดตตำแหน่งการค้นหาของ "${title}" แล้ว`,
   "folder.dragReorder": "ลากเพื่อจัดลำดับโฟลเดอร์ใหม่",
+  "folder.dragCategory": "ลากเพื่อเรียงลำดับหมวดหมู่ใหม่",
+  "folder.moveCategoryUp": "ย้ายหมวดหมู่ขึ้น",
+  "folder.moveCategoryDown": "ย้ายหมวดหมู่ลง",
+  "folder.dropCategoryAtEnd": "ปล่อยเพื่อวางหมวดหมู่ไว้ท้ายสุด",
+  "folder.dragSaveError": "ไม่สามารถบันทึกลำดับใหม่ได้",
   "folder.editFolder": "แก้ไขโฟลเดอร์",
   "folder.restoreFolder": "กู้คืนโฟลเดอร์",
   "folder.archiveFolder": "เก็บทั้งโฟลเดอร์ถาวร",

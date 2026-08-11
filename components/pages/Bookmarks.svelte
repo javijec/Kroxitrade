@@ -16,6 +16,12 @@
   import { tradeLocationService } from "../../lib/services/trade-location";
   import { flashMessages } from "../../lib/services/flash";
   import { storageService } from "../../lib/services/storage";
+  import {
+    BOOKMARK_DRAG_MIME_TYPE,
+    parseBookmarkDragPayload,
+    setBookmarkDragPayload,
+    type BookmarkDragPayload
+  } from "../../lib/types/bookmark-drag";
   import type { BookmarksFolderStruct } from "../../lib/types/bookmarks";
 
   import BookmarkFolder from "../BookmarkFolder.svelte";
@@ -162,44 +168,27 @@
       expandedFolderIds = [];
   };
 
-  const parseDragPayload = (event: DragEvent) => {
-    if (!event.dataTransfer) return null;
-    const raw = event.dataTransfer.getData("text/plain");
-    if (!raw) return null;
+  const parseDragPayload = (event: DragEvent): BookmarkDragPayload | null => {
+    if (!event.dataTransfer) return null
+    const primary = parseBookmarkDragPayload(
+      event.dataTransfer.getData(BOOKMARK_DRAG_MIME_TYPE)
+    )
+    if (primary) return primary
 
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed?.type === "trade") {
-        return {
-          type: "trade" as const,
-          tradeId: parsed.tradeId,
-          sourceFolderId: parsed.sourceFolderId
-        };
-      }
-      if (parsed?.type === "folder") {
-        return {
-          type: "folder" as const,
-          folderId: parsed.folderId
-        };
-      }
-    } catch {
-      // Fall back to legacy folder drag payload.
-    }
+    const legacy = parseBookmarkDragPayload(event.dataTransfer.getData("text/plain"))
+    if (legacy) return legacy
 
-    return {
-      type: "folder" as const,
-      folderId: raw
-    };
-  };
+    const legacyFolderId = event.dataTransfer.getData("text/plain")
+    return displayedFolderIndexById.has(legacyFolderId)
+      ? { type: "folder", folderId: legacyFolderId }
+      : null
+  }
 
   const handleFolderDragStart = (event: DragEvent, folderId: string) => {
     draggedFolderId = folderId;
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData(
-        "text/plain",
-        JSON.stringify({ type: "folder", folderId })
-      );
+      setBookmarkDragPayload(event.dataTransfer, { type: "folder", folderId });
     }
   };
 
@@ -249,11 +238,16 @@
     }
 
     if (payload.type === "trade" && payload.sourceFolderId !== folderId) {
-      void bookmarksService.moveTradeBetweenFolders(
-        payload.tradeId,
-        payload.sourceFolderId,
-        folderId
-      );
+      try {
+        await bookmarksService.moveTradeBetweenFolders(
+          payload.tradeId,
+          payload.sourceFolderId,
+          folderId
+        );
+      } catch {
+        await bookmarksService.refresh();
+        flashMessages.alert(translate($languageStore, "bookmarks.restoreFailed"));
+      }
     }
 
     draggedFolderId = null;

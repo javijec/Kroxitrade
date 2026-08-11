@@ -249,6 +249,11 @@ export const frenchTranslations: Record<string, TranslationValue> = {
   "folder.updatedSearchLocation": ({ title }) =>
     `L’emplacement de recherche de "${title}" a été mis à jour`,
   "folder.dragReorder": "Glisser pour réorganiser le dossier",
+  "folder.dragCategory": "Faites glisser pour réorganiser la catégorie",
+  "folder.moveCategoryUp": "Déplacer la catégorie vers le haut",
+  "folder.moveCategoryDown": "Déplacer la catégorie vers le bas",
+  "folder.dropCategoryAtEnd": "Déposez pour placer la catégorie à la fin",
+  "folder.dragSaveError": "Impossible d’enregistrer le nouvel ordre.",
   "folder.editFolder": "Modifier le dossier",
   "folder.restoreFolder": "Restaurer le dossier",
   "folder.archiveFolder": "Archiver tout le dossier",

@@ -461,6 +461,11 @@ export const englishTranslations: Record<string, TranslationValue> = {
   "folder.updatedSearchLocation": ({ title }) =>
     `Updated search location for "${title}"`,
   "folder.dragReorder": "Drag to reorder folder",
+  "folder.dragCategory": "Drag to reorder category",
+  "folder.moveCategoryUp": "Move category up",
+  "folder.moveCategoryDown": "Move category down",
+  "folder.dropCategoryAtEnd": "Drop to place category at end",
+  "folder.dragSaveError": "Could not save the new order.",
   "folder.collapse": "Collapse",
   "folder.expand": "Expand",
   "folder.editFolder": "Edit folder",

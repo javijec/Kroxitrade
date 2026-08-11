@@ -248,6 +248,11 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "folder.updatedSearchLocation": ({ title }) =>
     `"${title}"의 검색 위치를 업데이트했습니다`,
   "folder.dragReorder": "드래그하여 폴더 순서 변경",
+  "folder.dragCategory": "드래그하여 카테고리 순서 변경",
+  "folder.moveCategoryUp": "카테고리를 위로 이동",
+  "folder.moveCategoryDown": "카테고리를 아래로 이동",
+  "folder.dropCategoryAtEnd": "놓으면 카테고리를 마지막에 배치",
+  "folder.dragSaveError": "새 순서를 저장하지 못했습니다.",
   "folder.editFolder": "폴더 편집",
   "folder.restoreFolder": "폴더 복원",
   "folder.archiveFolder": "폴더 전체 보관",
