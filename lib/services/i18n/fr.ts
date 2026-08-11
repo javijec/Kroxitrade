@@ -142,6 +142,8 @@ export const frenchTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Inclure les mods profanés",
   "settings.coeDesecratedModsBody":
     "Inclut les mods profanés comme modificateurs normaux. Craft of Exile ne permet pas encore de les importer.",
+  "settings.highlightedModColorTitle": "Couleur des mods surlignés",
+  "settings.highlightedModColorBody": "Choisissez la couleur des modificateurs correspondant à vos filtres de recherche.",
   "settings.wikiTitle": "Bouton wiki",
   "settings.wikiBody":
     "Ajoute un bouton W aux objets uniques pour ouvrir la page correspondante sur le wiki PoE.",
@@ -223,7 +225,9 @@ export const frenchTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "Sauvegarde et restauration",
   "bookmarks.backupDescription":
     "Enregistrez un fichier portable avec les dossiers, recherches sauvegardées, paramètres et préférences de l’extension, ou restaurez-en un précédent.",
-  "bookmarks.saveFile": "Enregistrer le fichier",
+  "bookmarks.saveFile": "Sauvegarde",
+  "bookmarks.automaticSyncDescription":
+    "Vos marque-pages et paramètres se synchronisent automatiquement avec Chrome lorsque vous utilisez l’extension.",
   "bookmarks.restoreFile": "Restaurer depuis le fichier",
   "history.clear": "Effacer l’historique",
   "history.cleared": "Historique effacé !",
@@ -370,5 +374,13 @@ export const frenchTranslations: Record<string, TranslationValue> = {
   "settings.off": "Désactivé",
   "settings.tradeActionsTitle": "Actions de trade visibles",
   "settings.tradeActionsDescription":
-    "Choisissez quelles actions de recherche sauvegardée restent visibles hors du menu dans les dispositions classique et compacte. Si rien n’est sélectionné, seul le menu à trois points est affiché."
+    "Choisissez quelles actions de recherche sauvegardée restent visibles hors du menu dans les dispositions classique et compacte. Si rien n’est sélectionné, seul le menu à trois points est affiché.",
+  "whatsNew.item.filterOverlayColorTitle": "Couleur de filtre personnalisée",
+  "whatsNew.item.filterOverlayColorDescription": "Choisissez la couleur utilisée pour la surbrillance du filtre sélectionné dans les résultats de trade.",
+  "whatsNew.item.betterTradingSearchStateTitle": "Les recherches enregistrées Better Trading restent compatibles",
+  "whatsNew.item.betterTradingSearchStateDescription": "Les recherches enregistrées copiées depuis Better Trading conservent leur état intégré à l’ouverture.",
+  "whatsNew.item.settingsBackupReliabilityTitle": "Les paramètres et sauvegardes se restaurent de façon fiable",
+  "whatsNew.item.settingsBackupReliabilityDescription": "Votre disposition, vos catégories de marque-pages et vos préférences sont conservées lors de la synchronisation ou de la restauration d’une sauvegarde portable.",
+  "whatsNew.item.cancelNewFolderTitle": "Annuler un nouveau dossier ne laisse pas de dossier vide",
+  "whatsNew.item.cancelNewFolderDescription": "Annulez ou appuyez sur Échap pendant que vous nommez un nouveau dossier de marque-pages pour le supprimer au lieu de conserver un dossier vide."
 }

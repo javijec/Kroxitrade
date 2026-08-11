@@ -304,6 +304,8 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
     "settings.coeDesecratedModsTitle": "包含褻瀆詞綴",
     "settings.coeDesecratedModsBody":
       "將褻瀆詞綴視為一般詞綴一併包含。Craft of Exile 目前不支援匯入褻瀆詞綴。",
+    "settings.highlightedModColorTitle": "醒目提示詞綴顏色",
+    "settings.highlightedModColorBody": "選擇用於醒目提示符合搜尋篩選條件詞綴的顏色。",
     "settings.wikiTitle": "Wiki 按鈕",
     "settings.wikiBody":
       "在傳奇物品與技能寶石結果加入 W 按鈕，開啟 PoE Wiki 上對應的頁面（中文介面下也可使用）。",
@@ -374,7 +376,9 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
     "bookmarks.backupTitle": "備份與還原",
     "bookmarks.backupDescription":
       "儲存一個含資料夾、已儲存搜尋、設定與擴充功能偏好的可攜檔案，或還原你先前匯出的檔案。",
-    "bookmarks.saveFile": "儲存檔案",
+    "bookmarks.saveFile": "備份",
+    "bookmarks.automaticSyncDescription":
+      "使用擴充功能時，你的書籤和設定會自動與 Chrome 同步。",
     "bookmarks.restoreFile": "從檔案還原",
     "bookmarks.folderCopyTitle": ({ title }) => `${title}（複本）`,
     "confirm.cancel": "取消",
@@ -538,5 +542,13 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
       "以 Better Trading 的原始流程重新實作；選用的釘選可在目前搜尋期間保留結果，並從側邊欄回到該項目。",
     "whatsNew.item.duplicateBookmarksTitle": "直接複製書籤",
     "whatsNew.item.duplicateBookmarksDescription":
-      "已儲存搜尋的操作現在包含「複製書籤」，可不必重新建立搜尋就建立副本。"
+      "已儲存搜尋的操作現在包含「複製書籤」，可不必重新建立搜尋就建立副本。",
+    "whatsNew.item.filterOverlayColorTitle": "自訂篩選顏色",
+    "whatsNew.item.filterOverlayColorDescription": "選擇交易結果中所選篩選條件醒目提示使用的顏色。",
+    "whatsNew.item.betterTradingSearchStateTitle": "Better Trading 已儲存搜尋維持相容",
+    "whatsNew.item.betterTradingSearchStateDescription": "從 Better Trading 複製的已儲存搜尋在開啟時會保留其內嵌狀態。",
+    "whatsNew.item.settingsBackupReliabilityTitle": "設定與備份可可靠還原",
+    "whatsNew.item.settingsBackupReliabilityDescription": "同步設定或還原可攜備份時，會保留你的版面、書籤分類與偏好設定。",
+    "whatsNew.item.cancelNewFolderTitle": "取消新資料夾不會留下空資料夾",
+    "whatsNew.item.cancelNewFolderDescription": "為新書籤資料夾命名時取消或按 Escape，會將其移除而不留下空資料夾。"
   } as Record<string, TranslationValue>

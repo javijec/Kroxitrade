@@ -141,6 +141,8 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "รวมม็อด Desecrated",
   "settings.coeDesecratedModsBody":
     "รวมม็อด Desecrated เป็นม็อดปกติ ขณะนี้ Craft of Exile ยังไม่รองรับการนำเข้าม็อด Desecrated",
+  "settings.highlightedModColorTitle": "สีม็อดที่ไฮไลต์",
+  "settings.highlightedModColorBody": "เลือกสีที่ใช้ไฮไลต์ม็อดที่ตรงกับตัวกรองการค้นหาของคุณ",
   "settings.wikiTitle": "ปุ่มวิกิ",
   "settings.wikiBody":
     "เพิ่มปุ่ม W ให้ผลลัพธ์ไอเทม unique เพื่อเปิดหน้าที่ตรงกันในวิกิ PoE",
@@ -217,7 +219,9 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "สำรองและกู้คืน",
   "bookmarks.backupDescription":
     "บันทึกไฟล์พกพาที่มีโฟลเดอร์ การค้นหาที่บันทึกไว้ การตั้งค่า และค่ากำหนดของส่วนขยาย หรือกู้คืนจากไฟล์เดิม",
-  "bookmarks.saveFile": "บันทึกไฟล์",
+  "bookmarks.saveFile": "สำรองข้อมูล",
+  "bookmarks.automaticSyncDescription":
+    "บุ๊กมาร์กและการตั้งค่าของคุณจะซิงก์กับ Chrome โดยอัตโนมัติขณะใช้ส่วนขยาย",
   "bookmarks.restoreFile": "กู้คืนจากไฟล์",
   "history.clear": "ล้างประวัติ",
   "history.cleared": "ล้างประวัติแล้ว!",
@@ -359,5 +363,13 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "settings.off": "ปิด",
   "settings.tradeActionsTitle": "การทำงานเทรดที่แสดงอยู่",
   "settings.tradeActionsDescription":
-    "เลือกการทำงานของการค้นหาที่บันทึกไว้ซึ่งจะแสดงนอกเมนูในทั้งเลย์เอาต์แบบคลาสสิกและแบบกะทัดรัด หากไม่เลือกเลย จะแสดงเฉพาะเมนูสามจุด"
+    "เลือกการทำงานของการค้นหาที่บันทึกไว้ซึ่งจะแสดงนอกเมนูในทั้งเลย์เอาต์แบบคลาสสิกและแบบกะทัดรัด หากไม่เลือกเลย จะแสดงเฉพาะเมนูสามจุด",
+  "whatsNew.item.filterOverlayColorTitle": "สีตัวกรองแบบกำหนดเอง",
+  "whatsNew.item.filterOverlayColorDescription": "เลือกสีที่ใช้กับการไฮไลต์ตัวกรองที่เลือกในผลลัพธ์การเทรด",
+  "whatsNew.item.betterTradingSearchStateTitle": "การค้นหาที่บันทึกจาก Better Trading ยังคงใช้งานร่วมกันได้",
+  "whatsNew.item.betterTradingSearchStateDescription": "การค้นหาที่บันทึกซึ่งคัดลอกจาก Better Trading จะคงสถานะที่ฝังไว้เมื่อเปิด",
+  "whatsNew.item.settingsBackupReliabilityTitle": "กู้คืนการตั้งค่าและข้อมูลสำรองได้อย่างน่าเชื่อถือ",
+  "whatsNew.item.settingsBackupReliabilityDescription": "เลย์เอาต์ หมวดหมู่บุ๊กมาร์ก และการตั้งค่าของคุณจะคงอยู่เมื่อซิงก์การตั้งค่าหรือกู้คืนข้อมูลสำรองแบบพกพา",
+  "whatsNew.item.cancelNewFolderTitle": "การยกเลิกโฟลเดอร์ใหม่จะไม่ทิ้งโฟลเดอร์ว่างไว้",
+  "whatsNew.item.cancelNewFolderDescription": "ยกเลิกหรือกด Escape ขณะตั้งชื่อโฟลเดอร์บุ๊กมาร์กใหม่เพื่อลบออก แทนที่จะเก็บโฟลเดอร์ว่างไว้"
 }

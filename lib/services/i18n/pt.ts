@@ -144,6 +144,8 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Incluir mods desecrated",
   "settings.coeDesecratedModsBody":
     "Inclui mods desecrated como modificadores normais. O Craft of Exile atualmente não permite importá-los.",
+  "settings.highlightedModColorTitle": "Cor dos mods destacados",
+  "settings.highlightedModColorBody": "Escolha a cor usada para destacar modificadores que correspondem aos filtros de busca.",
   "settings.wikiTitle": "Botão da wiki",
   "settings.wikiBody":
     "Adiciona um botão W aos resultados de itens únicos para abrir a página correspondente na wiki do PoE.",
@@ -224,7 +226,9 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "Backup e restauração",
   "bookmarks.backupDescription":
     "Salve um arquivo portátil com pastas, buscas salvas, configurações e preferências da extensão, ou restaure um arquivo anterior.",
-  "bookmarks.saveFile": "Salvar arquivo",
+  "bookmarks.saveFile": "Backup",
+  "bookmarks.automaticSyncDescription":
+    "Seus favoritos e configurações são sincronizados automaticamente com o Chrome enquanto você usa a extensão.",
   "bookmarks.restoreFile": "Restaurar do arquivo",
   "history.clear": "Limpar histórico",
   "history.cleared": "Histórico limpo!",
@@ -376,5 +380,13 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "settings.off": "Desligado",
   "settings.tradeActionsTitle": "Ações visíveis de trade",
   "settings.tradeActionsDescription":
-    "Escolha quais ações de busca salva ficam visíveis fora do menu no layout clássico e no compacto. Se nenhuma for selecionada, apenas o menu de três pontos aparece."
+    "Escolha quais ações de busca salva ficam visíveis fora do menu no layout clássico e no compacto. Se nenhuma for selecionada, apenas o menu de três pontos aparece.",
+  "whatsNew.item.filterOverlayColorTitle": "Cor de filtro personalizada",
+  "whatsNew.item.filterOverlayColorDescription": "Escolha a cor usada na sobreposição do filtro selecionado nos resultados de trade.",
+  "whatsNew.item.betterTradingSearchStateTitle": "Buscas salvas do Better Trading continuam compatíveis",
+  "whatsNew.item.betterTradingSearchStateDescription": "Buscas salvas copiadas do Better Trading mantêm o estado incorporado ao serem abertas.",
+  "whatsNew.item.settingsBackupReliabilityTitle": "Configurações e backups são restaurados com segurança",
+  "whatsNew.item.settingsBackupReliabilityDescription": "Seu layout, categorias de favoritos e preferências são preservados ao sincronizar configurações ou restaurar um backup portátil.",
+  "whatsNew.item.cancelNewFolderTitle": "Cancelar uma nova pasta não deixa pastas extras",
+  "whatsNew.item.cancelNewFolderDescription": "Cancele ou pressione Escape ao nomear uma nova pasta de favoritos para removê-la em vez de manter uma pasta vazia."
 }

@@ -352,6 +352,8 @@ export const spanishTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Incluir mods desecrated",
   "settings.coeDesecratedModsBody":
     "Incluye los mods desecrated como modificadores normales. Craft of Exile actualmente no permite importarlos.",
+  "settings.highlightedModColorTitle": "Color de mods resaltados",
+  "settings.highlightedModColorBody": "Elegí el color usado para resaltar modificadores que coinciden con los filtros de búsqueda.",
   "settings.wikiTitle": "Botón de wiki",
   "settings.wikiBody":
     "Agrega un botón W a los resultados de objetos únicos para abrir su página correspondiente en la wiki de PoE.",
@@ -424,7 +426,9 @@ export const spanishTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "Respaldo y restauración",
   "bookmarks.backupDescription":
     "Guardá un archivo portable con carpetas, búsquedas, settings y preferencias de la extensión, o restaurá uno exportado antes.",
-  "bookmarks.saveFile": "Guardar archivo",
+  "bookmarks.saveFile": "Respaldo",
+  "bookmarks.automaticSyncDescription":
+    "Tus marcadores y settings se sincronizan automáticamente con Chrome mientras usás la extensión.",
   "bookmarks.restoreFile": "Restaurar desde archivo",
   "bookmarks.folderCopyTitle": ({ title }) => `${title} (copia)`,
   "confirm.cancel": "Cancelar",
@@ -559,5 +563,17 @@ export const spanishTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.duplicateBookmarksDescription": "Las acciones de búsqueda guardada ahora incluyen Duplicar bookmark para crear una copia sin volver a armar la búsqueda.",
   "whatsNew.item.buyoutClearTitle": "Acceso rápido para limpiar el precio de compra",
   "whatsNew.item.buyoutClearDescription":
-    "Los ajustes preestablecidos de filtro rápido ahora incluyen un botón Limpiar que restablece Precio de compra a Equivalente a Orbe de caos y funciona en los idiomas compatibles del sitio de trade."
+    "Los ajustes preestablecidos de filtro rápido ahora incluyen un botón Limpiar que restablece Precio de compra a Equivalente a Orbe de caos y funciona en los idiomas compatibles del sitio de trade.",
+  "whatsNew.item.filterOverlayColorTitle": "Color de filtro personalizado",
+  "whatsNew.item.filterOverlayColorDescription":
+    "Elegí el color de la superposición del filtro seleccionado en los resultados de trade.",
+  "whatsNew.item.betterTradingSearchStateTitle": "Las búsquedas guardadas de Better Trading siguen siendo compatibles",
+  "whatsNew.item.betterTradingSearchStateDescription":
+    "Las búsquedas guardadas copiadas desde Better Trading conservan su estado incorporado al abrirse.",
+  "whatsNew.item.settingsBackupReliabilityTitle": "Las settings y los respaldos se restauran de forma confiable",
+  "whatsNew.item.settingsBackupReliabilityDescription":
+    "Tu layout, las categorías de bookmarks y las preferencias se conservan al sincronizar settings o restaurar un respaldo portátil.",
+  "whatsNew.item.cancelNewFolderTitle": "Cancelar una carpeta nueva no deja carpetas extra",
+  "whatsNew.item.cancelNewFolderDescription":
+    "Cancelá o presioná Escape mientras nombrás una carpeta nueva para eliminarla en lugar de conservar una carpeta vacía."
 } as Record<string, TranslationValue>

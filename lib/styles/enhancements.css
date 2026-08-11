@@ -291,14 +291,6 @@ body.bt-dev-result-actions-visible.bt-dev-wiki-visible
   opacity: 0.72;
 }
 
-.bt-highlight-stat-filters {
-  background-color: rgba(40, 167, 69, 0.22) !important;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  background-image: none !important;
-}
-
 .bt-maximum-sockets-warning {
   min-height: 15px;
   padding: 2px 4px;
@@ -444,7 +436,7 @@ body.bt-dev-result-actions-visible.bt-dev-wiki-visible
   z-index: 1;
   position: absolute;
   inset: 0;
-  background: rgba(40, 167, 69, 0.1);
+  background: var(--bt-finer-filtered-background, rgba(40, 167, 69, 0.1));
   border: none;
   outline: none;
   box-shadow: none;

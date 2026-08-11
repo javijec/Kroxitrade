@@ -1,20 +1,12 @@
 import { writable } from "svelte/store";
 import type { TradeSiteVersion } from "../types/trade-location";
-import { storageService } from "./storage";
+import { settings } from "./settings";
 
 const BODY_CLASS = "bt-dev-result-actions-visible";
 const POE2_COPY_BODY_CLASS = "bt-dev-poe2-copy-visible";
 const POE2_BODY_CLASS = "bt-trade-poe2";
 const COE_BODY_CLASS = "bt-dev-coe-visible";
 const WIKI_BODY_CLASS = "bt-dev-wiki-visible";
-const storageKey = (version: TradeSiteVersion) =>
-  `experimental-result-actions-visible-poe${version}`;
-const POE2_COPY_STORAGE_KEY = "experimental-poe2-copy-visible";
-const COE_STORAGE_KEY = "experimental-coe-visible";
-const COE_DESECRATED_MODS_STORAGE_KEY = "experimental-coe-desecrated-mods-enabled";
-const WIKI_STORAGE_KEY = "experimental-wiki-visible";
-const versionStorageKey = (key: string, version: TradeSiteVersion) =>
-  `${key}-poe${version}`;
 
 let activeVersion: TradeSiteVersion = "1";
 const { subscribe, set } = writable(false);
@@ -75,10 +67,16 @@ function applyWikiVisibility(value: boolean) {
   document.dispatchEvent(new CustomEvent("poe-trade-plus:experimental-change"));
 }
 
-function getVersionSetting(key: string, version: TradeSiteVersion) {
-  return storageService.getLocalValue(versionStorageKey(key, version)) ??
-    storageService.getLocalValue(key);
+function applyCurrentSettings() {
+  const current = settings.getCurrent();
+  apply(current.showResultActions);
+  applyPoe2CopyVisibility(current.showPoe2CopyButton);
+  applyCoeVisibility(current.showCraftOfExileButton);
+  applyCoeDesecratedModsEnabled(current.includeDesecratedMods);
+  applyWikiVisibility(current.showWikiButton);
 }
+
+settings.subscribe(applyCurrentSettings);
 
 export const experimentalSettings = {
   subscribe,
@@ -89,51 +87,22 @@ export const experimentalSettings = {
   useVersion(version: TradeSiteVersion) {
     activeVersion = version;
     document.body?.classList.toggle(POE2_BODY_CLASS, version === "2");
-    apply(storageService.getLocalValue(storageKey(version)) === "true");
-    applyPoe2CopyVisibility(
-      getVersionSetting(POE2_COPY_STORAGE_KEY, version) !== "false"
-    );
-    applyCoeVisibility(
-      getVersionSetting(COE_STORAGE_KEY, version) === "true"
-    );
-    applyCoeDesecratedModsEnabled(
-      getVersionSetting(COE_DESECRATED_MODS_STORAGE_KEY, version) === "true"
-    );
-    applyWikiVisibility(
-      getVersionSetting(WIKI_STORAGE_KEY, version) === "true"
-    );
+    applyCurrentSettings();
   },
   setResultActionsVisible(value: boolean) {
-    storageService.setLocalValue(storageKey(activeVersion), String(value));
-    apply(value);
+    return settings.updateResultActionsVisibility(value);
   },
   setPoe2CopyVisible(value: boolean) {
-    storageService.setLocalValue(
-      versionStorageKey(POE2_COPY_STORAGE_KEY, activeVersion),
-      String(value)
-    );
-    applyPoe2CopyVisibility(value);
+    return settings.updatePoe2CopyButtonVisibility(value);
   },
   setCoeVisible(value: boolean) {
-    storageService.setLocalValue(
-      versionStorageKey(COE_STORAGE_KEY, activeVersion),
-      String(value)
-    );
-    applyCoeVisibility(value);
+    return settings.updateCraftOfExileButtonVisibility(value);
   },
   setCoeDesecratedModsEnabled(value: boolean) {
-    storageService.setLocalValue(
-      versionStorageKey(COE_DESECRATED_MODS_STORAGE_KEY, activeVersion),
-      String(value)
-    );
-    applyCoeDesecratedModsEnabled(value);
+    return settings.updateDesecratedModsVisibility(value);
   },
   setWikiVisible(value: boolean) {
-    storageService.setLocalValue(
-      versionStorageKey(WIKI_STORAGE_KEY, activeVersion),
-      String(value)
-    );
-    applyWikiVisibility(value);
+    return settings.updateWikiButtonVisibility(value);
   },
   isCoeVisible() {
     return isCoeVisible;

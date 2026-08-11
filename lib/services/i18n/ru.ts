@@ -141,6 +141,8 @@ export const russianTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Включать осквернённые модификаторы",
   "settings.coeDesecratedModsBody":
     "Добавляет осквернённые модификаторы как обычные. Craft of Exile пока не поддерживает их импорт.",
+  "settings.highlightedModColorTitle": "Цвет выделенных модификаторов",
+  "settings.highlightedModColorBody": "Выберите цвет для модификаторов, соответствующих фильтрам поиска.",
   "settings.wikiTitle": "Кнопка wiki",
   "settings.wikiBody":
     "Добавляет кнопку W к уникальным предметам, чтобы открыть соответствующую страницу на wiki PoE.",
@@ -218,7 +220,9 @@ export const russianTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "Резервное копирование и восстановление",
   "bookmarks.backupDescription":
     "Сохраните переносимый файл с папками, сохранёнными поисками, настройками и параметрами расширения или восстановите прежний файл.",
-  "bookmarks.saveFile": "Сохранить файл",
+  "bookmarks.saveFile": "Резервная копия",
+  "bookmarks.automaticSyncDescription":
+    "Ваши закладки и настройки автоматически синхронизируются с Chrome во время использования расширения.",
   "bookmarks.restoreFile": "Восстановить из файла",
   "history.clear": "Очистить историю",
   "history.cleared": "История очищена!",
@@ -362,5 +366,13 @@ export const russianTranslations: Record<string, TranslationValue> = {
   "settings.off": "Выкл",
   "settings.tradeActionsTitle": "Видимые действия трейда",
   "settings.tradeActionsDescription":
-    "Выберите, какие действия сохраненного поиска будут видны вне меню в классическом и компактном режиме. Если ничего не выбрано, отображается только меню из трех точек."
+    "Выберите, какие действия сохраненного поиска будут видны вне меню в классическом и компактном режиме. Если ничего не выбрано, отображается только меню из трех точек.",
+  "whatsNew.item.filterOverlayColorTitle": "Настраиваемый цвет фильтра",
+  "whatsNew.item.filterOverlayColorDescription": "Выберите цвет подсветки выбранного фильтра в результатах трейда.",
+  "whatsNew.item.betterTradingSearchStateTitle": "Сохраненные поиски Better Trading остаются совместимыми",
+  "whatsNew.item.betterTradingSearchStateDescription": "Сохраненные поиски, скопированные из Better Trading, сохраняют встроенное состояние при открытии.",
+  "whatsNew.item.settingsBackupReliabilityTitle": "Настройки и резервные копии восстанавливаются надежно",
+  "whatsNew.item.settingsBackupReliabilityDescription": "Ваш макет, категории закладок и предпочтения сохраняются при синхронизации настроек или восстановлении переносимой резервной копии.",
+  "whatsNew.item.cancelNewFolderTitle": "Отмена новой папки не оставляет пустую папку",
+  "whatsNew.item.cancelNewFolderDescription": "Отмените действие или нажмите Escape при именовании новой папки закладок, чтобы удалить ее, а не сохранять пустой папкой."
 }

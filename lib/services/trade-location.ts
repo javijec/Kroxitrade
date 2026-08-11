@@ -11,6 +11,7 @@ import {
   isExtensionContextInvalidatedError
 } from "../utilities/extension-context"
 import { uniqueId } from "../utilities/unique-id"
+import { formatTradeUrl } from "../utilities/trade-url-format"
 import { getActiveTradeTab } from "./active-trade-tab"
 import { languageStore, translate } from "./i18n"
 import { searchPanelService } from "./search-panel"
@@ -401,7 +402,15 @@ export class TradeLocationService {
     league: string
   ) {
     const basePath = version === "2" ? "trade2" : "trade"
-    return `${this.getTradeBaseUrl()}/${basePath}/${encodeTradePathPart(type)}/${encodeTradeLeague(league)}/${encodeTradePathPart(slug)}`
+    return formatTradeUrl(
+      this.getTradeBaseUrl(),
+      basePath,
+      type,
+      encodeTradePathPart(type),
+      encodeTradeLeague(league),
+      slug,
+      encodeTradePathPart(slug)
+    )
   }
 
   compareTradeLocations(a: TradeLocationStruct, b: TradeLocationStruct) {

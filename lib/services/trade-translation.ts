@@ -10,28 +10,10 @@ export interface TradeTranslationState {
 }
 
 const getStoredTradeLanguage = async () => {
-  const syncedSettings =
-    (await getPendingSyncValue<Record<string, unknown>>("app-settings")) ??
-    (await storageService.getValue<Record<string, unknown>>(
-      "app-settings",
-      null,
-      "sync"
-    ))
-  const settings = syncedSettings ?? await storageService.getValue<Record<string, unknown>>(
-    "app-settings"
-  )
+  const settings = await getCurrentSettingsRecord("app-settings")
   const version = isPoe2TradeSite() ? "poe2" : "poe1"
   const versionSettingsKey = `app-settings-${version}`
-  const syncedVersionSettings =
-    (await getPendingSyncValue<Record<string, unknown>>(versionSettingsKey)) ??
-    (await storageService.getValue<Record<string, unknown>>(
-      versionSettingsKey,
-      null,
-      "sync"
-    ))
-  const versionSettings =
-    syncedVersionSettings ??
-    await storageService.getValue<Record<string, unknown>>(versionSettingsKey)
+  const versionSettings = await getCurrentSettingsRecord(versionSettingsKey)
   // The current game's record is authoritative. The legacy global record is
   // only consulted until Settings has migrated an older installation.
   const language = String(
@@ -47,6 +29,35 @@ const getStoredTradeLanguage = async () => {
       versionSettings?.translateTradeSite === true ||
       (versionSettings == null && settings?.translateTradeSite === true)
   }
+}
+
+const isStoragePayload = (value: unknown): value is { value: unknown } =>
+  typeof value === "object" && value !== null && "value" in value
+
+const sameValue = (left: unknown, right: unknown) =>
+  JSON.stringify(left) === JSON.stringify(right)
+
+async function getCurrentSettingsRecord(
+  key: string
+): Promise<Record<string, unknown> | null> {
+  const [local, pending, synced] = await Promise.all([
+    storageService.getValue<Record<string, unknown>>(key),
+    getPendingSyncValue<Record<string, unknown>>(key),
+    storageService.getValue<Record<string, unknown>>(key, null, "sync")
+  ])
+
+  // A journal entry is the newest value only while it matches the durable
+  // local copy. If Sync has changed independently since then, use that newer
+  // remote value instead of reviving the stale pending state.
+  if (
+    pending !== null &&
+    !isStoragePayload(pending) &&
+    (local === null || sameValue(local, pending))
+  ) {
+    return pending as Record<string, unknown>
+  }
+
+  return synced ?? local ?? (isStoragePayload(pending) ? null : pending)
 }
 
 export const getChineseTradeLanguage = async (): Promise<string | null> => {

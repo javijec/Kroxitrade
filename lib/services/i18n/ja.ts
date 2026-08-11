@@ -146,6 +146,8 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Desecrated モッドを含める",
   "settings.coeDesecratedModsBody":
     "Desecrated モッドを通常のモッドとして含めます。Craft of Exile は現在 Desecrated モッドのインポートに対応していません。",
+  "settings.highlightedModColorTitle": "強調表示するモッドの色",
+  "settings.highlightedModColorBody": "検索フィルターに一致するモッドを強調表示する色を選択します。",
   "settings.wikiTitle": "Wiki ボタン",
   "settings.wikiBody":
     "ユニークアイテムの結果に W ボタンを追加し、対応する PoE Wiki ページを開きます。",
@@ -224,7 +226,9 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "バックアップと復元",
   "bookmarks.backupDescription":
     "フォルダー、保存済み検索、設定、拡張機能の設定を含むポータブルファイルを保存、または以前のファイルから復元します。",
-  "bookmarks.saveFile": "ファイルを保存",
+  "bookmarks.saveFile": "バックアップ",
+  "bookmarks.automaticSyncDescription":
+    "拡張機能の使用中は、ブックマークと設定が Chrome と自動的に同期されます。",
   "bookmarks.restoreFile": "ファイルから復元",
   "history.clear": "履歴を消去",
   "history.cleared": "履歴を消去しました！",
@@ -372,5 +376,13 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "settings.off": "オフ",
   "settings.tradeActionsTitle": "表示するトレード操作",
   "settings.tradeActionsDescription":
-    "クラシック/コンパクト両方のレイアウトで、メニュー外に表示しておく保存済み検索の操作を選択します。何も選ばない場合は3点メニューのみ表示されます。"
+    "クラシック/コンパクト両方のレイアウトで、メニュー外に表示しておく保存済み検索の操作を選択します。何も選ばない場合は3点メニューのみ表示されます。",
+  "whatsNew.item.filterOverlayColorTitle": "カスタムフィルター色",
+  "whatsNew.item.filterOverlayColorDescription": "トレード結果で選択したフィルターのハイライトに使う色を選べます。",
+  "whatsNew.item.betterTradingSearchStateTitle": "Better Trading の保存済み検索との互換性を維持",
+  "whatsNew.item.betterTradingSearchStateDescription": "Better Trading からコピーした保存済み検索は、開いたときに埋め込み状態を維持します。",
+  "whatsNew.item.settingsBackupReliabilityTitle": "設定とバックアップを確実に復元",
+  "whatsNew.item.settingsBackupReliabilityDescription": "設定の同期またはポータブルバックアップの復元時に、レイアウト、ブックマークカテゴリ、設定が保持されます。",
+  "whatsNew.item.cancelNewFolderTitle": "新規フォルダーをキャンセルしても空のフォルダーを残さない",
+  "whatsNew.item.cancelNewFolderDescription": "新しいブックマークフォルダーの名前を付ける途中でキャンセルするか Escape を押すと、空のフォルダーを残さず削除します。"
 }

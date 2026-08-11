@@ -146,6 +146,8 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Desecrated 모드 포함",
   "settings.coeDesecratedModsBody":
     "Desecrated 모드를 일반 모드로 포함합니다. Craft of Exile은 현재 Desecrated 모드 가져오기를 지원하지 않습니다.",
+  "settings.highlightedModColorTitle": "강조된 모드 색상",
+  "settings.highlightedModColorBody": "검색 필터와 일치하는 모드를 강조할 색상을 선택하세요.",
   "settings.wikiTitle": "위키 버튼",
   "settings.wikiBody":
     "고유 아이템 결과에 W 버튼을 추가해 해당 PoE 위키 페이지를 엽니다.",
@@ -223,7 +225,9 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "백업 및 복원",
   "bookmarks.backupDescription":
     "폴더, 저장된 검색, 설정, 확장 프로그램 환경설정을 담은 휴대용 파일을 저장하거나 이전 파일에서 복원합니다.",
-  "bookmarks.saveFile": "파일 저장",
+  "bookmarks.saveFile": "백업",
+  "bookmarks.automaticSyncDescription":
+    "확장 프로그램을 사용하는 동안 북마크와 설정이 Chrome과 자동으로 동기화됩니다.",
   "bookmarks.restoreFile": "파일에서 복원",
   "history.clear": "기록 지우기",
   "history.cleared": "기록을 지웠습니다!",
@@ -368,5 +372,13 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "settings.off": "꺼짐",
   "settings.tradeActionsTitle": "표시할 거래 작업",
   "settings.tradeActionsDescription":
-    "클래식과 컴팩트 레이아웃 모두에서 메뉴 밖에 보일 저장된 검색 작업을 선택하세요. 아무것도 선택하지 않으면 점 세 개 메뉴만 보입니다."
+    "클래식과 컴팩트 레이아웃 모두에서 메뉴 밖에 보일 저장된 검색 작업을 선택하세요. 아무것도 선택하지 않으면 점 세 개 메뉴만 보입니다.",
+  "whatsNew.item.filterOverlayColorTitle": "사용자 지정 필터 색상",
+  "whatsNew.item.filterOverlayColorDescription": "거래 결과에서 선택한 필터 강조에 사용할 색상을 선택하세요.",
+  "whatsNew.item.betterTradingSearchStateTitle": "Better Trading 저장 검색 호환성 유지",
+  "whatsNew.item.betterTradingSearchStateDescription": "Better Trading에서 복사한 저장 검색은 열 때 포함된 상태를 유지합니다.",
+  "whatsNew.item.settingsBackupReliabilityTitle": "설정과 백업을 안정적으로 복원",
+  "whatsNew.item.settingsBackupReliabilityDescription": "설정을 동기화하거나 휴대용 백업을 복원할 때 레이아웃, 북마크 카테고리 및 환경설정이 유지됩니다.",
+  "whatsNew.item.cancelNewFolderTitle": "새 폴더를 취소해도 빈 폴더가 남지 않음",
+  "whatsNew.item.cancelNewFolderDescription": "새 북마크 폴더의 이름을 지정하는 동안 취소하거나 Escape를 누르면 빈 폴더를 남기지 않고 제거합니다."
 }

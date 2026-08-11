@@ -67,6 +67,9 @@
     isTutorialSaveTarget?: boolean;
     startInEditMode?: boolean;
     onStartInEditModeHandled?: () => void;
+    isNewFolderEdit?: boolean;
+    onNewFolderEditSaved?: () => void;
+    onNewFolderEditCancelled?: () => void | Promise<void>;
   }
 
   let {
@@ -85,7 +88,10 @@
     scrollContainer = null,
     isTutorialSaveTarget = false,
     startInEditMode = false,
-    onStartInEditModeHandled = () => {}
+    onStartInEditModeHandled = () => {},
+    isNewFolderEdit = false,
+    onNewFolderEditSaved = () => {},
+    onNewFolderEditCancelled = () => {}
   }: Props = $props();
 
   let trades: BookmarksTradeStruct[] = $state([])
@@ -884,6 +890,7 @@
     if (!newTitle) return
     if (newTitle === folder.title && !iconChanged) {
       editingFolder = false
+      if (isNewFolderEdit) onNewFolderEditSaved()
       return
     }
 
@@ -897,6 +904,7 @@
       folder.title = newTitle
       folder.icon = folderEditIcon
       editingFolder = false
+      if (isNewFolderEdit) onNewFolderEditSaved()
       flashMessages.success(
         translate($languageStore, "folder.renamedFolder", { title: newTitle })
       )
@@ -909,6 +917,7 @@
     editingFolder = false
     folderEditTitle = folder.title
     folderEditIcon = folder.icon
+    if (isNewFolderEdit) void onNewFolderEditCancelled()
   }
 
   let editingTradeId: string | null = $state(null)
