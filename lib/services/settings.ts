@@ -297,7 +297,8 @@ async function persistSynced(key: string, value: unknown): Promise<boolean> {
     key,
     value,
     null,
-    SETTINGS_STORAGE_AREA
+    SETTINGS_STORAGE_AREA,
+    { awaitSync: false }
   )
   if (!persisted) {
     // A full or temporarily unavailable browser Sync area must not prevent a
@@ -306,7 +307,7 @@ async function persistSynced(key: string, value: unknown): Promise<boolean> {
     return storageService.setValue(key, value)
   }
 
-  await storageService.deleteValue(key)
+  await storageService.deleteValue(key, null, "local")
   return true
 }
 

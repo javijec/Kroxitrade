@@ -10,6 +10,11 @@ import type {
 import type { TradeSiteVersion } from "../types/trade-location"
 import { decodeBase64Utf8, encodeBase64Utf8 } from "../utilities/base64"
 import { uniqueId } from "../utilities/unique-id"
+import {
+  BookmarkRepository,
+  BOOKMARK_REPOSITORY_JOURNAL_KEY,
+  type BookmarkRepositoryJournal
+} from "./bookmark-repository"
 import { languageStore, translate } from "./i18n"
 import { storageService, type StorageArea } from "./storage"
 
@@ -74,14 +79,22 @@ export class BookmarksService {
   private completedCategoryTransferFolders = new Set<string>()
   private foldersMigration: Promise<void> | null = null
   private tradesMigrations = new Map<string, Promise<void>>()
+  private repository = new BookmarkRepository()
+  private journalHydrated = false
+  private journalReady: Promise<void>
+  private journalWriteTail: Promise<void> = Promise.resolve()
   public subscribe = this.foldersStore.subscribe
 
   constructor() {
-    this.refresh()
     this.bindStorageSync()
+    this.journalReady = this.hydrateJournal().finally(() => {
+      this.journalHydrated = true
+    })
+    void this.journalReady.then(() => this.refresh())
   }
 
   async refresh(options?: { force?: boolean }) {
+    if (!this.journalHydrated) await this.journalReady
     if (!options?.force && this.pendingCategoryTransfers > 0) return
     const folders = await this.fetchFolders()
     this.foldersStore.set(folders)
@@ -95,6 +108,72 @@ export class BookmarksService {
 
   private notifyChange(event?: BookmarksChangeEvent) {
     this.listeners.forEach((listener) => listener(event))
+  }
+
+  private async hydrateJournal() {
+    const journal = await storageService.getValue<BookmarkRepositoryJournal>(
+      BOOKMARK_REPOSITORY_JOURNAL_KEY
+    )
+    this.repository.hydrate(journal)
+  }
+
+  private async persistJournal(acknowledgedOperationIds: string[] = []) {
+    const journal = this.repository.journal()
+    this.journalWriteTail = this.journalWriteTail.then(async () => {
+      // The sidebar and the background worker have different JS contexts.
+      // Merge the latest durable journal before writing so acknowledging an
+      // older operation cannot erase a newer UI operation created mid-flush.
+      const durable = await storageService.getValue<BookmarkRepositoryJournal>(
+        BOOKMARK_REPOSITORY_JOURNAL_KEY
+      )
+      const merged = new BookmarkRepository()
+      merged.hydrate({
+        version: 1,
+        revision: durable?.revision || 0,
+        operations: (durable?.operations || []).filter(
+          (operation) => !acknowledgedOperationIds.includes(operation.id)
+        )
+      })
+      merged.hydrate({
+        ...journal,
+        operations: journal.operations.filter(
+          (operation) => !acknowledgedOperationIds.includes(operation.id)
+        )
+      })
+      const saved = await storageService.setValue(
+        BOOKMARK_REPOSITORY_JOURNAL_KEY,
+        merged.journal()
+      )
+      if (!saved) throw new Error("Could not persist bookmark changes locally")
+    })
+    return this.journalWriteTail
+  }
+
+  private requestBackgroundFlush(): Promise<void> {
+    // The browser worker owns production persistence. The inline fallback is
+    // for contexts without a runtime channel (imports, backups and tests).
+    if (typeof chrome === "undefined" || !chrome.runtime?.sendMessage) {
+      return this.flushPendingOperations()
+    }
+    return chrome.runtime
+      .sendMessage({ type: "bookmark-repository-flush", delayMs: 500 })
+      .then(() => undefined)
+      .catch(() => undefined)
+  }
+
+  async flushPendingOperations() {
+    await this.journalReady
+    for (const operation of this.repository.pendingOperations()) {
+      if (operation.type === "folders") {
+        await this.persistFoldersToChunks(operation.folders)
+      } else if (operation.type === "trades") {
+        await this.persistTradesToChunks(operation.folderId, operation.trades)
+      } else {
+        await this.deleteChunkedTrades(operation.folderId)
+      }
+      this.repository.acknowledge(operation.id)
+      await this.persistJournal([operation.id])
+    }
   }
 
   private bindStorageSync() {
@@ -130,8 +209,12 @@ export class BookmarksService {
   // ─── STORAGE ──────────────────────────────────────────────
 
   async fetchFolders(): Promise<BookmarksFolderStruct[]> {
+    if (!this.journalHydrated) await this.journalReady
     const chunkedFolders = await this.fetchChunkedFolders()
-    if (chunkedFolders !== null) return this.normalizeFolders(chunkedFolders)
+    if (chunkedFolders !== null) {
+      this.repository.replaceFolders(this.normalizeFolders(chunkedFolders))
+      return this.repository.getFolders()
+    }
 
     const legacyFolders =
       await this.fetchSynced<Partial<BookmarksFolderStruct>[]>(FOLDERS_KEY)
@@ -139,7 +222,8 @@ export class BookmarksService {
       await this.migrateFoldersToChunks(legacyFolders)
     }
 
-    return this.normalizeFolders(legacyFolders)
+    this.repository.replaceFolders(this.normalizeFolders(legacyFolders))
+    return this.repository.getFolders()
   }
 
   private async fetchChunkedFolders(): Promise<
@@ -608,17 +692,25 @@ export class BookmarksService {
   private normalizeTrades(
     trades: BookmarksTradeStruct[] | null | undefined
   ): BookmarksTradeStruct[] {
-    return (trades || []).map((t) => ({
-      ...t,
-      archivedAt: typeof t.archivedAt === "string" ? t.archivedAt : null,
-      categoryId:
-        typeof t.categoryId === "string" && t.categoryId ? t.categoryId : null,
-      location: {
-        ...t.location,
-        version: t.location.version || "1",
-        league: t.location.league || null
-      }
-    }))
+    const ids = new Set<string>()
+    return (trades || []).flatMap((t) => {
+      // Trade IDs are globally unique. Concurrent optimistic moves can present
+      // the same trade twice before their queued writes converge; keep the
+      // first copy so a keyed Svelte list never receives duplicate keys.
+      if (t.id && ids.has(t.id)) return []
+      if (t.id) ids.add(t.id)
+      return [{
+        ...t,
+        archivedAt: typeof t.archivedAt === "string" ? t.archivedAt : null,
+        categoryId:
+          typeof t.categoryId === "string" && t.categoryId ? t.categoryId : null,
+        location: {
+          ...t.location,
+          version: t.location.version || "1",
+          league: t.location.league || null
+        }
+      }]
+    })
   }
 
   private resolveTargetTradeCategory(
@@ -667,6 +759,7 @@ export class BookmarksService {
     folderId: string,
     options?: { force?: boolean }
   ): Promise<BookmarksTradeStruct[]> {
+    if (!this.journalHydrated) await this.journalReady
     if (!options?.force) {
       const cached = this.getCachedTradesByFolderId(folderId)
       if (cached) {
@@ -685,8 +778,10 @@ export class BookmarksService {
         if (this.hasLocalTradesEdits(folderId) && this.tradesCache.has(folderId)) {
           return this.cloneTrades(this.tradesCache.get(folderId) || [])
         }
-        this.tradesCache.set(folderId, normalized)
-        return this.cloneTrades(normalized)
+        this.repository.replaceTrades(folderId, normalized)
+        const resolved = this.repository.getTrades(folderId)
+        this.tradesCache.set(folderId, resolved)
+        return this.cloneTrades(resolved)
       })
       .finally(() => {
         this.tradesRequests.delete(folderId)
@@ -823,20 +918,17 @@ export class BookmarksService {
   }
 
   async persistFolders(folders: BookmarksFolderStruct[]) {
+    if (!this.journalHydrated) await this.journalReady
     const safeFolders = this.normalizeFolders(folders)
-    // All folder mutations share this optimistic publication path. The Sync
-    // write remains queued below, so adding, editing, moving, archiving and
-    // deleting folders never wait for storage before updating the UI.
-    this.foldersStore.set(safeFolders)
+    this.repository.stageFolders(safeFolders)
+    this.foldersStore.set(this.repository.getFolders())
     this.notifyChange({ foldersChanged: true })
-    this.foldersWriteDepth++
     try {
-      await this.persistFoldersToChunks(safeFolders)
+      await this.persistJournal()
+      await this.requestBackgroundFlush()
     } catch (error) {
       await this.refresh({ force: true })
       throw error
-    } finally {
-      this.foldersWriteDepth--
     }
   }
 
@@ -863,48 +955,36 @@ export class BookmarksService {
         : [...trades, nextTrade]
     )
 
-    this.tradesCache.set(folderId, this.cloneTrades(updated))
-    this.notifyChange({ tradesChanged: true, folderId })
-    const queued = this.enqueueTradesWrite(folderId, async () => {
-      this.assertFolderCanPersist(folderId)
-      await this.persistTradesToChunks(folderId, updated)
-      return id
-    })
-    return queued.catch(async (error) => {
-      this.tradesCache.delete(folderId)
-      this.tradesRequests.delete(folderId)
-      await this.refreshTradesFromStorage(folderId)
-      throw error
-    })
+    await this.persistTrades(updated, folderId)
+    return id
   }
 
   async persistTrades(
     trades: BookmarksTradeStruct[],
     folderId: string
   ): Promise<BookmarksTradeStruct[]> {
+    if (!this.journalHydrated) await this.journalReady
     this.assertFolderCanPersist(folderId)
     const safeTrades = this.normalizeTrades(
       trades.map((trade) => ({ ...trade, id: trade.id || uniqueId() }))
     )
 
-    // Publish the final list immediately. Every caller (create, edit, move,
-    // delete, archive and category assignment) flows through here, while the
-    // actual Sync work is coalesced by StorageService after the quiet period.
-    this.tradesCache.set(folderId, this.cloneTrades(safeTrades))
+    this.repository.stageTrades(folderId, safeTrades)
+    const finalTrades = this.repository.getTrades(folderId)
+    this.tradesCache.set(folderId, this.cloneTrades(finalTrades))
     if (!this.isCategoryTransferPending(folderId)) {
       this.notifyChange({ tradesChanged: true, folderId })
     }
-    const queued = this.enqueueTradesWrite(folderId, async () => {
-      this.assertFolderCanPersist(folderId)
-      await this.persistTradesToChunks(folderId, safeTrades)
-      return this.cloneTrades(safeTrades)
-    })
-    return queued.catch(async (error) => {
+    try {
+      await this.persistJournal()
+      await this.requestBackgroundFlush()
+      return this.cloneTrades(finalTrades)
+    } catch (error) {
       this.tradesCache.delete(folderId)
       this.tradesRequests.delete(folderId)
       await this.refreshTradesFromStorage(folderId)
       throw error
-    })
+    }
   }
 
   async deleteTrade(
@@ -919,6 +999,7 @@ export class BookmarksService {
   }
 
   async deleteFolder(folderId: string) {
+    if (!this.journalHydrated) await this.journalReady
     if (!folderId) throw new Error("A bookmark folder id is required")
 
     let folders = get(this.foldersStore)
@@ -933,48 +1014,32 @@ export class BookmarksService {
       ? this.cloneTrades(cachedTrades)
       : undefined
 
-    // Remove the folder at once. Persistence stays serialized with every
-    // bookmark mutation, and a failure restores this exact visible snapshot.
+    // Removing a folder is one local transaction. The Sync deletion happens
+    // later in the worker, so no intermediate empty/uncategorized view leaks
+    // back into the UI.
     this.deletedTradeFolderIds.add(folderId)
-    this.foldersStore.set(updated)
+    this.repository.stageFolders(updated)
+    this.repository.stageFolderDeletion(folderId)
+    this.foldersStore.set(this.repository.getFolders())
     this.notifyChange({ foldersChanged: true, folderId })
     this.tradesCache.delete(folderId)
     this.tradesRequests.delete(folderId)
 
-    return this.enqueueTradesMutation(async () => {
-      const trades =
-        tradesSnapshot ??
-        (await this.fetchTradesByFolderId(folderId, { force: true }))
-
-      try {
-        await this.persistFolders(updated)
-        await this.enqueueTradesWrite(folderId, async () => {
-          await this.deleteChunkedTrades(folderId)
-          this.tradesCache.delete(folderId)
-          this.tradesRequests.delete(folderId)
-        })
-        await this.refresh()
-        return true
-      } catch (error) {
-        console.warn("Could not delete bookmark folder; restoring it", error)
-
-        this.deletedTradeFolderIds.delete(folderId)
-        try {
-          await this.persistFolders(folders)
-          await this.persistTrades(trades, folderId)
-          this.tradesCache.set(folderId, this.cloneTrades(trades))
-        } catch (rollbackError) {
-          console.warn(
-            "Could not restore bookmark folder after a failed deletion",
-            rollbackError
-          )
-        }
-
-        this.foldersStore.set(folders)
-        this.notifyChange({ foldersChanged: true, folderId })
-        return false
-      }
-    })
+    try {
+      await this.persistJournal()
+      await this.requestBackgroundFlush()
+      return true
+    } catch (error) {
+      console.warn("Could not persist bookmark folder deletion locally", error)
+      this.repository.cancelFolderDeletion(folderId)
+      this.repository.stageFolders(folders)
+      if (tradesSnapshot) this.repository.stageTrades(folderId, tradesSnapshot)
+      this.deletedTradeFolderIds.delete(folderId)
+      this.tradesCache.set(folderId, tradesSnapshot || [])
+      this.foldersStore.set(this.repository.getFolders())
+      this.notifyChange({ foldersChanged: true, folderId })
+      return false
+    }
   }
 
   async duplicateTrade(

@@ -6,6 +6,7 @@ import { buildChineseItemNameCache } from "~/lib/services/chinese-trade/item-nam
 import { loadChineseStatTemplates } from "~/lib/services/chinese-trade/stat-templates"
 import { getTradeTranslationState } from "~/lib/services/trade-translation"
 import { storageService } from "~/lib/services/storage"
+import { bookmarksService } from "~/lib/services/bookmarks"
 import {
   BOOKMARK_SCROLL_RESTORE_MAX_AGE_MS,
   bookmarkScrollMessage,
@@ -49,6 +50,26 @@ const getStorageUsage = async () => {
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error)
+
+const BOOKMARK_REPOSITORY_FLUSH_ALARM = "bookmark-repository-flush"
+const BOOKMARK_REPOSITORY_RECOVERY_DELAY_MS = 30_000
+let bookmarkFlushTimer: ReturnType<typeof setTimeout> | null = null
+
+const scheduleBookmarkFlush = (delayMs = 500) => {
+  if (bookmarkFlushTimer) clearTimeout(bookmarkFlushTimer)
+  bookmarkFlushTimer = setTimeout(() => {
+    bookmarkFlushTimer = null
+    void bookmarksService.flushPendingOperations().catch((error) => {
+      console.warn("[PoeTradePlus] Could not flush pending bookmark changes", error)
+    })
+  }, Math.max(0, delayMs))
+
+  // Chrome alarms are deliberately coarse. They are a durable recovery path
+  // if the MV3 worker is suspended before the short in-memory debounce fires.
+  chrome.alarms.create(BOOKMARK_REPOSITORY_FLUSH_ALARM, {
+    when: Date.now() + BOOKMARK_REPOSITORY_RECOVERY_DELAY_MS
+  })
+}
 
 const prepareChineseTradeCaches = async (
   force = false,
@@ -126,6 +147,13 @@ export default defineBackground({
   main() {
     storageService.initializeSyncRecovery()
     registerBackgroundHandlers()
+    scheduleBookmarkFlush()
+    chrome.alarms.onAlarm.addListener((alarm) => {
+      if (alarm.name !== BOOKMARK_REPOSITORY_FLUSH_ALARM) return
+      void bookmarksService.flushPendingOperations().catch((error) => {
+        console.warn("[PoeTradePlus] Could not flush pending bookmark changes", error)
+      })
+    })
     void prepareChineseTradeCaches()
     chrome.runtime.onInstalled.addListener(() => {
       void prepareChineseTradeCaches()
@@ -134,6 +162,14 @@ export default defineBackground({
       const tabId = sender.tab?.id
       const bookmarkScrollKey =
         typeof tabId === "number" ? getBookmarkScrollRestoreKey(tabId) : null
+
+      if (request?.type === "bookmark-repository-flush") {
+        scheduleBookmarkFlush(
+          typeof request.delayMs === "number" ? request.delayMs : 500
+        )
+        sendResponse({ ok: true })
+        return false
+      }
 
       if (request?.type === bookmarkScrollMessage.save) {
         const value = request.value

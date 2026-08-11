@@ -9,6 +9,10 @@ interface StoragePayload {
 }
 
 export type StorageArea = "local" | "sync"
+export type SyncWriteOptions = {
+  /** Wait only when the caller depends on the exact Sync write order. */
+  awaitSync?: boolean
+}
 
 const SYNC_VALUE_FORMAT = 1
 const COMPRESSED_SYNC_VALUE_FORMAT = 2
@@ -263,12 +267,13 @@ export class StorageService {
     key: string,
     value: unknown,
     league: string | null = null,
-    area: StorageArea = "local"
+    area: StorageArea = "local",
+    options?: SyncWriteOptions
   ): Promise<boolean> {
     return this.write(this.formatKey(key, league), {
       expiresAt: null,
       value
-    }, area)
+    }, area, options)
   }
 
   async setEphemeralValue(
@@ -357,9 +362,10 @@ export class StorageService {
   async deleteValue(
     key: string,
     league: string | null = null,
-    area: StorageArea = "local"
+    area: StorageArea = "local",
+    options?: SyncWriteOptions
   ): Promise<boolean> {
-    return this.remove(this.formatKey(key, league), area)
+    return this.remove(this.formatKey(key, league), area, options)
   }
 
   setLocalValue(key: string, value: string, league: string | null = null) {
@@ -377,17 +383,27 @@ export class StorageService {
   private async write(
     key: string,
     value: StoragePayload,
-    area: StorageArea = "local"
+    area: StorageArea = "local",
+    options?: SyncWriteOptions
   ): Promise<boolean> {
     const storageArea = this.getStorageArea(area)
     if (!storageArea) return false
     try {
       if (area === "sync") {
         const storedValue = await encodeSyncValue(value.value)
-        await this.enqueueSyncMutation(key, {
+        const queued = this.enqueueSyncMutation(key, {
           ...value,
           value: storedValue
         })
+        if (options?.awaitSync !== false) {
+          await queued
+        } else {
+          void queued.catch((error) => {
+            if (!isExtensionContextInvalidatedError(error)) {
+              console.warn("Deferred Sync write failed", error)
+            }
+          })
+        }
       } else {
         await storageArea.set({ [key]: value })
       }
@@ -402,17 +418,27 @@ export class StorageService {
 
   private async remove(
     keys: string | string[],
-    area: StorageArea = "local"
+    area: StorageArea = "local",
+    options?: SyncWriteOptions
   ): Promise<boolean> {
     const storageArea = this.getStorageArea(area)
     if (!storageArea) return false
     try {
       if (area === "sync") {
-        await Promise.all(
+        const queued = Promise.all(
           (Array.isArray(keys) ? keys : [keys]).map((key) =>
             this.enqueueSyncMutation(key)
           )
         )
+        if (options?.awaitSync !== false) {
+          await queued
+        } else {
+          void queued.catch((error) => {
+            if (!isExtensionContextInvalidatedError(error)) {
+              console.warn("Deferred Sync removal failed", error)
+            }
+          })
+        }
       } else {
         await storageArea.remove(keys)
       }

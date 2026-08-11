@@ -243,8 +243,19 @@
   const hasAssignedCategories = () =>
     trades.some((trade) => categoryIdForTrade(trade) !== null)
 
+  const uniqueTrades = () => {
+    const ids = new Set<string>()
+    return trades.filter((trade) => {
+      if (!trade.id || !ids.has(trade.id)) {
+        if (trade.id) ids.add(trade.id)
+        return true
+      }
+      return false
+    })
+  }
+
   const getDisplayedTrades = () => {
-    const visibleTrades = trades.filter((trade) =>
+    const visibleTrades = uniqueTrades().filter((trade) =>
       showArchivedTrades ? !!trade.archivedAt : !trade.archivedAt
     )
     if (

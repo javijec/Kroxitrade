@@ -88,12 +88,16 @@ const trade = (id, title = id) => ({
 })
 
 const reset = () => {
+  if (sync.syncBatchTimer) clearTimeout(sync.syncBatchTimer)
   stores.local.clear()
   stores.sync.clear()
   failSyncSet = null
   syncSetCalls = 0
   syncSetGate = null
   sync.syncBatchDelay = 0
+  sync.syncBatchTimer = null
+  sync.pendingSyncMutations = []
+  sync.syncOperationQueue = Promise.resolve()
   sync.syncRecoveryTimer = null
   sync.syncRecoveryInitialized = false
 }
@@ -147,16 +151,67 @@ test("batches concurrent Sync writes into one storage call", async () => {
 
 test("waits for a quiet Sync window before publishing batched changes", async () => {
   reset()
-  sync.syncBatchDelay = 30
+  sync.syncBatchDelay = 100
 
   const first = storageService.setValue("batch-one", { value: 1 }, null, "sync")
   await new Promise((resolve) => setTimeout(resolve, 15))
   const second = storageService.setValue("batch-two", { value: 2 }, null, "sync")
-  await new Promise((resolve) => setTimeout(resolve, 20))
+  await new Promise((resolve) => setTimeout(resolve, 30))
 
   assert.equal(syncSetCalls, 0)
   await Promise.all([first, second])
   assert.equal(syncSetCalls, 1)
+})
+
+test("can enqueue Sync changes without waiting for the batch to publish", async () => {
+  reset()
+  sync.syncBatchDelay = 30
+
+  const queued = await storageService.setValue(
+    "deferred",
+    { value: true },
+    null,
+    "sync",
+    { awaitSync: false }
+  )
+
+  assert.equal(queued, true)
+  assert.equal(syncSetCalls, 0)
+  await new Promise((resolve) => setTimeout(resolve, 40))
+  assert.equal(syncSetCalls, 1)
+})
+
+test("rehydrates a pending local bookmark journal before Sync is flushed", async () => {
+  reset()
+  const previousSendMessage = chrome.runtime.sendMessage
+  chrome.runtime.sendMessage = async () => ({ ok: true })
+  try {
+    const writer = new BookmarksService()
+    await writer.persistTrades([trade("pending")], "journal-folder")
+
+    assert.deepEqual(
+      await storageService.getValue("bookmark-trades-manifest--journal-folder", null, "sync"),
+      null
+    )
+
+    const reloaded = new BookmarksService()
+    assert.deepEqual(
+      (await reloaded.fetchTradesByFolderId("journal-folder", { force: true })).map(
+        ({ id }) => id
+      ),
+      ["pending"]
+    )
+
+    await reloaded.flushPendingOperations()
+    assert.deepEqual(
+      (await new BookmarksService().fetchTradesByFolderId("journal-folder", {
+        force: true
+      })).map(({ id }) => id),
+      ["pending"]
+    )
+  } finally {
+    chrome.runtime.sendMessage = previousSendMessage
+  }
 })
 
 test("does not publish staged chunks when manifest publication fails", async () => {
@@ -261,7 +316,7 @@ test("keeps independent folder changes from two devices during concurrent add, d
 })
 
 
-test("persistTrades rejects when chunk persistence fails", async () => {
+test("keeps a local journal entry when a trade flush fails so it can retry", async () => {
   reset()
   const bookmarks = new BookmarksService()
   failSyncSet = (values) =>
@@ -270,7 +325,19 @@ test("persistTrades rejects when chunk persistence fails", async () => {
   await assert.rejects(bookmarks.persistTrades([trade("will-fail")], "failure"))
 
   failSyncSet = null
-  assert.deepEqual(await bookmarks.fetchTradesByFolderId("failure", { force: true }), [])
+  assert.deepEqual(
+    (await bookmarks.fetchTradesByFolderId("failure", { force: true })).map(
+      ({ id }) => id
+    ),
+    ["will-fail"]
+  )
+  await bookmarks.flushPendingOperations()
+  assert.deepEqual(
+    (await new BookmarksService().fetchTradesByFolderId("failure", {
+      force: true
+    })).map(({ id }) => id),
+    ["will-fail"]
+  )
 })
 
 test("creates new bookmarks without inheriting a category", async () => {
@@ -291,6 +358,17 @@ test("creates new bookmarks without inheriting a category", async () => {
       .find((entry) => entry.id === id)
       .categoryId,
     null
+  )
+})
+
+test("deduplicates repeated bookmark ids before publishing a folder", async () => {
+  reset()
+  const bookmarks = new BookmarksService()
+  await bookmarks.persistTrades([trade("same"), trade("same")], "dedupe")
+
+  assert.deepEqual(
+    (await bookmarks.fetchTradesByFolderId("dedupe", { force: true })).map(({ id }) => id),
+    ["same"]
   )
 })
 
