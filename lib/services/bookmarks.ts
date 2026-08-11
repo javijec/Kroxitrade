@@ -10,6 +10,19 @@ import type {
 import type { TradeSiteVersion } from "../types/trade-location"
 import { decodeBase64Utf8, encodeBase64Utf8 } from "../utilities/base64"
 import { uniqueId } from "../utilities/unique-id"
+import {
+  BookmarkRepository,
+  BOOKMARK_REPOSITORY_JOURNAL_KEY,
+  type BookmarkRepositoryJournal
+} from "./bookmark-repository"
+import {
+  BookmarkOplog,
+  type BookmarkOplogOperation,
+  getBookmarkOplogDeviceId,
+  publishBookmarkOplog,
+  readBookmarkOplog,
+  replayBookmarkOplog
+} from "./bookmark-oplog"
 import { languageStore, translate } from "./i18n"
 import { storageService, type StorageArea } from "./storage"
 
@@ -47,6 +60,14 @@ type BookmarksChangeEvent = {
   folderId?: string
 }
 
+type BookmarkTransactionOperation =
+  | { type: "folders"; folders: BookmarksFolderStruct[] }
+  | {
+      type: "trades"
+      folderId: string
+      trades: BookmarksTradeStruct[]
+    }
+
 interface ExportedFolderStruct {
   icn: string
   tit: string
@@ -66,16 +87,31 @@ export class BookmarksService {
   private tradesCache = new Map<string, BookmarksTradeStruct[]>()
   private tradesRequests = new Map<string, Promise<BookmarksTradeStruct[]>>()
   private tradesWriteQueues = new Map<string, Promise<unknown>>()
+  private deletedTradeFolderIds = new Set<string>()
+  private tradesMutationTail: Promise<void> = Promise.resolve()
+  private foldersWriteDepth = 0
+  private pendingCategoryTransfers = 0
+  private pendingCategoryTransferFolders = new Map<string, number>()
+  private completedCategoryTransferFolders = new Set<string>()
   private foldersMigration: Promise<void> | null = null
   private tradesMigrations = new Map<string, Promise<void>>()
+  private repository = new BookmarkRepository()
+  private journalHydrated = false
+  private journalReady: Promise<void>
+  private journalWriteTail: Promise<void> = Promise.resolve()
   public subscribe = this.foldersStore.subscribe
 
   constructor() {
-    this.refresh()
     this.bindStorageSync()
+    this.journalReady = this.hydrateJournal().finally(() => {
+      this.journalHydrated = true
+    })
+    void this.journalReady.then(() => this.refresh())
   }
 
-  async refresh() {
+  async refresh(options?: { force?: boolean }) {
+    if (!this.journalHydrated) await this.journalReady
+    if (!options?.force && this.pendingCategoryTransfers > 0) return
     const folders = await this.fetchFolders()
     this.foldersStore.set(folders)
     this.notifyChange()
@@ -90,6 +126,142 @@ export class BookmarksService {
     this.listeners.forEach((listener) => listener(event))
   }
 
+  private async hydrateJournal() {
+    const journal = await storageService.getValue<BookmarkRepositoryJournal>(
+      BOOKMARK_REPOSITORY_JOURNAL_KEY
+    )
+    this.repository.hydrate(journal)
+  }
+
+  private async persistJournal(acknowledgedOperationIds: string[] = []) {
+    const journal = this.repository.journal()
+    this.journalWriteTail = this.journalWriteTail.then(async () => {
+      // The sidebar and the background worker have different JS contexts.
+      // Merge the latest durable journal before writing so acknowledging an
+      // older operation cannot erase a newer UI operation created mid-flush.
+      const durable = await storageService.getValue<BookmarkRepositoryJournal>(
+        BOOKMARK_REPOSITORY_JOURNAL_KEY
+      )
+      const merged = new BookmarkRepository()
+      merged.hydrate({
+        version: 1,
+        revision: durable?.revision || 0,
+        operations: (durable?.operations || []).filter(
+          (operation) => !acknowledgedOperationIds.includes(operation.id)
+        )
+      })
+      merged.hydrate({
+        ...journal,
+        operations: journal.operations.filter(
+          (operation) => !acknowledgedOperationIds.includes(operation.id)
+        )
+      })
+      const saved = await storageService.setValue(
+        BOOKMARK_REPOSITORY_JOURNAL_KEY,
+        merged.journal()
+      )
+      if (!saved) throw new Error("Could not persist bookmark changes locally")
+    })
+    return this.journalWriteTail
+  }
+
+  private requestBackgroundFlush(): Promise<void> {
+    // The browser worker owns production persistence. The inline fallback is
+    // for contexts without a runtime channel (imports, backups and tests).
+    if (typeof chrome === "undefined" || !chrome.runtime?.sendMessage) {
+      return this.flushPendingOperations()
+    }
+    return chrome.runtime
+      .sendMessage({ type: "bookmark-repository-flush", delayMs: 500 })
+      .then(() => undefined)
+      .catch(() => undefined)
+  }
+
+  async flushPendingOperations() {
+    await this.journalReady
+    for (const operation of this.repository.pendingOperations()) {
+      await this.publishPendingOperationToOplog(operation)
+      if (operation.type === "folders") {
+        await this.persistFoldersToChunks(operation.folders)
+      } else if (operation.type === "trades") {
+        await this.persistTradesToChunks(operation.folderId, operation.trades)
+      } else {
+        await this.deleteChunkedTrades(operation.folderId)
+      }
+      this.repository.acknowledge(operation.id)
+      await this.persistJournal([operation.id])
+    }
+  }
+
+  private sameBookmarkValue(left: unknown, right: unknown) {
+    return JSON.stringify(left) === JSON.stringify(right)
+  }
+
+  private async getOplogSeed(oplog: BookmarkOplog) {
+    const folders = this.repository.getFolders()
+    const operations: BookmarkOplogOperation[] = folders.map((folder) =>
+      oplog.upsertFolder(folder)
+    )
+    for (const folder of folders) {
+      if (!folder.id) continue
+      const trades = await this.fetchTradesByFolderId(folder.id, { force: true })
+      operations.push(...trades.map((trade) => oplog.upsertTrade(folder.id!, trade)))
+    }
+    return operations
+  }
+
+  /**
+   * Mirrors the already-durable local journal as entity operations. The old
+   * chunk snapshots are kept below as a migration bridge, but every modern
+   * reader projects the merged per-device oplog first.
+   */
+  private async publishPendingOperationToOplog(
+    operation: BookmarkRepositoryJournal["operations"][number]
+  ) {
+    const remote = await readBookmarkOplog()
+    const actor = await getBookmarkOplogDeviceId()
+    const oplog = new BookmarkOplog(actor)
+    remote.forEach((entry) => oplog.observe(entry.clock))
+    const own = remote.filter((entry) => entry.clock.actor === actor)
+    const baseline = replayBookmarkOplog(remote)
+
+    // The first publication converts the complete existing snapshot. Without
+    // this seed, enabling the new protocol during an edit would hide folders
+    // that were created by an older extension version.
+    if (remote.length === 0) {
+      await publishBookmarkOplog(actor, await this.getOplogSeed(oplog))
+      return
+    }
+
+    const changes: BookmarkOplogOperation[] = []
+    if (operation.type === "folders") {
+      const next = new Map(operation.folders.filter((folder) => folder.id).map((folder) => [folder.id!, folder]))
+      for (const folder of operation.folders) {
+        if (!folder.id || this.sameBookmarkValue(baseline.folders.find(({ id }) => id === folder.id), folder)) continue
+        changes.push(oplog.upsertFolder(folder))
+      }
+      for (const folder of baseline.folders) {
+        if (folder.id && !next.has(folder.id)) changes.push(oplog.deleteFolder(folder.id))
+      }
+    } else if (operation.type === "trades") {
+      const current = baseline.tradesByFolder.get(operation.folderId) || []
+      const next = new Map(operation.trades.filter((trade) => trade.id).map((trade) => [trade.id!, trade]))
+      for (const trade of operation.trades) {
+        if (!trade.id || this.sameBookmarkValue(current.find(({ id }) => id === trade.id), trade)) continue
+        changes.push(oplog.upsertTrade(operation.folderId, trade))
+      }
+      for (const trade of current) {
+        if (trade.id && !next.has(trade.id)) changes.push(oplog.deleteTrade(operation.folderId, trade.id))
+      }
+    } else {
+      changes.push(oplog.deleteFolder(operation.folderId))
+      for (const trade of baseline.tradesByFolder.get(operation.folderId) || []) {
+        if (trade.id) changes.push(oplog.deleteTrade(operation.folderId, trade.id))
+      }
+    }
+    if (changes.length > 0) await publishBookmarkOplog(actor, [...own, ...changes])
+  }
+
   private bindStorageSync() {
     if (typeof chrome === "undefined" || !chrome.storage?.onChanged) return
 
@@ -102,7 +274,7 @@ export class BookmarksService {
           key === FOLDERS_MANIFEST_KEY ||
           key.startsWith(FOLDERS_CHUNK_PREFIX)
       )
-      if (foldersChanged) {
+      if (foldersChanged && this.foldersWriteDepth === 0) {
         void this.refresh()
       }
 
@@ -112,6 +284,7 @@ export class BookmarksService {
         if (folderId) changedTradeFolderIds.add(folderId)
       }
       for (const folderId of changedTradeFolderIds) {
+        if (this.hasLocalTradesEdits(folderId) || this.isCategoryTransferPending(folderId)) continue
         this.tradesCache.delete(folderId)
         this.tradesRequests.delete(folderId)
         void this.refreshTradesFromStorage(folderId)
@@ -122,8 +295,17 @@ export class BookmarksService {
   // ─── STORAGE ──────────────────────────────────────────────
 
   async fetchFolders(): Promise<BookmarksFolderStruct[]> {
+    if (!this.journalHydrated) await this.journalReady
+    const operations = await readBookmarkOplog()
+    if (operations.length > 0) {
+      this.repository.replaceFolders(this.normalizeFolders(replayBookmarkOplog(operations).folders))
+      return this.repository.getFolders()
+    }
     const chunkedFolders = await this.fetchChunkedFolders()
-    if (chunkedFolders !== null) return this.normalizeFolders(chunkedFolders)
+    if (chunkedFolders !== null) {
+      this.repository.replaceFolders(this.normalizeFolders(chunkedFolders))
+      return this.repository.getFolders()
+    }
 
     const legacyFolders =
       await this.fetchSynced<Partial<BookmarksFolderStruct>[]>(FOLDERS_KEY)
@@ -131,7 +313,8 @@ export class BookmarksService {
       await this.migrateFoldersToChunks(legacyFolders)
     }
 
-    return this.normalizeFolders(legacyFolders)
+    this.repository.replaceFolders(this.normalizeFolders(legacyFolders))
+    return this.repository.getFolders()
   }
 
   private async fetchChunkedFolders(): Promise<
@@ -296,6 +479,10 @@ export class BookmarksService {
   }
 
   private async fetchTrades(folderId: string): Promise<BookmarksTradeStruct[]> {
+    const operations = await readBookmarkOplog()
+    if (operations.length > 0) {
+      return replayBookmarkOplog(operations).tradesByFolder.get(folderId) || []
+    }
     const chunkedTrades = await this.fetchChunkedTrades(folderId)
     if (chunkedTrades !== null) return chunkedTrades
 
@@ -517,6 +704,47 @@ export class BookmarksService {
     return queued
   }
 
+  private hasLocalTradesEdits(folderId: string) {
+    return this.tradesWriteQueues.has(folderId)
+  }
+
+  private isCategoryTransferPending(folderId: string) {
+    return (this.pendingCategoryTransferFolders.get(folderId) || 0) > 0
+  }
+
+  private setCategoryTransferPending(folderId: string, pending: boolean) {
+    const count = this.pendingCategoryTransferFolders.get(folderId) || 0
+    if (pending) {
+      this.pendingCategoryTransferFolders.set(folderId, count + 1)
+    } else if (count <= 1) {
+      this.pendingCategoryTransferFolders.delete(folderId)
+    } else {
+      this.pendingCategoryTransferFolders.set(folderId, count - 1)
+    }
+  }
+
+  private cloneTrades(trades: BookmarksTradeStruct[]): BookmarksTradeStruct[] {
+    return trades.map((trade) => ({
+      ...trade,
+      location: { ...trade.location }
+    }))
+  }
+
+  private assertFolderCanPersist(folderId: string) {
+    if (!folderId || this.deletedTradeFolderIds.has(folderId)) {
+      throw new Error("Cannot save trades for a deleted bookmark folder")
+    }
+  }
+
+  private enqueueTradesMutation<T>(run: () => T | Promise<T>): Promise<T> {
+    const result = this.tradesMutationTail.then(run, run)
+    this.tradesMutationTail = result.then(
+      () => undefined,
+      () => undefined
+    )
+    return result
+  }
+
   private async deleteChunkedTrades(folderId: string): Promise<void> {
     const manifestKey = this.tradesManifestKey(folderId)
     const manifest = await storageService.getValue<FoldersManifest>(
@@ -559,17 +787,62 @@ export class BookmarksService {
   private normalizeTrades(
     trades: BookmarksTradeStruct[] | null | undefined
   ): BookmarksTradeStruct[] {
-    return (trades || []).map((t) => ({
-      ...t,
-      archivedAt: typeof t.archivedAt === "string" ? t.archivedAt : null,
-      categoryId:
-        typeof t.categoryId === "string" && t.categoryId ? t.categoryId : null,
-      location: {
-        ...t.location,
-        version: t.location.version || "1",
-        league: t.location.league || null
+    const ids = new Set<string>()
+    return (trades || []).flatMap((t) => {
+      // Trade IDs are globally unique. Concurrent optimistic moves can present
+      // the same trade twice before their queued writes converge; keep the
+      // first copy so a keyed Svelte list never receives duplicate keys.
+      if (t.id && ids.has(t.id)) return []
+      if (t.id) ids.add(t.id)
+      return [{
+        ...t,
+        archivedAt: typeof t.archivedAt === "string" ? t.archivedAt : null,
+        categoryId:
+          typeof t.categoryId === "string" && t.categoryId ? t.categoryId : null,
+        location: {
+          ...t.location,
+          version: t.location.version || "1",
+          league: t.location.league || null
+        }
+      }]
+    })
+  }
+
+  private resolveTargetTradeCategory(
+    sourceFolder: BookmarksFolderStruct,
+    targetFolder: BookmarksFolderStruct,
+    categoryId: string | null | undefined
+  ) {
+    const targetCategories = this.normalizeCategories(targetFolder.categories)
+    if (!categoryId) {
+      return { categoryId: null, targetCategories, addedToTarget: false }
+    }
+
+    const sourceCategory = this.normalizeCategories(sourceFolder.categories)
+      .find((category) => category.id === categoryId)
+    if (!sourceCategory) {
+      return { categoryId: null, targetCategories, addedToTarget: false }
+    }
+
+    const targetCategory = targetCategories.find(
+      (category) =>
+        category.id === sourceCategory.id ||
+        category.title.trim().toLocaleLowerCase() ===
+          sourceCategory.title.trim().toLocaleLowerCase()
+    )
+    if (targetCategory) {
+      return {
+        categoryId: targetCategory.id,
+        targetCategories,
+        addedToTarget: false
       }
-    }))
+    }
+
+    return {
+      categoryId: sourceCategory.id,
+      targetCategories: [...targetCategories, sourceCategory],
+      addedToTarget: true
+    }
   }
 
   getCachedTradesByFolderId(folderId: string): BookmarksTradeStruct[] | null {
@@ -581,6 +854,7 @@ export class BookmarksService {
     folderId: string,
     options?: { force?: boolean }
   ): Promise<BookmarksTradeStruct[]> {
+    if (!this.journalHydrated) await this.journalReady
     if (!options?.force) {
       const cached = this.getCachedTradesByFolderId(folderId)
       if (cached) {
@@ -596,8 +870,13 @@ export class BookmarksService {
     const request = this.fetchTrades(folderId)
       .then((trades) => {
         const normalized = this.normalizeTrades(trades)
-        this.tradesCache.set(folderId, normalized)
-        return [...normalized]
+        if (this.hasLocalTradesEdits(folderId) && this.tradesCache.has(folderId)) {
+          return this.cloneTrades(this.tradesCache.get(folderId) || [])
+        }
+        this.repository.replaceTrades(folderId, normalized)
+        const resolved = this.repository.getTrades(folderId)
+        this.tradesCache.set(folderId, resolved)
+        return this.cloneTrades(resolved)
       })
       .finally(() => {
         this.tradesRequests.delete(folderId)
@@ -608,7 +887,11 @@ export class BookmarksService {
   }
 
   private async refreshTradesFromStorage(folderId: string) {
+    if (this.hasLocalTradesEdits(folderId)) return
+
     const trades = await this.fetchTradesByFolderId(folderId, { force: true })
+    if (this.hasLocalTradesEdits(folderId)) return
+
     this.tradesCache.set(folderId, trades)
     this.notifyChange({ tradesChanged: true, folderId })
   }
@@ -730,51 +1013,73 @@ export class BookmarksService {
   }
 
   async persistFolders(folders: BookmarksFolderStruct[]) {
-    await this.persistFoldersToChunks(folders)
+    if (!this.journalHydrated) await this.journalReady
+    const safeFolders = this.normalizeFolders(folders)
+    this.repository.stageFolders(safeFolders)
+    this.foldersStore.set(this.repository.getFolders())
+    this.notifyChange({ foldersChanged: true })
+    try {
+      await this.persistJournal()
+      await this.requestBackgroundFlush()
+    } catch (error) {
+      await this.refresh({ force: true })
+      throw error
+    }
   }
 
   async persistTrade(
     trade: BookmarksTradeStruct,
     folderId: string
   ): Promise<string> {
-    return this.enqueueTradesWrite(folderId, async () => {
-      const trades = await this.fetchTradesByFolderId(folderId, { force: true })
-      const id = trade.id || uniqueId()
-      const nextTrade = { ...trade, id }
-      const updated = trade.id
+    this.assertFolderCanPersist(folderId)
+    const trades = this.getCachedTradesByFolderId(folderId) ??
+      await this.fetchTradesByFolderId(folderId, { force: true })
+    const id = trade.id || uniqueId()
+    const nextTrade = {
+      ...trade,
+      id,
+      // New bookmarks always start uncategorized. Assignment is an explicit
+      // follow-up action, so a stale UI payload cannot inherit a category.
+      categoryId: trade.id ? trade.categoryId || null : null
+    }
+    const updated = this.normalizeTrades(
+      trade.id
         ? trades.map((entry) =>
             entry.id === trade.id ? { ...entry, ...nextTrade } : entry
           )
         : [...trades, nextTrade]
+    )
 
-      const savedIncrementally = await this.persistTradeToAffectedChunk(
-        folderId,
-        this.normalizeTrades([nextTrade])[0]
-      )
-      if (!savedIncrementally) {
-        await this.persistTradesToChunks(
-          folderId,
-          this.normalizeTrades(updated)
-        )
-      }
-      this.tradesCache.set(folderId, this.normalizeTrades(updated))
-      await this.refresh()
-      return id
-    })
+    await this.persistTrades(updated, folderId)
+    return id
   }
 
   async persistTrades(
     trades: BookmarksTradeStruct[],
     folderId: string
   ): Promise<BookmarksTradeStruct[]> {
-    return this.enqueueTradesWrite(folderId, async () => {
-      const safeTrades = this.normalizeTrades(
-        trades.map((t) => ({ ...t, id: t.id || uniqueId() }))
-      )
-      this.tradesCache.set(folderId, safeTrades)
-      await this.persistTradesToChunks(folderId, safeTrades)
-      return [...safeTrades]
-    })
+    if (!this.journalHydrated) await this.journalReady
+    this.assertFolderCanPersist(folderId)
+    const safeTrades = this.normalizeTrades(
+      trades.map((trade) => ({ ...trade, id: trade.id || uniqueId() }))
+    )
+
+    this.repository.stageTrades(folderId, safeTrades)
+    const finalTrades = this.repository.getTrades(folderId)
+    this.tradesCache.set(folderId, this.cloneTrades(finalTrades))
+    if (!this.isCategoryTransferPending(folderId)) {
+      this.notifyChange({ tradesChanged: true, folderId })
+    }
+    try {
+      await this.persistJournal()
+      await this.requestBackgroundFlush()
+      return this.cloneTrades(finalTrades)
+    } catch (error) {
+      this.tradesCache.delete(folderId)
+      this.tradesRequests.delete(folderId)
+      await this.refreshTradesFromStorage(folderId)
+      throw error
+    }
   }
 
   async deleteTrade(
@@ -789,20 +1094,90 @@ export class BookmarksService {
   }
 
   async deleteFolder(folderId: string) {
-    const folders = await this.fetchFolders()
-    const updated = folders.filter((f) => f.id !== folderId)
-    await this.persistFolders(updated)
+    if (!this.journalHydrated) await this.journalReady
+    if (!folderId) throw new Error("A bookmark folder id is required")
+
+    let folders = get(this.foldersStore)
+    if (!folders.some((folder) => folder.id === folderId)) {
+      folders = await this.fetchFolders()
+    }
+    if (!folders.some((folder) => folder.id === folderId)) return false
+
+    const updated = folders.filter((folder) => folder.id !== folderId)
+    const cachedTrades = this.tradesCache.get(folderId)
+    const tradesSnapshot = cachedTrades
+      ? this.cloneTrades(cachedTrades)
+      : undefined
+
+    // Removing a folder is one local transaction. The Sync deletion happens
+    // later in the worker, so no intermediate empty/uncategorized view leaks
+    // back into the UI.
+    this.deletedTradeFolderIds.add(folderId)
+    this.repository.stageFolders(updated)
+    this.repository.stageFolderDeletion(folderId)
+    this.foldersStore.set(this.repository.getFolders())
+    this.notifyChange({ foldersChanged: true, folderId })
     this.tradesCache.delete(folderId)
     this.tradesRequests.delete(folderId)
-    await this.deleteChunkedTrades(folderId)
-    await this.refresh()
+
+    try {
+      await this.persistJournal()
+      await this.requestBackgroundFlush()
+      return true
+    } catch (error) {
+      console.warn("Could not persist bookmark folder deletion locally", error)
+      this.repository.cancelFolderDeletion(folderId)
+      this.repository.stageFolders(folders)
+      if (tradesSnapshot) this.repository.stageTrades(folderId, tradesSnapshot)
+      this.deletedTradeFolderIds.delete(folderId)
+      this.tradesCache.set(folderId, tradesSnapshot || [])
+      this.foldersStore.set(this.repository.getFolders())
+      this.notifyChange({ foldersChanged: true, folderId })
+      return false
+    }
+  }
+
+  private async persistTransaction(
+    operations: BookmarkTransactionOperation[]
+  ) {
+    if (!this.journalHydrated) await this.journalReady
+
+    const changedTradeFolderIds = new Set<string>()
+    let foldersChanged = false
+    for (const operation of operations) {
+      if (operation.type === "folders") {
+        this.repository.stageFolders(this.normalizeFolders(operation.folders))
+        foldersChanged = true
+      } else {
+        this.assertFolderCanPersist(operation.folderId)
+        this.repository.stageTrades(
+          operation.folderId,
+          this.normalizeTrades(operation.trades)
+        )
+        changedTradeFolderIds.add(operation.folderId)
+      }
+    }
+
+    if (foldersChanged) {
+      this.foldersStore.set(this.repository.getFolders())
+      this.notifyChange({ foldersChanged: true })
+    }
+    for (const folderId of changedTradeFolderIds) {
+      this.tradesCache.set(folderId, this.repository.getTrades(folderId))
+      if (!this.isCategoryTransferPending(folderId)) {
+        this.notifyChange({ tradesChanged: true, folderId })
+      }
+    }
+
+    await this.persistJournal()
+    await this.requestBackgroundFlush()
   }
 
   async duplicateTrade(
     trade: BookmarksTradeStruct,
     targetFolderId: string
   ): Promise<BookmarksTradeStruct[]> {
-    const newTrade = { ...trade, id: uniqueId() }
+    const newTrade = { ...trade, id: uniqueId(), categoryId: null }
     const trades = await this.fetchTradesByFolderId(targetFolderId, {
       force: true
     })
@@ -906,6 +1281,252 @@ export class BookmarksService {
     const persisted = await this.persistTrades(updated, folderId)
     await this.refresh()
     return persisted
+  }
+
+  async moveCategory(
+    folderId: string,
+    fromIndex: number,
+    toIndex: number
+  ): Promise<BookmarksCategoryStruct[]> {
+    if (!folderId || !Number.isInteger(fromIndex) || !Number.isInteger(toIndex)) {
+      throw new Error("A valid category move is required")
+    }
+
+    return this.enqueueTradesMutation(async () => {
+      const folders = await this.fetchFolders()
+      const folder = folders.find((entry) => entry.id === folderId)
+      if (!folder) throw new Error("Bookmark folder no longer exists")
+
+      const categories = this.normalizeCategories(folder.categories)
+      if (fromIndex < 0 || fromIndex >= categories.length || toIndex < 0 || toIndex >= categories.length) {
+        throw new Error("Category move is outside the folder bounds")
+      }
+      if (fromIndex === toIndex) return categories
+
+      const reordered = [...categories]
+      const [moved] = reordered.splice(fromIndex, 1)
+      // `toIndex` is the final visual index, so moving down inserts after the
+      // item that was originally the drop target.
+      reordered.splice(toIndex, 0, moved)
+      const updatedFolder = { ...folder, categories: reordered }
+      await this.persistFolders(
+        folders.map((entry) => entry.id === folderId ? updatedFolder : entry)
+      )
+      await this.refresh()
+      return reordered
+    })
+  }
+
+  async moveCategoryBetweenFolders(
+    categoryId: string,
+    sourceFolderId: string,
+    targetFolderId: string
+  ): Promise<void> {
+    if (!categoryId || !sourceFolderId || !targetFolderId || sourceFolderId === targetFolderId) {
+      throw new Error("A category and two different bookmark folders are required")
+    }
+
+    this.pendingCategoryTransfers += 1
+    this.setCategoryTransferPending(sourceFolderId, true)
+    this.setCategoryTransferPending(targetFolderId, true)
+
+    const transfer = this.enqueueTradesMutation(async () => {
+      const folders = await this.fetchFolders()
+      const source = folders.find((folder) => folder.id === sourceFolderId)
+      const target = folders.find((folder) => folder.id === targetFolderId)
+      const movedCategory = this.normalizeCategories(source?.categories)
+        .find((entry) => entry.id === categoryId)
+      if (!source || !target || !movedCategory) {
+        throw new Error("Bookmark category no longer exists in the source folder")
+      }
+
+      const [sourceSnapshot, targetSnapshot] = await Promise.all([
+        this.fetchTradesByFolderId(sourceFolderId, { force: true }),
+        this.fetchTradesByFolderId(targetFolderId, { force: true })
+      ])
+      const movedTrades = sourceSnapshot.filter((trade) => trade.categoryId === categoryId)
+      const nextSourceTrades = sourceSnapshot.filter((trade) => trade.categoryId !== categoryId)
+      const nextTargetTrades = [...targetSnapshot, ...movedTrades]
+      const nextFolders = folders.map((folder) => {
+        if (folder.id === sourceFolderId) {
+          return {
+            ...folder,
+            categories: this.normalizeCategories(folder.categories)
+              .filter((entry) => entry.id !== categoryId)
+          }
+        }
+        if (folder.id === targetFolderId) {
+          return {
+            ...folder,
+            categories: [...this.normalizeCategories(folder.categories), movedCategory]
+          }
+        }
+        return folder
+      })
+
+      try {
+        await this.persistTransaction([
+          { type: "trades", folderId: targetFolderId, trades: nextTargetTrades },
+          { type: "folders", folders: nextFolders },
+          { type: "trades", folderId: sourceFolderId, trades: nextSourceTrades }
+        ])
+      } catch (error) {
+        await this.persistTransaction([
+          { type: "trades", folderId: targetFolderId, trades: targetSnapshot },
+          { type: "folders", folders },
+          { type: "trades", folderId: sourceFolderId, trades: sourceSnapshot }
+        ]).catch(() => undefined)
+        throw error
+      }
+    })
+
+    return transfer.finally(async () => {
+      this.pendingCategoryTransfers -= 1
+      this.setCategoryTransferPending(sourceFolderId, false)
+      this.setCategoryTransferPending(targetFolderId, false)
+      this.completedCategoryTransferFolders.add(sourceFolderId)
+      this.completedCategoryTransferFolders.add(targetFolderId)
+      if (this.pendingCategoryTransfers === 0) {
+        await this.refresh({ force: true })
+        const completedFolderIds = [...this.completedCategoryTransferFolders]
+        this.completedCategoryTransferFolders.clear()
+        for (const folderId of completedFolderIds) {
+          this.notifyChange({ tradesChanged: true, folderId })
+        }
+      }
+    })
+  }
+
+  async moveTradeBetweenFolders(
+    tradeId: string,
+    sourceFolderId: string,
+    targetFolderId: string,
+    targetIndex?: number
+  ): Promise<{
+    sourceTrades: BookmarksTradeStruct[];
+    targetTrades: BookmarksTradeStruct[];
+  }> {
+    if (!tradeId || !sourceFolderId || !targetFolderId) {
+      throw new Error("A trade and both bookmark folders are required")
+    }
+    if (sourceFolderId === targetFolderId) {
+      throw new Error("A trade must be moved to a different bookmark folder")
+    }
+    if (targetIndex !== undefined && (!Number.isInteger(targetIndex) || targetIndex < 0)) {
+      throw new Error("The target trade position is invalid")
+    }
+
+    // Move already-loaded lists immediately. Persistence below remains
+    // serialized, but expanded folders should not wait for the Sync queue.
+    const cachedSource = this.tradesCache.get(sourceFolderId)
+    const cachedTarget = this.tradesCache.get(targetFolderId)
+    const cachedFolders = get(this.foldersStore)
+    const sourceFolder = cachedFolders.find((folder) => folder.id === sourceFolderId)
+    const targetFolder = cachedFolders.find((folder) => folder.id === targetFolderId)
+    const cachedSourceIndex = cachedSource?.findIndex((trade) => trade.id === tradeId) ?? -1
+    if (cachedSource && cachedSourceIndex >= 0) {
+      const sourceTrades = this.cloneTrades(cachedSource)
+      const [movedTrade] = sourceTrades.splice(cachedSourceIndex, 1)
+      this.tradesCache.set(sourceFolderId, sourceTrades)
+      this.notifyChange({ tradesChanged: true, folderId: sourceFolderId })
+
+      if (cachedTarget && sourceFolder && targetFolder) {
+        const targetTrades = this.cloneTrades(cachedTarget)
+        const category = this.resolveTargetTradeCategory(
+          sourceFolder,
+          targetFolder,
+          movedTrade.categoryId
+        )
+        const insertionIndex = targetIndex === undefined
+          ? targetTrades.length
+          : Math.min(targetIndex, targetTrades.length)
+        targetTrades.splice(insertionIndex, 0, {
+          ...movedTrade,
+          location: { ...movedTrade.location },
+          categoryId: category.categoryId
+        })
+        this.tradesCache.set(targetFolderId, targetTrades)
+        this.notifyChange({ tradesChanged: true, folderId: targetFolderId })
+        if (category.addedToTarget) {
+          this.foldersStore.set(cachedFolders.map((folder) =>
+            folder.id === targetFolderId
+              ? { ...folder, categories: category.targetCategories }
+              : folder
+          ))
+          this.notifyChange({ foldersChanged: true, folderId: targetFolderId })
+        }
+      }
+    }
+
+    return this.enqueueTradesMutation(async () => {
+      const folders = await this.fetchFolders()
+      const sourceFolder = folders.find((folder) => folder.id === sourceFolderId)
+      const targetFolder = folders.find((folder) => folder.id === targetFolderId)
+      if (!sourceFolder || !targetFolder) {
+        throw new Error("The source or target bookmark folder no longer exists")
+      }
+
+      const [sourceSnapshot, targetSnapshot] = await Promise.all([
+        this.fetchTradesByFolderId(sourceFolderId, { force: true }),
+        this.fetchTradesByFolderId(targetFolderId, { force: true })
+      ])
+      const sourceTrades = this.cloneTrades(sourceSnapshot)
+      const targetTrades = this.cloneTrades(targetSnapshot)
+      const sourceIndex = sourceTrades.findIndex((trade) => trade.id === tradeId)
+      if (sourceIndex < 0) throw new Error("Bookmark trade no longer exists in the source folder")
+
+      const [movedTrade] = sourceTrades.splice(sourceIndex, 1)
+      const category = this.resolveTargetTradeCategory(
+        sourceFolder,
+        targetFolder,
+        movedTrade.categoryId
+      )
+      const moved = {
+        ...movedTrade,
+        location: { ...movedTrade.location },
+        categoryId: category.categoryId
+      }
+      const insertionIndex = targetIndex === undefined
+        ? targetTrades.length
+        : Math.min(targetIndex, targetTrades.length)
+      targetTrades.splice(insertionIndex, 0, moved)
+
+      const nextSource = this.normalizeTrades(sourceTrades)
+      const nextTarget = this.normalizeTrades(targetTrades)
+      const nextFolders = category.addedToTarget
+        ? folders.map((folder) =>
+            folder.id === targetFolderId
+              ? { ...folder, categories: category.targetCategories }
+              : folder
+          )
+        : folders
+      try {
+        // Copy first, then remove. This keeps at least one durable version if
+        // a reload interrupts a cross-folder move between Sync writes.
+        await this.persistTrades(nextTarget, targetFolderId)
+        if (category.addedToTarget) await this.persistFolders(nextFolders)
+        await this.persistTrades(nextSource, sourceFolderId)
+      } catch (error) {
+        // Sync has no transaction. Restore both snapshots so the cache and the
+        // published manifests converge on the same state after a partial write.
+        const rollback = await Promise.allSettled([
+          this.persistTrades(sourceSnapshot, sourceFolderId),
+          this.persistTrades(targetSnapshot, targetFolderId)
+        ])
+        if (rollback.some((result) => result.status === "rejected")) {
+          this.tradesCache.delete(sourceFolderId)
+          this.tradesCache.delete(targetFolderId)
+          this.tradesRequests.delete(sourceFolderId)
+          this.tradesRequests.delete(targetFolderId)
+        }
+        throw error
+      }
+
+      return {
+        sourceTrades: this.cloneTrades(nextSource),
+        targetTrades: this.cloneTrades(nextTarget)
+      }
+    })
   }
 
   async moveFolder(

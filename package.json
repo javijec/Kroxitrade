@@ -50,6 +50,7 @@
     "@types/chrome": "0.2.5",
     "@types/node": "26.1.2",
     "@wxt-dev/module-svelte": "^2.0.5",
+    "esbuild": "^0.28.1",
     "prettier": "3.9.6",
     "typescript": "^7.0.2",
     "vite": "^8.2.0",

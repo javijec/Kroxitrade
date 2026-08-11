@@ -1,11 +1,15 @@
 <script lang="ts">
   import gripVerticalIcon from "lucide-static/icons/grip-vertical.svg?raw";
+  import arrowDownIcon from "lucide-static/icons/arrow-down.svg?raw";
+  import arrowUpIcon from "lucide-static/icons/arrow-up.svg?raw";
+  import moreIcon from "lucide-static/icons/more-horizontal.svg?raw";
   import pencilIcon from "lucide-static/icons/pencil.svg?raw";
   import trashIcon from "lucide-static/icons/trash-2.svg?raw";
   import xIcon from "lucide-static/icons/x.svg?raw";
   import imageIcon from "lucide-static/icons/image.svg?raw";
   import { onDestroy, tick } from "svelte"
   import { slide } from "svelte/transition"
+
 
   import {
     getActiveTradeTabTitle,
@@ -29,9 +33,13 @@
     BookmarksFolderStruct,
     BookmarksTradeStruct
   } from "../lib/types/bookmarks"
+  import {
+    setBookmarkDragPayload
+  } from "../lib/types/bookmark-drag"
   import { copyToClipboard } from "../lib/utilities/copy-to-clipboard"
   import { resolveTradeUrl } from "../lib/utilities/trade-url"
   import Button from "./Button.svelte"
+  import ActionsMenu from "./ActionsMenu.svelte"
   import ConfirmDialog from "./ConfirmDialog.svelte"
   import FolderActionsMenu from "./FolderActionsMenu.svelte"
   import LoadingContainer from "./LoadingContainer.svelte"
@@ -87,6 +95,8 @@
   let archiveCompletedPending = $state(false)
   let showArchivedTrades = $state(false)
   let categoryPendingDelete: BookmarksCategoryStruct | null = $state(null)
+  let categoryDeletingId: string | null = $state(null)
+  let pendingDeletedCategoryIds: string[] = $state([])
   let currentFolderId: string | null = $state(null)
   let collapsedCategoryIds: string[] = $state([])
   let loadRequestId = 0
@@ -230,11 +240,29 @@
     return categoryById.has(trade.categoryId) ? trade.categoryId : null
   }
 
+  const hasAssignedCategories = () =>
+    trades.some((trade) => categoryIdForTrade(trade) !== null)
+
+  const uniqueTrades = () => {
+    const ids = new Set<string>()
+    return trades.filter((trade) => {
+      if (!trade.id || !ids.has(trade.id)) {
+        if (trade.id) ids.add(trade.id)
+        return true
+      }
+      return false
+    })
+  }
+
   const getDisplayedTrades = () => {
-    const visibleTrades = trades.filter((trade) =>
+    const visibleTrades = uniqueTrades().filter((trade) =>
       showArchivedTrades ? !!trade.archivedAt : !trade.archivedAt
     )
-    if (!$settings.bookmarkCategoriesEnabled || categoryOptions.length === 0) {
+    if (
+      !$settings.bookmarkCategoriesEnabled ||
+      categoryOptions.length === 0 ||
+      !hasAssignedCategories()
+    ) {
       return visibleTrades
     }
 
@@ -254,13 +282,17 @@
     }
 
     return [
-      ...uncategorized,
-      ...categoryOptions.flatMap((category) => grouped.get(category.id) || [])
+      ...categoryOptions.flatMap((category) => grouped.get(category.id) || []),
+      ...uncategorized
     ]
   }
 
   const getTradeListEntries = (): TradeListEntry[] => {
-    if (!$settings.bookmarkCategoriesEnabled || categoryOptions.length === 0) {
+    if (
+      !$settings.bookmarkCategoriesEnabled ||
+      categoryOptions.length === 0 ||
+      !hasAssignedCategories()
+    ) {
       return displayedTrades.map((trade, displayIndex) => ({
         type: "trade",
         id: trade.id || `trade-${displayIndex}`,
@@ -286,25 +318,6 @@
       }
     }
 
-    if (uncategorized.length > 0) {
-      entries.push({
-        type: "category",
-        id: "category-none",
-        title: translate($languageStore, "folder.uncategorized"),
-        category: null,
-        categoryId: UNCATEGORIZED_CATEGORY_ID,
-        tradeCount: uncategorized.length
-      })
-      if (!isCategoryCollapsed(UNCATEGORIZED_CATEGORY_ID)) {
-        entries.push(...uncategorized.map((trade) => ({
-          type: "trade" as const,
-          id: trade.id || `trade-${displayedTrades.indexOf(trade)}`,
-          trade,
-          displayIndex: displayedTrades.indexOf(trade)
-        })))
-      }
-    }
-
     for (const category of categoryOptions) {
       const categoryTrades = tradesByCategory.get(category.id) || []
       entries.push({
@@ -317,6 +330,25 @@
       })
       if (!isCategoryCollapsed(category.id)) {
         entries.push(...categoryTrades.map((trade) => ({
+          type: "trade" as const,
+          id: trade.id || `trade-${displayedTrades.indexOf(trade)}`,
+          trade,
+          displayIndex: displayedTrades.indexOf(trade)
+        })))
+      }
+    }
+
+    if (uncategorized.length > 0) {
+      entries.push({
+        type: "category",
+        id: "category-none",
+        title: translate($languageStore, "folder.uncategorized"),
+        category: null,
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        tradeCount: uncategorized.length
+      })
+      if (!isCategoryCollapsed(UNCATEGORIZED_CATEGORY_ID)) {
+        entries.push(...uncategorized.map((trade) => ({
           type: "trade" as const,
           id: trade.id || `trade-${displayedTrades.indexOf(trade)}`,
           trade,
@@ -348,7 +380,7 @@
 
     const category = await bookmarksService.createCategory(folder, safeTitle)
     if (!category) return null
-    folder.categories = [...(folder.categories || []), category]
+    await bookmarksService.refresh()
     flashMessages.success(
       translate($languageStore, "folder.categoryCreated", { title: safeTitle })
     )
@@ -359,25 +391,42 @@
     const title = promptForCategoryTitle(category.title)
     if (!title || title === category.title) return
     await bookmarksService.renameCategory(folder, category.id, title)
-    folder.categories = (folder.categories || []).map((entry) =>
-      entry.id === category.id ? { ...entry, title } : entry
-    )
+    await bookmarksService.refresh()
     flashMessages.success(
       translate($languageStore, "folder.categoryRenamed", { title })
     )
   }
 
   const deleteCategory = async (category: BookmarksCategoryStruct) => {
-    if (!folder.id) return
-    trades = await bookmarksService.deleteCategory(folder, category.id)
-    folder.categories = (folder.categories || []).filter((entry) => entry.id !== category.id)
+    if (!folder.id || categoryDeletingId) return
+    const previousTrades = [...trades]
+    categoryDeletingId = category.id
+    categoryPendingDelete = null
+    pendingDeletedCategoryIds = [...pendingDeletedCategoryIds, category.id]
+    trades = trades.map((trade) =>
+      trade.categoryId === category.id ? { ...trade, categoryId: null } : trade
+    )
+    hasLoadedTrades = true
     collapsedCategoryIds = collapsedCategoryIds.filter((id) => id !== category.id)
     persistCollapsedCategoryIds()
-    categoryPendingDelete = null
-    hasLoadedTrades = true
-    flashMessages.success(
-      translate($languageStore, "folder.categoryDeleted", { title: category.title })
-    )
+    try {
+      trades = await bookmarksService.deleteCategory(folder, category.id)
+      pendingDeletedCategoryIds = pendingDeletedCategoryIds.filter(
+        (id) => id !== category.id
+      )
+      flashMessages.success(
+        translate($languageStore, "folder.categoryDeleted", { title: category.title })
+      )
+    } catch {
+      pendingDeletedCategoryIds = pendingDeletedCategoryIds.filter(
+        (id) => id !== category.id
+      )
+      trades = previousTrades
+      await bookmarksService.refresh()
+      flashMessages.alert(translate($languageStore, "folder.dragSaveError"))
+    } finally {
+      categoryDeletingId = null
+    }
   }
 
   const requestCategoryDelete = (category: BookmarksCategoryStruct) => {
@@ -438,15 +487,23 @@
     )
   }
 
-  const deleteTrade = async (trade: BookmarksTradeStruct) => {
+  const deleteTrade = (trade: BookmarksTradeStruct) => {
     if (!folder.id || !trade.id) return
-    try {
-      trades = await bookmarksService.deleteTrade(trade.id, folder.id)
-      hasLoadedTrades = true
-      tradePendingDelete = null
-    } catch {
-      flashMessages.alert(translate($languageStore, "folder.deleteTradeError"))
-    }
+    const previousTrades = trades
+    trades = trades.filter((entry) => entry.id !== trade.id)
+    hasLoadedTrades = true
+    tradePendingDelete = null
+
+    void bookmarksService.deleteTrade(trade.id, folder.id)
+      .then((persisted) => {
+        trades = persisted
+        hasLoadedTrades = true
+      })
+      .catch(() => {
+        trades = previousTrades
+        hasLoadedTrades = true
+        flashMessages.alert(translate($languageStore, "folder.deleteTradeError"))
+      })
   }
 
   const requestTradeDelete = (trade: BookmarksTradeStruct) => {
@@ -477,15 +534,45 @@
 
   let draggedIndex: number | null = $state(null)
   let dragOverIndex: number | null = $state(null)
+  let draggedCategoryId: string | null = $state(null)
+  let dragOverCategoryId: string | null = $state(null)
+  let optimisticCategoryOptions: BookmarksCategoryStruct[] | null = $state(null)
+  let pendingCategoryMoves = 0
   let suppressNextTradeOpen = false
 
   const handleDragStart = (e: DragEvent, index: number) => {
+    e.stopPropagation()
     draggedIndex = index
     suppressNextTradeOpen = true
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = "move"
-      e.dataTransfer.setData("text/plain", index.toString())
+      const trade = displayedTrades[index]
+      if (trade?.id && folder.id) {
+        setBookmarkDragPayload(e.dataTransfer, {
+          type: "trade",
+          tradeId: trade.id,
+          sourceFolderId: folder.id
+        })
+      }
     }
+  }
+
+  const handleCategoryDragStart = (
+    event: DragEvent,
+    category: BookmarksCategoryStruct
+  ) => {
+    event.stopPropagation()
+    if (!folder.id || !event.dataTransfer) return
+    const index = categoryOptions.findIndex((entry) => entry.id === category.id)
+    if (index < 0) return
+    draggedCategoryId = category.id
+    event.dataTransfer.effectAllowed = "move"
+    setBookmarkDragPayload(event.dataTransfer, {
+      type: "category",
+      folderId: folder.id,
+      categoryId: category.id,
+      categoryIndex: index
+    })
   }
 
   const handleDragEnter = (e: DragEvent, index: number) => {
@@ -495,14 +582,27 @@
     }
   }
 
+  const handleCategoryDragOver = (event: DragEvent, categoryId: string) => {
+    if (!draggedCategoryId && draggedIndex === null) return
+    event.preventDefault()
+    if (dragOverCategoryId !== categoryId) {
+      dragOverCategoryId = categoryId
+    }
+  }
+
+  const clearCategoryDragState = () => {
+    draggedCategoryId = null
+    dragOverCategoryId = null
+  }
+
   const handleDrop = async (e: DragEvent, index: number) => {
     e.preventDefault()
     if (draggedIndex !== null && draggedIndex !== index && folder.id) {
+      const previousTrades = [...trades]
       const orderedTrades = [...displayedTrades]
       const trade = orderedTrades[draggedIndex]
       const targetTrade = orderedTrades[index]
       if (trade && trade.id) {
-        // Optimistic UI update
         const [moved] = orderedTrades.splice(draggedIndex, 1)
         orderedTrades.splice(index, 0, {
           ...moved,
@@ -511,22 +611,101 @@
             : categoryIdForTrade(moved)
         })
         trades = orderedTrades
-        // Background sync
-        trades = await bookmarksService.persistTrades(orderedTrades, folder.id)
-        await bookmarksService.refresh()
         hasLoadedTrades = true
+        try {
+          trades = await bookmarksService.persistTrades(orderedTrades, folder.id)
+        } catch {
+          trades = previousTrades
+          await bookmarksService.refresh()
+          flashMessages.alert(translate($languageStore, "folder.dragSaveError"))
+        }
       }
     }
     draggedIndex = null
     dragOverIndex = null
   }
 
+  const moveCategoryOptimistically = async (fromIndex: number, toIndex: number) => {
+    if (!folder.id || fromIndex === toIndex) return
+
+    const categories = [...categoryOptions]
+    if (
+      fromIndex < 0 ||
+      fromIndex >= categories.length ||
+      toIndex < 0 ||
+      toIndex >= categories.length
+    ) return
+
+    const [moved] = categories.splice(fromIndex, 1)
+    categories.splice(toIndex, 0, moved)
+    optimisticCategoryOptions = categories
+    pendingCategoryMoves += 1
+
+    try {
+      await bookmarksService.moveCategory(folder.id, fromIndex, toIndex)
+    } catch {
+      optimisticCategoryOptions = null
+      await bookmarksService.refresh()
+      flashMessages.alert(translate($languageStore, "folder.dragSaveError"))
+    } finally {
+      pendingCategoryMoves -= 1
+      if (pendingCategoryMoves === 0) {
+        optimisticCategoryOptions = null
+      }
+    }
+  }
+
+  const handleCategoryDrop = async (event: DragEvent, targetCategoryId: string) => {
+    event.preventDefault()
+    if (draggedIndex !== null) {
+      const draggedTrade = displayedTrades[draggedIndex]
+      draggedIndex = null
+      dragOverIndex = null
+      dragOverCategoryId = null
+      if (!draggedTrade?.id || !folder.id) return
+
+      const previousTrades = [...trades]
+      const updatedTrades = displayedTrades.map((trade) =>
+        trade.id === draggedTrade.id
+          ? { ...trade, categoryId: targetCategoryId }
+          : trade
+      )
+      trades = updatedTrades
+      hasLoadedTrades = true
+      try {
+        trades = await bookmarksService.persistTrades(updatedTrades, folder.id)
+      } catch {
+        trades = previousTrades
+        await bookmarksService.refresh()
+        flashMessages.alert(translate($languageStore, "folder.dragSaveError"))
+      }
+      return
+    }
+
+    const sourceIndex = categoryOptions.findIndex((category) => category.id === draggedCategoryId)
+    const targetIndex = categoryOptions.findIndex((category) => category.id === targetCategoryId)
+    clearCategoryDragState()
+    if (sourceIndex >= 0 && targetIndex >= 0 && sourceIndex !== targetIndex) {
+      await moveCategoryOptimistically(sourceIndex, targetIndex)
+    }
+  }
+
+  const moveCategoryWithKeyboard = async (fromIndex: number, direction: "up" | "down") => {
+    const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1
+    await moveCategoryOptimistically(fromIndex, toIndex)
+  }
+
   const handleDragEnd = () => {
     draggedIndex = null
     dragOverIndex = null
+    dragOverCategoryId = null
     window.setTimeout(() => {
       suppressNextTradeOpen = false
     }, 0)
+  }
+
+  const handleCategoryDragEnd = () => {
+    clearCategoryDragState()
   }
 
   const createTradeFromCurrent = async () => {
@@ -861,7 +1040,11 @@
     }
     return groups
   })
-  let categoryOptions = $derived(folder.categories || [])
+  let categoryOptions = $derived(
+    (optimisticCategoryOptions || folder.categories || []).filter(
+      (category) => !pendingDeletedCategoryIds.includes(category.id)
+    )
+  )
   let categoryById = $derived(new Map(categoryOptions.map((category) => [category.id, category])))
   let displayedTrades = $derived(getDisplayedTrades())
   let tradeListEntries = $derived(getTradeListEntries())
@@ -885,18 +1068,18 @@
   class:is-editing={editingFolder}
   class:is-folder-dragging={isFolderDragging}
   class:is-folder-drag-over={isFolderDragOver}
-  draggable="true"
-  ondragstart={(e) => onFolderDragStart(e, folder.id || "")}
   ondragenter={(e) => onFolderDragEnter(e, folder.id || "")}
   ondragover={(event) => event.preventDefault()}
   ondrop={(event) => {
     event.preventDefault()
     onFolderDrop(event, folder.id || "")
-  }}
-  ondragend={onFolderDragEnd}>
+  }}>
   <div class="folder-header">
     <div
       class="folder-drag-handle"
+      draggable="true"
+      ondragstart={(e) => onFolderDragStart(e, folder.id || "")}
+      ondragend={onFolderDragEnd}
       title={translate($languageStore, "folder.dragReorder")}
       aria-hidden="true">
       <span class="action-icon"><SvgIcon svg={gripVerticalIcon} /></span>
@@ -1055,8 +1238,30 @@
         <ul class="trades-list">
           {#each tradeListEntries as entry (entry.id)}
             {#if entry.type === "category"}
-              <li class="category-row">
+              {@const categoryIndex = entry.category ? categoryOptions.findIndex((category) => category.id === entry.category.id) : -1}
+              <li
+                class="category-row"
+                class:is-drag-over={entry.category && dragOverCategoryId === entry.category.id}
+                class:is-dragging={entry.category && draggedCategoryId === entry.category.id}
+                ondragover={entry.category ? (event) => handleCategoryDragOver(event, entry.category!.id) : undefined}
+                ondrop={entry.category ? (event) => {
+                  event.preventDefault()
+                  void handleCategoryDrop(event, entry.category!.id)
+                } : undefined}
+                ondragend={entry.category ? handleCategoryDragEnd : undefined}>
                 <div class="category-heading">
+                  {#if entry.category}
+                    <button
+                      type="button"
+                      class="category-drag-handle"
+                      draggable="true"
+                      title={translate($languageStore, "folder.dragCategory")}
+                      aria-label={translate($languageStore, "folder.dragCategory")}
+                      ondragstart={(event) => handleCategoryDragStart(event, entry.category!)}
+                      ondragend={handleCategoryDragEnd}>
+                      <span class="action-icon"><SvgIcon svg={gripVerticalIcon} /></span>
+                    </button>
+                  {/if}
                   <button
                     type="button"
                     class="category-toggle"
@@ -1067,29 +1272,53 @@
                     {isCategoryCollapsed(entry.categoryId) ? "▸" : "▾"}
                   </button>
                   <span class="category-heading__rule" aria-hidden="true"></span>
-                  <span class="category-heading__title">{entry.title}</span>
+                  <span
+                    class="category-heading__title category-heading__drag-area"
+                    role="button"
+                    aria-label={entry.title}
+                    tabindex={entry.category ? 0 : -1}
+                    draggable={!!entry.category}
+                    ondragstart={entry.category
+                      ? (event) => handleCategoryDragStart(event, entry.category!)
+                      : undefined}
+                    ondragend={entry.category ? handleCategoryDragEnd : undefined}>{entry.title}</span>
                   <span class="category-heading__count">{entry.tradeCount}</span>
                   <span class="category-heading__rule" aria-hidden="true"></span>
                   {#if entry.category}
                     <div class="category-heading__actions">
-                      <button
-                        type="button"
-                        class="category-action"
-                        title={translate($languageStore, "folder.renameCategory")}
-                        aria-label={translate($languageStore, "folder.renameCategory")}
-                        onclick={() => void renameCategory(entry.category!)}
-                      >
-                        <span class="action-icon"><SvgIcon svg={pencilIcon} /></span>
-                      </button>
-                      <button
-                        type="button"
-                        class="category-action is-danger"
-                        title={translate($languageStore, "folder.deleteCategory")}
-                        aria-label={translate($languageStore, "folder.deleteCategory")}
-                        onclick={() => requestCategoryDelete(entry.category!)}
-                      >
-                        <span class="action-icon"><SvgIcon svg={trashIcon} /></span>
-                      </button>
+                      <ActionsMenu
+                        actions={[
+                          ...(categoryIndex > 0 ? [{
+                            id: "move-up",
+                            icon: arrowUpIcon,
+                            labelKey: "folder.moveCategoryUp",
+                            handler: () => void moveCategoryWithKeyboard(categoryIndex, "up")
+                          }] : []),
+                          ...(categoryIndex < categoryOptions.length - 1 ? [{
+                            id: "move-down",
+                            icon: arrowDownIcon,
+                            labelKey: "folder.moveCategoryDown",
+                            handler: () => void moveCategoryWithKeyboard(categoryIndex, "down")
+                          }] : []),
+                          {
+                            id: "rename",
+                            icon: pencilIcon,
+                            labelKey: "folder.renameCategory",
+                            handler: () => void renameCategory(entry.category!)
+                          },
+                          {
+                            id: "delete",
+                            icon: trashIcon,
+                            labelKey: "folder.deleteCategory",
+                            handler: () => requestCategoryDelete(entry.category!),
+                            danger: true
+                          }
+                        ]}
+                        primaryActionIds={[]}
+                        compactVisibleActionIds={[]}
+                        dropdownLabel="folder.actionsMenu"
+                        dropdownIcon={moreIcon}
+                        translate={(key) => translate($languageStore, key)} />
                     </div>
                   {/if}
                 </div>
@@ -1097,13 +1326,36 @@
             {:else}
               {@const trade = entry.trade}
               {@const i = entry.displayIndex}
+              {@const tradeCategoryId = categoryIdForTrade(trade)}
               <li
                 draggable="true"
                 ondragstart={(e) => handleDragStart(e, i)}
-                ondragenter={(e) => handleDragEnter(e, i)}
-                ondragover={(event) => event.preventDefault()}
+                ondragenter={(event) => {
+                  if (draggedCategoryId !== null) {
+                    if (tradeCategoryId) {
+                      handleCategoryDragOver(event, tradeCategoryId)
+                    }
+                    return
+                  }
+                  handleDragEnter(event, i)
+                }}
+                ondragover={(event) => {
+                  if (draggedCategoryId !== null) {
+                    if (tradeCategoryId) {
+                      handleCategoryDragOver(event, tradeCategoryId)
+                    }
+                    return
+                  }
+                  event.preventDefault()
+                }}
                 ondrop={(event) => {
                   event.preventDefault()
+                  if (draggedCategoryId !== null) {
+                    if (tradeCategoryId) {
+                      void handleCategoryDrop(event, tradeCategoryId)
+                    }
+                    return
+                  }
                   void handleDrop(event, i)
                 }}
                 ondragend={handleDragEnd}>
@@ -1578,7 +1830,59 @@
 }
 
 .category-row {
+  position: relative;
   list-style: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.category-row.is-drag-over .category-heading {
+  border-radius: 4px;
+  background: rgba(163, 141, 109, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(163, 141, 109, 0.2), 0 0 0 1px rgba(163, 141, 109, 0.14);
+}
+
+.category-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  min-width: 18px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: rgba(238, 238, 238, 0.3);
+  cursor: grab;
+  user-select: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.category-drag-handle:hover {
+  color: #a38d6d;
+  background: rgba(238, 238, 238, 0.05);
+}
+
+.category-drag-handle:focus-visible {
+  outline: 1px solid rgba(163, 141, 109, 0.65);
+  outline-offset: 1px;
+}
+
+.category-drag-handle:active {
+  cursor: grabbing;
+}
+
+.category-drag-handle :global(.action-svg) {
+  width: 13px;
+  height: 13px;
+  min-width: 13px;
+  min-height: 13px;
+  stroke-width: 1.6;
+}
+
+.category-row.is-dragging {
+  opacity: 0.45;
+  transform: scale(0.985);
 }
 
 .category-heading {
@@ -1633,6 +1937,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.category-heading__drag-area {
+  cursor: grab;
+  user-select: none;
+}
+
+.category-heading__drag-area:active {
+  cursor: grabbing;
 }
 
 .category-heading__count {

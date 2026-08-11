@@ -9,6 +9,10 @@ interface StoragePayload {
 }
 
 export type StorageArea = "local" | "sync"
+export type SyncWriteOptions = {
+  /** Wait only when the caller depends on the exact Sync write order. */
+  awaitSync?: boolean
+}
 
 const SYNC_VALUE_FORMAT = 1
 const COMPRESSED_SYNC_VALUE_FORMAT = 2
@@ -22,6 +26,7 @@ const MANAGED_SYNC_KEYS = new Set([
   "bookmark-folders-manifest"
 ])
 const MANAGED_SYNC_PREFIXES = [
+  "bookmark-oplog--",
   "bookmark-trades--",
   "bookmark-trades-manifest--",
   "bookmark-trades-chunk--",
@@ -71,6 +76,13 @@ const EXPANDED_KEYS = Object.fromEntries(
 type SyncRecoverySnapshot = {
   capturedAt: string
   data: Record<string, unknown>
+}
+
+type SyncMutation = {
+  key: string
+  value?: StoragePayload
+  resolve: () => void
+  reject: (error: unknown) => void
 }
 
 const isManagedSyncKey = (key: string) =>
@@ -187,6 +199,9 @@ export class StorageService {
   private syncRecoveryInitialized = false
   private syncOperationQueue: Promise<void> = Promise.resolve()
   private lastSyncOperationAt = 0
+  private pendingSyncMutations: SyncMutation[] = []
+  private syncBatchTimer: ReturnType<typeof setTimeout> | null = null
+  private syncBatchDelay = 500
 
   static getInstance() {
     if (!this.instance) this.instance = new StorageService()
@@ -253,12 +268,56 @@ export class StorageService {
     key: string,
     value: unknown,
     league: string | null = null,
-    area: StorageArea = "local"
+    area: StorageArea = "local",
+    options?: SyncWriteOptions
   ): Promise<boolean> {
     return this.write(this.formatKey(key, league), {
       expiresAt: null,
       value
-    }, area)
+    }, area, options)
+  }
+
+  /**
+   * Publishes a related set of Sync values in one storage mutation. This is
+   * used for manifest/chunk protocols so readers never observe a manifest
+   * that points at only half of its generation.
+   */
+  async setValues(
+    values: Record<string, unknown>,
+    area: StorageArea = "local",
+    options?: SyncWriteOptions
+  ): Promise<boolean> {
+    const storageArea = this.getStorageArea(area)
+    if (!storageArea) return false
+    try {
+      const payload = Object.fromEntries(
+        await Promise.all(
+          Object.entries(values).map(async ([key, value]) => [
+            this.formatKey(key, null),
+            {
+              expiresAt: null,
+              value: area === "sync" ? await encodeSyncValue(value) : value
+            }
+          ])
+        )
+      )
+      if (area === "sync") {
+        const queued = this.enqueueSyncOperation(async () => {
+          await chrome.storage.sync.set(payload)
+          void this.snapshotManagedSyncData()
+        })
+        if (options?.awaitSync !== false) await queued
+        else void queued.catch((error) => {
+          if (!isExtensionContextInvalidatedError(error)) console.warn("Deferred Sync write failed", error)
+        })
+      } else {
+        await storageArea.set(payload)
+      }
+      return true
+    } catch (error) {
+      if (!isExtensionContextInvalidatedError(error)) console.warn("Storage batch write failed", error)
+      return false
+    }
   }
 
   async setEphemeralValue(
@@ -347,9 +406,10 @@ export class StorageService {
   async deleteValue(
     key: string,
     league: string | null = null,
-    area: StorageArea = "local"
+    area: StorageArea = "local",
+    options?: SyncWriteOptions
   ): Promise<boolean> {
-    return this.remove(this.formatKey(key, league), area)
+    return this.remove(this.formatKey(key, league), area, options)
   }
 
   setLocalValue(key: string, value: string, league: string | null = null) {
@@ -367,24 +427,29 @@ export class StorageService {
   private async write(
     key: string,
     value: StoragePayload,
-    area: StorageArea = "local"
+    area: StorageArea = "local",
+    options?: SyncWriteOptions
   ): Promise<boolean> {
     const storageArea = this.getStorageArea(area)
     if (!storageArea) return false
-    const operation = async () => {
-      const storedValue =
-        area === "sync" ? await encodeSyncValue(value.value) : value
-      await storageArea.set({
-        [key]:
-          area === "sync" ? { ...value, value: storedValue } : value
-      })
-      if (area === "sync") void this.snapshotManagedSyncData()
-    }
     try {
       if (area === "sync") {
-        await this.enqueueSyncOperation(operation)
+        const storedValue = await encodeSyncValue(value.value)
+        const queued = this.enqueueSyncMutation(key, {
+          ...value,
+          value: storedValue
+        })
+        if (options?.awaitSync !== false) {
+          await queued
+        } else {
+          void queued.catch((error) => {
+            if (!isExtensionContextInvalidatedError(error)) {
+              console.warn("Deferred Sync write failed", error)
+            }
+          })
+        }
       } else {
-        await operation()
+        await storageArea.set({ [key]: value })
       }
       return true
     } catch (error) {
@@ -397,19 +462,29 @@ export class StorageService {
 
   private async remove(
     keys: string | string[],
-    area: StorageArea = "local"
+    area: StorageArea = "local",
+    options?: SyncWriteOptions
   ): Promise<boolean> {
     const storageArea = this.getStorageArea(area)
     if (!storageArea) return false
-    const operation = async () => {
-      await storageArea.remove(keys)
-      if (area === "sync") void this.snapshotManagedSyncData()
-    }
     try {
       if (area === "sync") {
-        await this.enqueueSyncOperation(operation)
+        const queued = Promise.all(
+          (Array.isArray(keys) ? keys : [keys]).map((key) =>
+            this.enqueueSyncMutation(key)
+          )
+        )
+        if (options?.awaitSync !== false) {
+          await queued
+        } else {
+          void queued.catch((error) => {
+            if (!isExtensionContextInvalidatedError(error)) {
+              console.warn("Deferred Sync removal failed", error)
+            }
+          })
+        }
       } else {
-        await operation()
+        await storageArea.remove(keys)
       }
       return true
     } catch (error) {
@@ -429,6 +504,49 @@ export class StorageService {
     })
     this.syncOperationQueue = queued.catch(() => undefined)
     return queued
+  }
+
+  private enqueueSyncMutation(key: string, value?: StoragePayload): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.pendingSyncMutations.push({ key, value, resolve, reject })
+      if (this.syncBatchTimer !== null) clearTimeout(this.syncBatchTimer)
+
+      this.syncBatchTimer = setTimeout(() => {
+        this.syncBatchTimer = null
+        const mutations = this.pendingSyncMutations.splice(0)
+        void this.flushSyncMutations(mutations)
+      }, this.syncBatchDelay)
+    })
+  }
+
+  private async flushSyncMutations(mutations: SyncMutation[]) {
+    const latestByKey = new Map<string, SyncMutation>()
+    for (const mutation of mutations) latestByKey.set(mutation.key, mutation)
+
+    try {
+      await this.enqueueSyncOperation(async () => {
+        const values: Record<string, StoragePayload> = {}
+        const keysToRemove: string[] = []
+        for (const mutation of latestByKey.values()) {
+          if (mutation.value) {
+            values[mutation.key] = mutation.value
+          } else {
+            keysToRemove.push(mutation.key)
+          }
+        }
+
+        if (Object.keys(values).length > 0) {
+          await chrome.storage.sync.set(values)
+        }
+        if (keysToRemove.length > 0) {
+          await chrome.storage.sync.remove(keysToRemove)
+        }
+        void this.snapshotManagedSyncData()
+      })
+      mutations.forEach((mutation) => mutation.resolve())
+    } catch (error) {
+      mutations.forEach((mutation) => mutation.reject(error))
+    }
   }
 }
 
