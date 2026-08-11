@@ -226,7 +226,9 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "Backup e restauração",
   "bookmarks.backupDescription":
     "Salve um arquivo portátil com pastas, buscas salvas, configurações e preferências da extensão, ou restaure um arquivo anterior.",
-  "bookmarks.saveFile": "Salvar arquivo",
+  "bookmarks.saveFile": "Backup",
+  "bookmarks.automaticSyncDescription":
+    "Seus favoritos e configurações são sincronizados automaticamente com o Chrome enquanto você usa a extensão.",
   "bookmarks.restoreFile": "Restaurar do arquivo",
   "history.clear": "Limpar histórico",
   "history.cleared": "Histórico limpo!",

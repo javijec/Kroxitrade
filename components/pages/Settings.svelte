@@ -518,8 +518,10 @@
       const success = await extensionBackupService.restoreFromDataString(dataString);
       if (success) {
         await settings.reload();
+        await settings.useVersion(tradeLocationService.current.version);
         experimentalSettings.useVersion(tradeLocationService.current.version);
         flashMessages.success(translate($languageStore, "bookmarks.restored"));
+        window.setTimeout(() => window.location.reload(), 0);
       } else {
         flashMessages.alert(translate($languageStore, "bookmarks.restoreFailed"));
       }
@@ -808,6 +810,7 @@
         <h3 class="section-title">{translate($languageStore, "bookmarks.backupTitle")}</h3>
       </div>
       <p class="section-description">{translate($languageStore, "bookmarks.backupDescription")}</p>
+      <p class="section-description">{translate($languageStore, "bookmarks.automaticSyncDescription")}</p>
 
       <div class="side-selector settings-actions-row">
         <Button

@@ -164,19 +164,19 @@ function readLegacyExperimentalSettings(version: TradeSiteVersion) {
   }
 }
 
-function getStorageChangeValue<T>(
-  change: chrome.storage.StorageChange | undefined
-): T | undefined {
-  const payload = change?.newValue
+function isStoragePayload(
+  value: unknown
+): value is { value: unknown; expiresAt: string | null } {
   if (
-    typeof payload !== "object" ||
-    payload === null ||
-    !("value" in payload)
+    typeof value !== "object" ||
+    value === null ||
+    !("value" in value) ||
+    !("expiresAt" in value)
   ) {
-    return undefined
+    return false
   }
 
-  return payload.value as T
+  return true
 }
 
 let activeVersion: TradeSiteVersion = inferTradeVersion()
@@ -315,11 +315,15 @@ function bindStorageSync() {
       const key = versionSettingsKey(version)
       const change = changes[key]
       if (!change) continue
-      void getPendingSyncValue(key).then((pending) => {
+      void getPendingSyncValue(key).then(async (pending) => {
         if (pending !== null) return
-        const next = normalizeVersionSettings(
-          getStorageChangeValue<Partial<VersionSettings>>(change)
+        const stored = await storageService.getValue<VersionSettings>(
+          key,
+          null,
+          SETTINGS_STORAGE_AREA
         )
+        if (stored === null) return
+        const next = normalizeVersionSettings(stored)
         versionCache.set(version, next)
         if (version === activeVersion) {
           activeVersionSettings = next
@@ -332,7 +336,10 @@ function bindStorageSync() {
 
 async function fetchSynced<T>(key: string): Promise<T | null> {
   const pending = await getPendingSyncValue<T>(key)
-  if (pending !== null) return pending
+  // Backups stage the exact Chrome storage payload so compressed Sync values
+  // can be restored without rewriting bookmark chunks. That wrapper is not a
+  // setting value; prefer the local copy while the raw Sync journal flushes.
+  if (pending !== null && !isStoragePayload(pending)) return pending
   const local = await storageService.getValue<T>(key)
   const synced = await storageService.getValue<T>(
     key,

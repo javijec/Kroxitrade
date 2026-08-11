@@ -223,7 +223,9 @@ export const germanTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "Backup & Wiederherstellung",
   "bookmarks.backupDescription":
     "Speichere eine portable Datei mit Ordnern, gespeicherten Suchen, Einstellungen und Erweiterungsoptionen oder stelle eine frühere Datei wieder her.",
-  "bookmarks.saveFile": "Datei speichern",
+  "bookmarks.saveFile": "Sicherung",
+  "bookmarks.automaticSyncDescription":
+    "Deine Lesezeichen und Einstellungen werden während der Nutzung der Erweiterung automatisch mit Chrome synchronisiert.",
   "bookmarks.restoreFile": "Aus Datei wiederherstellen",
   "history.clear": "Verlauf löschen",
   "history.cleared": "Verlauf gelöscht!",

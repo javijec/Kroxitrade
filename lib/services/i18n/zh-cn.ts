@@ -370,7 +370,9 @@ export const simplifiedChineseTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "备份与还原",
   "bookmarks.backupDescription":
     "保存一个含文件夹、已保存搜索、设置与扩充功能偏好的可携文件，或还原你先前导出的文件。",
-  "bookmarks.saveFile": "保存文件",
+  "bookmarks.saveFile": "备份",
+  "bookmarks.automaticSyncDescription":
+    "使用扩充功能时，你的书签和设置会自动与 Chrome 同步。",
   "bookmarks.restoreFile": "从文件还原",
   "bookmarks.folderCopyTitle": ({ title }) => `${title}（复本）`,
   "confirm.cancel": "取消",

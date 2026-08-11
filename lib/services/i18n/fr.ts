@@ -225,7 +225,9 @@ export const frenchTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "Sauvegarde et restauration",
   "bookmarks.backupDescription":
     "Enregistrez un fichier portable avec les dossiers, recherches sauvegardées, paramètres et préférences de l’extension, ou restaurez-en un précédent.",
-  "bookmarks.saveFile": "Enregistrer le fichier",
+  "bookmarks.saveFile": "Sauvegarde",
+  "bookmarks.automaticSyncDescription":
+    "Vos marque-pages et paramètres se synchronisent automatiquement avec Chrome lorsque vous utilisez l’extension.",
   "bookmarks.restoreFile": "Restaurer depuis le fichier",
   "history.clear": "Effacer l’historique",
   "history.cleared": "Historique effacé !",

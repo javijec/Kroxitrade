@@ -225,7 +225,9 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "백업 및 복원",
   "bookmarks.backupDescription":
     "폴더, 저장된 검색, 설정, 확장 프로그램 환경설정을 담은 휴대용 파일을 저장하거나 이전 파일에서 복원합니다.",
-  "bookmarks.saveFile": "파일 저장",
+  "bookmarks.saveFile": "백업",
+  "bookmarks.automaticSyncDescription":
+    "확장 프로그램을 사용하는 동안 북마크와 설정이 Chrome과 자동으로 동기화됩니다.",
   "bookmarks.restoreFile": "파일에서 복원",
   "history.clear": "기록 지우기",
   "history.cleared": "기록을 지웠습니다!",

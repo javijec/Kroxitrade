@@ -219,7 +219,9 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "สำรองและกู้คืน",
   "bookmarks.backupDescription":
     "บันทึกไฟล์พกพาที่มีโฟลเดอร์ การค้นหาที่บันทึกไว้ การตั้งค่า และค่ากำหนดของส่วนขยาย หรือกู้คืนจากไฟล์เดิม",
-  "bookmarks.saveFile": "บันทึกไฟล์",
+  "bookmarks.saveFile": "สำรองข้อมูล",
+  "bookmarks.automaticSyncDescription":
+    "บุ๊กมาร์กและการตั้งค่าของคุณจะซิงก์กับ Chrome โดยอัตโนมัติขณะใช้ส่วนขยาย",
   "bookmarks.restoreFile": "กู้คืนจากไฟล์",
   "history.clear": "ล้างประวัติ",
   "history.cleared": "ล้างประวัติแล้ว!",

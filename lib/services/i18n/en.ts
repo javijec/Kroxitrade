@@ -421,7 +421,9 @@ export const englishTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "Backup & Restore",
   "bookmarks.backupDescription":
     "Save a portable file with folders, saved searches, settings, and extension preferences, or restore one you exported earlier.",
-  "bookmarks.saveFile": "Save File",
+  "bookmarks.saveFile": "Backup",
+  "bookmarks.automaticSyncDescription":
+    "Your bookmarks and settings sync automatically with Chrome while you use the extension.",
   "bookmarks.restoreFile": "Restore From File",
   "bookmarks.folderCopyTitle": ({ title }) => `${title} (copy)`,
   "confirm.cancel": "Cancel",

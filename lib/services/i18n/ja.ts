@@ -226,7 +226,9 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "バックアップと復元",
   "bookmarks.backupDescription":
     "フォルダー、保存済み検索、設定、拡張機能の設定を含むポータブルファイルを保存、または以前のファイルから復元します。",
-  "bookmarks.saveFile": "ファイルを保存",
+  "bookmarks.saveFile": "バックアップ",
+  "bookmarks.automaticSyncDescription":
+    "拡張機能の使用中は、ブックマークと設定が Chrome と自動的に同期されます。",
   "bookmarks.restoreFile": "ファイルから復元",
   "history.clear": "履歴を消去",
   "history.cleared": "履歴を消去しました！",

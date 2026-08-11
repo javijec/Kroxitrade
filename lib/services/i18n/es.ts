@@ -426,7 +426,9 @@ export const spanishTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "Respaldo y restauración",
   "bookmarks.backupDescription":
     "Guardá un archivo portable con carpetas, búsquedas, settings y preferencias de la extensión, o restaurá uno exportado antes.",
-  "bookmarks.saveFile": "Guardar archivo",
+  "bookmarks.saveFile": "Respaldo",
+  "bookmarks.automaticSyncDescription":
+    "Tus marcadores y settings se sincronizan automáticamente con Chrome mientras usás la extensión.",
   "bookmarks.restoreFile": "Restaurar desde archivo",
   "bookmarks.folderCopyTitle": ({ title }) => `${title} (copia)`,
   "confirm.cancel": "Cancelar",

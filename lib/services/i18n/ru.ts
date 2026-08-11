@@ -220,7 +220,9 @@ export const russianTranslations: Record<string, TranslationValue> = {
   "bookmarks.backupTitle": "Резервное копирование и восстановление",
   "bookmarks.backupDescription":
     "Сохраните переносимый файл с папками, сохранёнными поисками, настройками и параметрами расширения или восстановите прежний файл.",
-  "bookmarks.saveFile": "Сохранить файл",
+  "bookmarks.saveFile": "Резервная копия",
+  "bookmarks.automaticSyncDescription":
+    "Ваши закладки и настройки автоматически синхронизируются с Chrome во время использования расширения.",
   "bookmarks.restoreFile": "Восстановить из файла",
   "history.clear": "Очистить историю",
   "history.cleared": "История очищена!",
