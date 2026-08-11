@@ -68,6 +68,7 @@ export class BookmarksService {
   private tradesWriteQueues = new Map<string, Promise<unknown>>()
   private deletedTradeFolderIds = new Set<string>()
   private tradesMutationTail: Promise<void> = Promise.resolve()
+  private foldersWriteDepth = 0
   private pendingCategoryTransfers = 0
   private pendingCategoryTransferFolders = new Map<string, number>()
   private completedCategoryTransferFolders = new Set<string>()
@@ -108,7 +109,7 @@ export class BookmarksService {
           key === FOLDERS_MANIFEST_KEY ||
           key.startsWith(FOLDERS_CHUNK_PREFIX)
       )
-      if (foldersChanged) {
+      if (foldersChanged && this.foldersWriteDepth === 0) {
         void this.refresh()
       }
 
@@ -785,7 +786,12 @@ export class BookmarksService {
   }
 
   async persistFolders(folders: BookmarksFolderStruct[]) {
-    await this.persistFoldersToChunks(folders)
+    this.foldersWriteDepth++
+    try {
+      await this.persistFoldersToChunks(folders)
+    } finally {
+      this.foldersWriteDepth--
+    }
   }
 
   async persistTrade(
@@ -852,21 +858,59 @@ export class BookmarksService {
   async deleteFolder(folderId: string) {
     if (!folderId) throw new Error("A bookmark folder id is required")
 
-    return this.enqueueTradesMutation(async () => {
-      const folders = await this.fetchFolders()
-      if (!folders.some((folder) => folder.id === folderId)) return
+    let folders = get(this.foldersStore)
+    if (!folders.some((folder) => folder.id === folderId)) {
+      folders = await this.fetchFolders()
+    }
+    if (!folders.some((folder) => folder.id === folderId)) return false
 
-      // Block stale component work immediately, then drain this folder's queue
-      // before deleting its manifest and chunks.
-      this.deletedTradeFolderIds.add(folderId)
-      const updated = folders.filter((folder) => folder.id !== folderId)
-      await this.persistFolders(updated)
-      await this.enqueueTradesWrite(folderId, async () => {
-        await this.deleteChunkedTrades(folderId)
-        this.tradesCache.delete(folderId)
-        this.tradesRequests.delete(folderId)
-      })
-      await this.refresh()
+    const updated = folders.filter((folder) => folder.id !== folderId)
+    const cachedTrades = this.tradesCache.get(folderId)
+    const tradesSnapshot = cachedTrades
+      ? this.cloneTrades(cachedTrades)
+      : undefined
+
+    // Remove the folder at once. Persistence stays serialized with every
+    // bookmark mutation, and a failure restores this exact visible snapshot.
+    this.deletedTradeFolderIds.add(folderId)
+    this.foldersStore.set(updated)
+    this.notifyChange({ foldersChanged: true, folderId })
+    this.tradesCache.delete(folderId)
+    this.tradesRequests.delete(folderId)
+
+    return this.enqueueTradesMutation(async () => {
+      const trades =
+        tradesSnapshot ??
+        (await this.fetchTradesByFolderId(folderId, { force: true }))
+
+      try {
+        await this.persistFolders(updated)
+        await this.enqueueTradesWrite(folderId, async () => {
+          await this.deleteChunkedTrades(folderId)
+          this.tradesCache.delete(folderId)
+          this.tradesRequests.delete(folderId)
+        })
+        await this.refresh()
+        return true
+      } catch (error) {
+        console.warn("Could not delete bookmark folder; restoring it", error)
+
+        this.deletedTradeFolderIds.delete(folderId)
+        try {
+          await this.persistFolders(folders)
+          await this.persistTrades(trades, folderId)
+          this.tradesCache.set(folderId, this.cloneTrades(trades))
+        } catch (rollbackError) {
+          console.warn(
+            "Could not restore bookmark folder after a failed deletion",
+            rollbackError
+          )
+        }
+
+        this.foldersStore.set(folders)
+        this.notifyChange({ foldersChanged: true, folderId })
+        return false
+      }
     })
   }
 

@@ -381,6 +381,7 @@ export const englishTranslations: Record<string, TranslationValue> = {
   "bookmarks.newFolder": "New Folder",
   "bookmarks.folderCreated": "Folder created!",
   "bookmarks.folderDeleted": "Folder deleted!",
+  "bookmarks.folderDeleteError": "Could not delete the folder. It was restored.",
   "bookmarks.exported": "Backup exported!",
   "bookmarks.restored": "Backup restored!",
   "bookmarks.restoreFailed": "Failed to restore backup.",

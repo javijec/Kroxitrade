@@ -187,6 +187,7 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "bookmarks.newFolder": "Nova pasta",
   "bookmarks.folderCreated": "Pasta criada!",
   "bookmarks.folderDeleted": "Pasta excluída!",
+  "bookmarks.folderDeleteError": "Não foi possível excluir a pasta. Ela foi restaurada.",
   "bookmarks.exported": "Backup exportado!",
   "bookmarks.restored": "Backup restaurado!",
   "bookmarks.restoreFailed": "Falha ao restaurar o backup.",

@@ -181,6 +181,7 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "bookmarks.newFolder": "โฟลเดอร์ใหม่",
   "bookmarks.folderCreated": "สร้างโฟลเดอร์แล้ว!",
   "bookmarks.folderDeleted": "ลบโฟลเดอร์แล้ว!",
+  "bookmarks.folderDeleteError": "ไม่สามารถลบโฟลเดอร์ได้ จึงกู้คืนโฟลเดอร์แล้ว",
   "bookmarks.exported": "ส่งออกข้อมูลสำรองแล้ว!",
   "bookmarks.restored": "กู้คืนข้อมูลสำรองแล้ว!",
   "bookmarks.restoreFailed": "กู้คืนข้อมูลสำรองไม่สำเร็จ",

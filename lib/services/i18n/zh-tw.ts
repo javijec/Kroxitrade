@@ -338,6 +338,7 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
     "bookmarks.newFolder": "新增資料夾",
     "bookmarks.folderCreated": "資料夾已建立！",
     "bookmarks.folderDeleted": "資料夾已刪除！",
+    "bookmarks.folderDeleteError": "無法刪除資料夾，已將其還原。",
     "bookmarks.exported": "備份已匯出！",
     "bookmarks.restored": "備份已還原！",
     "bookmarks.restoreFailed": "還原備份失敗。",

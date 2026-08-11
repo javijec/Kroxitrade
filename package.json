@@ -1,7 +1,7 @@
 {
   "name": "poe-trade-plus",
   "displayName": "Poe Trade Plus",
-  "version": "1.1.24",
+  "version": "1.1.25",
   "packageManager": "pnpm@11.3.0",
   "engines": {
     "node": ">=22"

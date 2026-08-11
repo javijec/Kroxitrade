@@ -3,8 +3,13 @@ import type { AppLanguage } from "../services/i18n"
 type LocalizedWhatsNewTexts = Partial<Record<AppLanguage, Record<string, string>>>
 
 export const localizedWhatsNewTexts: LocalizedWhatsNewTexts = {
-  en: {},
+  en: {
+    "Bulk folder opening is temporarily disabled": "Bulk folder opening is temporarily disabled",
+    "Opening every saved search in a folder is temporarily disabled to avoid Path of Exile Trade rate limits. Individual searches can still be opened in a new background tab with middle-click.": "Opening every saved search in a folder is temporarily disabled to avoid Path of Exile Trade rate limits. Individual searches can still be opened in a new background tab with middle-click."
+  },
   es: {
+    "Bulk folder opening is temporarily disabled": "La apertura masiva de carpetas está desactivada temporalmente",
+    "Opening every saved search in a folder is temporarily disabled to avoid Path of Exile Trade rate limits. Individual searches can still be opened in a new background tab with middle-click.": "Abrir todas las búsquedas guardadas de una carpeta está desactivado temporalmente para evitar los límites de velocidad de Path of Exile Trade. Las búsquedas individuales todavía se pueden abrir en una nueva pestaña en segundo plano con clic central.",
     "Open saved searches in new tabs": "Abrir búsquedas guardadas en pestañas nuevas",
     "Middle-click a saved search to open it in a background tab, so you can queue several searches without leaving the current one.": "Haz clic central en una búsqueda guardada para abrirla en una pestaña en segundo plano, así puedes poner varias búsquedas en cola sin salir de la actual.",
     "Bookmark icons are easier to browse": "Los iconos de marcadores son más fáciles de explorar",
@@ -95,6 +100,8 @@ export const localizedWhatsNewTexts: LocalizedWhatsNewTexts = {
     "Card click handling and seller panel accessibility were tightened for repeated trade workflows.": "El manejo de clics en tarjetas y la accesibilidad al panel del vendedor se reforzaron para flujos de trabajo comerciales repetidos.",
   },
   pt: {
+    "Bulk folder opening is temporarily disabled": "A abertura em massa de pastas está temporariamente desativada",
+    "Opening every saved search in a folder is temporarily disabled to avoid Path of Exile Trade rate limits. Individual searches can still be opened in a new background tab with middle-click.": "Abrir todas as buscas salvas de uma pasta está temporariamente desativado para evitar limites de taxa do Path of Exile Trade. As buscas individuais ainda podem ser abertas em uma nova aba em segundo plano com o clique do meio.",
     "Open saved searches in new tabs": "Abrir buscas salvas em novas abas",
     "Middle-click a saved search to open it in a background tab, so you can queue several searches without leaving the current one.": "Clique com o botão do meio em uma busca salva para abri-la em uma aba em segundo plano, assim você pode enfileirar várias buscas sem sair da atual.",
     "Bookmark icons are easier to browse": "Os ícones de favoritos estão mais fáceis de explorar",
@@ -185,6 +192,8 @@ export const localizedWhatsNewTexts: LocalizedWhatsNewTexts = {
     "Card click handling and seller panel accessibility were tightened for repeated trade workflows.": "O manuseio de cliques no cartão e a acessibilidade ao painel do vendedor foram aprimorados para fluxos de trabalho comerciais repetidos.",
   },
   ru: {
+    "Bulk folder opening is temporarily disabled": "Массовое открытие папок временно отключено",
+    "Opening every saved search in a folder is temporarily disabled to avoid Path of Exile Trade rate limits. Individual searches can still be opened in a new background tab with middle-click.": "Открытие всех сохранённых поисков в папке временно отключено, чтобы избежать ограничений частоты запросов Path of Exile Trade. Отдельные поиски по-прежнему можно открыть в новой фоновой вкладке средней кнопкой мыши.",
     "Open saved searches in new tabs": "Открывайте сохраненные поиски в новых вкладках",
     "Middle-click a saved search to open it in a background tab, so you can queue several searches without leaving the current one.": "Нажмите средней кнопкой мыши на сохраненный поиск, чтобы открыть его в фоновой вкладке и поставить в очередь несколько поисков, не покидая текущий.",
     "Bookmark icons are easier to browse": "Значки закладок стало проще просматривать",
@@ -275,6 +284,8 @@ export const localizedWhatsNewTexts: LocalizedWhatsNewTexts = {
     "Card click handling and seller panel accessibility were tightened for repeated trade workflows.": "Обработка кликов по картам и доступность панели продавца были ужесточены для повторяющихся торговых процессов.",
   },
   th: {
+    "Bulk folder opening is temporarily disabled": "ปิดการเปิดโฟลเดอร์แบบหลายรายการชั่วคราว",
+    "Opening every saved search in a folder is temporarily disabled to avoid Path of Exile Trade rate limits. Individual searches can still be opened in a new background tab with middle-click.": "การเปิดการค้นหาที่บันทึกไว้ทั้งหมดในโฟลเดอร์ถูกปิดใช้งานชั่วคราวเพื่อหลีกเลี่ยงการจำกัดอัตราของ Path of Exile Trade คุณยังเปิดการค้นหาแต่ละรายการในแท็บพื้นหลังใหม่ได้ด้วยการคลิกกลาง",
     "Open saved searches in new tabs": "เปิดการค้นหาที่บันทึกไว้ในแท็บใหม่",
     "Middle-click a saved search to open it in a background tab, so you can queue several searches without leaving the current one.": "คลิกปุ่มกลางที่การค้นหาที่บันทึกไว้เพื่อเปิดในแท็บเบื้องหลัง คุณจึงจัดคิวการค้นหาหลายรายการได้โดยไม่ต้องออกจากการค้นหาปัจจุบัน.",
     "Bookmark icons are easier to browse": "เรียกดูไอคอนบุ๊กมาร์กได้ง่ายขึ้น",
@@ -365,6 +376,8 @@ export const localizedWhatsNewTexts: LocalizedWhatsNewTexts = {
     "Card click handling and seller panel accessibility were tightened for repeated trade workflows.": "การจัดการการคลิกการ์ดและการเข้าถึงแผงผู้ขายได้รับการปรับปรุงให้เข้มงวดขึ้นสำหรับขั้นตอนการซื้อขายซ้ำๆ",
   },
   de: {
+    "Bulk folder opening is temporarily disabled": "Massenöffnung von Ordnern ist vorübergehend deaktiviert",
+    "Opening every saved search in a folder is temporarily disabled to avoid Path of Exile Trade rate limits. Individual searches can still be opened in a new background tab with middle-click.": "Das Öffnen aller gespeicherten Suchen in einem Ordner ist vorübergehend deaktiviert, um Ratenlimits von Path of Exile Trade zu vermeiden. Einzelne Suchen können weiterhin per Mittelklick in einem neuen Hintergrund-Tab geöffnet werden.",
     "Open saved searches in new tabs": "Gespeicherte Suchen in neuen Tabs öffnen",
     "Middle-click a saved search to open it in a background tab, so you can queue several searches without leaving the current one.": "Klicke mit der mittleren Maustaste auf eine gespeicherte Suche, um sie in einem Hintergrund-Tab zu öffnen. So kannst du mehrere Suchen einreihen, ohne die aktuelle zu verlassen.",
     "Bookmark icons are easier to browse": "Lesezeichen-Symbole sind leichter zu durchsuchen",
@@ -455,6 +468,8 @@ export const localizedWhatsNewTexts: LocalizedWhatsNewTexts = {
     "Card click handling and seller panel accessibility were tightened for repeated trade workflows.": "Die Handhabung von Kartenklicks und die Zugänglichkeit des Verkäuferpanels wurden für wiederholte Handelsabläufe verbessert.",
   },
   fr: {
+    "Bulk folder opening is temporarily disabled": "L’ouverture groupée des dossiers est temporairement désactivée",
+    "Opening every saved search in a folder is temporarily disabled to avoid Path of Exile Trade rate limits. Individual searches can still be opened in a new background tab with middle-click.": "L’ouverture de toutes les recherches enregistrées d’un dossier est temporairement désactivée afin d’éviter les limites de débit de Path of Exile Trade. Les recherches individuelles peuvent toujours être ouvertes dans un nouvel onglet en arrière-plan avec un clic central.",
     "Open saved searches in new tabs": "Ouvrir les recherches enregistrées dans de nouveaux onglets",
     "Middle-click a saved search to open it in a background tab, so you can queue several searches without leaving the current one.": "Cliquez avec le bouton du milieu sur une recherche enregistrée pour l'ouvrir dans un onglet en arrière-plan et mettre plusieurs recherches en file sans quitter celle en cours.",
     "Bookmark icons are easier to browse": "Les icônes de favoris sont plus faciles à parcourir",
@@ -545,6 +560,8 @@ export const localizedWhatsNewTexts: LocalizedWhatsNewTexts = {
     "Card click handling and seller panel accessibility were tightened for repeated trade workflows.": "La gestion des clics sur les cartes et l'accessibilité du panneau des vendeurs ont été renforcées pour les flux de travail commerciaux répétés.",
   },
   ja: {
+    "Bulk folder opening is temporarily disabled": "フォルダーの一括オープンは一時的に無効です",
+    "Opening every saved search in a folder is temporarily disabled to avoid Path of Exile Trade rate limits. Individual searches can still be opened in a new background tab with middle-click.": "Path of Exile Trade のレート制限を避けるため、フォルダー内の保存済み検索をすべて開く機能は一時的に無効です。個別の検索は、引き続き中クリックで新しいバックグラウンドタブに開けます。",
     "Open saved searches in new tabs": "保存した検索を新しいタブで開く",
     "Middle-click a saved search to open it in a background tab, so you can queue several searches without leaving the current one.": "保存した検索を中クリックするとバックグラウンドタブで開き、現在の検索を離れずに複数の検索を続けて開けます。",
     "Bookmark icons are easier to browse": "ブックマークアイコンを探しやすく改善",
@@ -635,6 +652,8 @@ export const localizedWhatsNewTexts: LocalizedWhatsNewTexts = {
     "Card click handling and seller panel accessibility were tightened for repeated trade workflows.": "繰り返される取引ワークフローのために、カードのクリック処理と販売者パネルへのアクセシビリティが強化されました。",
   },
   ko: {
+    "Bulk folder opening is temporarily disabled": "폴더 일괄 열기가 일시적으로 비활성화되었습니다",
+    "Opening every saved search in a folder is temporarily disabled to avoid Path of Exile Trade rate limits. Individual searches can still be opened in a new background tab with middle-click.": "Path of Exile Trade의 요청 제한을 피하기 위해 폴더의 저장된 검색을 모두 여는 기능이 일시적으로 비활성화되었습니다. 개별 검색은 계속해서 가운데 클릭으로 새 백그라운드 탭에서 열 수 있습니다.",
     "Open saved searches in new tabs": "저장된 검색을 새 탭에서 열기",
     "Middle-click a saved search to open it in a background tab, so you can queue several searches without leaving the current one.": "저장된 검색을 마우스 가운데 버튼으로 클릭하면 백그라운드 탭에서 열리므로 현재 검색을 떠나지 않고 여러 검색을 대기열에 넣을 수 있습니다.",
     "Bookmark icons are easier to browse": "북마크 아이콘을 더 쉽게 찾아볼 수 있습니다",

@@ -404,6 +404,56 @@ test("queued trade persistence cannot recreate chunks after deleting its folder"
   )
 })
 
+test("removes a folder from the visible store before its Sync cleanup completes", async () => {
+  reset()
+  const bookmarks = new BookmarksService()
+  await bookmarks.persistFolders([folder("optimistic")])
+  await bookmarks.persistTrades([trade("optimistic-trade")], "optimistic")
+  await bookmarks.refresh()
+
+  let visibleFolders = []
+  const snapshots = []
+  const unsubscribe = bookmarks.subscribe((folders) => {
+    visibleFolders = folders
+    snapshots.push(folders.map(({ id }) => id))
+  })
+  const deletion = bookmarks.deleteFolder("optimistic")
+  const snapshotCount = snapshots.length
+
+  assert.deepEqual(visibleFolders, [])
+  await deletion
+  unsubscribe()
+
+  assert.ok(
+    snapshots.slice(snapshotCount).every((ids) => !ids.includes("optimistic"))
+  )
+  assert.deepEqual(await bookmarks.fetchFolders(), [])
+})
+
+test("restores the visible folder when its Sync deletion fails", async () => {
+  reset()
+  const bookmarks = new BookmarksService()
+  await bookmarks.persistFolders([folder("rollback")])
+  await bookmarks.persistTrades([trade("rollback-trade")], "rollback")
+  await bookmarks.refresh()
+
+  let visibleFolders = []
+  const unsubscribe = bookmarks.subscribe((folders) => {
+    visibleFolders = folders
+  })
+  failSyncSet = (values) => "bookmark-folders-manifest" in values
+
+  await bookmarks.deleteFolder("rollback")
+  failSyncSet = null
+  unsubscribe()
+
+  assert.deepEqual(visibleFolders.map(({ id }) => id), ["rollback"])
+  assert.deepEqual(
+    (await bookmarks.fetchFolders()).map(({ id }) => id),
+    ["rollback"]
+  )
+})
+
 test("serializes rapid repeated persistence and remains usable after a failed write", async () => {
   reset()
   const bookmarks = new BookmarksService()

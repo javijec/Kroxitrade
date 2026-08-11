@@ -7,7 +7,6 @@
   import trashIcon from "lucide-static/icons/trash-2.svg?raw";
   import xIcon from "lucide-static/icons/x.svg?raw";
   import imageIcon from "lucide-static/icons/image.svg?raw";
-  import externalLinkIcon from "lucide-static/icons/external-link.svg?raw";
   import { onDestroy, tick } from "svelte"
   import { slide } from "svelte/transition"
 
@@ -445,15 +444,23 @@
     )
   }
 
-  const deleteTrade = async (trade: BookmarksTradeStruct) => {
+  const deleteTrade = (trade: BookmarksTradeStruct) => {
     if (!folder.id || !trade.id) return
-    try {
-      trades = await bookmarksService.deleteTrade(trade.id, folder.id)
-      hasLoadedTrades = true
-      tradePendingDelete = null
-    } catch {
-      flashMessages.alert(translate($languageStore, "folder.deleteTradeError"))
-    }
+    const previousTrades = trades
+    trades = trades.filter((entry) => entry.id !== trade.id)
+    hasLoadedTrades = true
+    tradePendingDelete = null
+
+    void bookmarksService.deleteTrade(trade.id, folder.id)
+      .then((persisted) => {
+        trades = persisted
+        hasLoadedTrades = true
+      })
+      .catch(() => {
+        trades = previousTrades
+        hasLoadedTrades = true
+        flashMessages.alert(translate($languageStore, "folder.deleteTradeError"))
+      })
   }
 
   const requestTradeDelete = (trade: BookmarksTradeStruct) => {
@@ -489,7 +496,6 @@
   let optimisticCategoryOptions: BookmarksCategoryStruct[] | null = $state(null)
   let pendingCategoryMoves = 0
   let suppressNextTradeOpen = false
-  let suppressNextFolderToggle = false
 
   const handleDragStart = (e: DragEvent, index: number) => {
     e.stopPropagation()
@@ -686,20 +692,6 @@
     }
   }
 
-  const openAllTradesInNewTabs = async () => {
-    await loadTrades()
-    if (displayedTrades.length === 0) {
-      flashMessages.alert(translate($languageStore, "folder.noTradesToOpen"))
-      return
-    }
-    for (const trade of displayedTrades) {
-      await openTrade(trade, true)
-    }
-    flashMessages.success(
-      translate($languageStore, "folder.openedTabs", { count: displayedTrades.length })
-    )
-  }
-
   const requestArchiveCompleted = () => {
     archiveCompletedPending = true
   }
@@ -890,20 +882,6 @@
     }
   }
 
-  const handleFolderHeaderPointerDown = (event: PointerEvent) => {
-    if (event.button === 1) event.preventDefault()
-  }
-
-  const handleFolderHeaderPointerUp = (event: PointerEvent) => {
-    if (event.button !== 1 || editingFolder) return
-    event.preventDefault()
-    suppressNextFolderToggle = true
-    window.setTimeout(() => {
-      suppressNextFolderToggle = false
-    }, 0)
-    void openAllTradesInNewTabs()
-  }
-
   const handleTradeCardClick = (event: MouseEvent | PointerEvent, trade: BookmarksTradeStruct) => {
     if (shouldIgnoreTradeCardClick(event.target)) return
     if (event.button === 1) {
@@ -1036,14 +1014,8 @@
     <button
       type="button"
       class="expansion-wrapper"
-      onpointerdown={handleFolderHeaderPointerDown}
-      onpointerup={handleFolderHeaderPointerUp}
       onclick={(e) => {
         e.stopPropagation()
-        if (suppressNextFolderToggle) {
-          suppressNextFolderToggle = false
-          return
-        }
         if (!editingFolder) onToggleExpansion(folder.id || "")
       }}
       aria-expanded={isExpanded}
@@ -1081,17 +1053,6 @@
     </button>
 
     <div class="header-actions">
-      {#if !previewTrades && displayedTrades.length > 0}
-        <button
-          type="button"
-          class="category-action"
-          title={translate($languageStore, "folder.openAllInNewTabs")}
-          aria-label={translate($languageStore, "folder.openAllInNewTabs")}
-          onclick={() => void openAllTradesInNewTabs()}
-        >
-          <span class="action-icon"><SvgIcon svg={externalLinkIcon} /></span>
-        </button>
-      {/if}
       <FolderActionsMenu
         {folder}
         onRename={startEditingFolder}

@@ -149,11 +149,16 @@
     await bookmarksService.toggleFolderArchive(folder);
   };
 
-  const deleteFolder = async (folder: BookmarksFolderStruct) => {
+  const deleteFolder = (folder: BookmarksFolderStruct) => {
     if (!folder.id) return;
-    await bookmarksService.deleteFolder(folder.id);
     folderPendingDelete = null;
-    flashMessages.success(translate($languageStore, "bookmarks.folderDeleted"));
+    void bookmarksService.deleteFolder(folder.id).then((deleted) => {
+      if (deleted) {
+        flashMessages.success(translate($languageStore, "bookmarks.folderDeleted"));
+      } else {
+        flashMessages.alert(translate($languageStore, "bookmarks.folderDeleteError"));
+      }
+    });
   };
 
   const requestFolderDelete = (folder: BookmarksFolderStruct) => {

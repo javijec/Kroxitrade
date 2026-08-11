@@ -184,6 +184,7 @@ export const germanTranslations: Record<string, TranslationValue> = {
   "bookmarks.newFolder": "Neuer Ordner",
   "bookmarks.folderCreated": "Ordner erstellt!",
   "bookmarks.folderDeleted": "Ordner gelöscht!",
+  "bookmarks.folderDeleteError": "Ordner konnte nicht gelöscht werden. Er wurde wiederhergestellt.",
   "bookmarks.exported": "Backup exportiert!",
   "bookmarks.restored": "Backup wiederhergestellt!",
   "bookmarks.restoreFailed": "Backup konnte nicht wiederhergestellt werden.",

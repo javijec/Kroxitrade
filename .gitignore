@@ -49,3 +49,5 @@ keys.json
 
 # local scratch / docs artifacts
 tmp_video_frames/
+# Local AI runtime state
+.atl/
