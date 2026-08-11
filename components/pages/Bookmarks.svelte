@@ -67,6 +67,7 @@
   let dragOverFolderId: string | null = $state(null);
   let folderPendingDelete: BookmarksFolderStruct | null = $state(null);
   let pendingEditFolderId: string | null = $state(null);
+  let newFolderEditId: string | null = $state(null);
   let toolbarStickyEl: HTMLDivElement | null = $state(null);
   let toolbarRenderKey = $state(0);
   let toolbarRepairFrame = 0;
@@ -142,7 +143,22 @@
       expandedFolderIds = [...expandedFolderIds, folderId];
     }
     pendingEditFolderId = folderId;
+    newFolderEditId = folderId;
     flashMessages.success(translate($languageStore, "bookmarks.folderCreated"));
+  };
+
+  const confirmNewFolderEdit = (folderId: string | undefined) => {
+    if (newFolderEditId === folderId) newFolderEditId = null;
+  };
+
+  const cancelNewFolderEdit = async (folderId: string | undefined) => {
+    if (!folderId || newFolderEditId !== folderId) return;
+    newFolderEditId = null;
+    pendingEditFolderId = null;
+    expandedFolderIds = expandedFolderIds.filter((id) => id !== folderId);
+    if (!(await bookmarksService.deleteFolder(folderId))) {
+      flashMessages.alert(translate($languageStore, "bookmarks.folderDeleteError"));
+    }
   };
 
   const toggleArchive = async (folder: BookmarksFolderStruct) => {
@@ -550,9 +566,12 @@
                 isExpanded={expandedFolderIds.includes(folder.id || "")}
                 isTutorialSaveTarget={tutorialStep === "save-search" && folder.id === tutorialTargetFolderId}
                 startInEditMode={pendingEditFolderId === folder.id}
+                isNewFolderEdit={newFolderEditId === folder.id}
                 onStartInEditModeHandled={() => {
                   if (pendingEditFolderId === folder.id) pendingEditFolderId = null;
                 }}
+                onNewFolderEditSaved={() => confirmNewFolderEdit(folder.id)}
+                onNewFolderEditCancelled={() => cancelNewFolderEdit(folder.id)}
                 onToggleExpansion={toggleExpansion}
                 onArchiveEvent={() => toggleArchive(folder)}
                  onDeleteEvent={() => requestFolderDelete(folder)}
