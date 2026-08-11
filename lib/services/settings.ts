@@ -317,9 +317,7 @@ async function loadVersionSettings(
   const cached = versionCache.get(version)
   if (cached) return cached
 
-  const stored = await fetchSynced<VersionSettings>(
-    versionSettingsKey(version)
-  )
+  const stored = await fetchSynced<VersionSettings>(versionSettingsKey(version))
   const hasIndependentInterfaceSettings =
     typeof stored?.sidebarSide === "string" &&
     typeof stored?.sidebarWidth === "number" &&
@@ -339,10 +337,13 @@ async function loadVersionSettings(
   return next
 }
 
-async function load() {
+async function load(force = false) {
+  if (force) versionCache.clear()
+
   const requestedVersion = inferTradeVersion()
   const requestId = ++versionRequestId
-  const legacySettings = await fetchSynced<Partial<AppSettings>>(GLOBAL_SETTINGS_KEY)
+  const legacySettings =
+    await fetchSynced<Partial<AppSettings>>(GLOBAL_SETTINGS_KEY)
 
   const [poe1Settings, poe2Settings] = await Promise.all([
     loadVersionSettings("1", legacySettings),
@@ -380,10 +381,7 @@ async function saveVersionForReload(next: VersionSettings) {
 }
 
 async function saveVersion(next: VersionSettings) {
-  const saved = await persistSynced(
-    versionSettingsKey(activeVersion),
-    next
-  )
+  const saved = await persistSynced(versionSettingsKey(activeVersion), next)
   if (!saved) {
     console.warn(
       `[Poe Trade Plus] Failed to persist PoE ${activeVersion} settings`
@@ -402,6 +400,9 @@ bindStorageSync()
 export const settings = {
   subscribe,
   load,
+  reload() {
+    return load(true)
+  },
   getCurrent() {
     return currentSettings
   },
