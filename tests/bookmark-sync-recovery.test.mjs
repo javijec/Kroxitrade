@@ -470,6 +470,47 @@ test("keeps source bookmarks durable while a category transfer is still publishi
   )
 })
 
+test("moves a bookmark whose category assignment is still only in the local journal", async () => {
+  reset()
+  const previousSendMessage = chrome.runtime.sendMessage
+  chrome.runtime.sendMessage = async () => ({ ok: true })
+  try {
+    const bookmarks = new BookmarksService()
+    await bookmarks.persistFolders([
+      {
+        ...folder("source"),
+        categories: [{ id: "moved-category", title: "Moved" }]
+      },
+      folder("target")
+    ])
+    await bookmarks.persistTrades(
+      [{ ...trade("moved"), categoryId: "moved-category" }],
+      "source"
+    )
+    await bookmarks.persistTrades([], "target")
+
+    await bookmarks.moveCategoryBetweenFolders(
+      "moved-category",
+      "source",
+      "target"
+    )
+    await bookmarks.flushPendingOperations()
+
+    const reloaded = new BookmarksService()
+    assert.deepEqual(
+      await reloaded.fetchTradesByFolderId("source", { force: true }),
+      []
+    )
+    assert.equal(
+      (await reloaded.fetchTradesByFolderId("target", { force: true }))[0]
+        .categoryId,
+      "moved-category"
+    )
+  } finally {
+    chrome.runtime.sendMessage = previousSendMessage
+  }
+})
+
 
 test("moves the only source trade into an empty target folder", async () => {
   reset()

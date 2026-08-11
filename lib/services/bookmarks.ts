@@ -1252,8 +1252,8 @@ export class BookmarksService {
       }
 
       const [sourceSnapshot, targetSnapshot] = await Promise.all([
-        this.fetchTrades(sourceFolderId).then((trades) => this.normalizeTrades(trades)),
-        this.fetchTrades(targetFolderId).then((trades) => this.normalizeTrades(trades))
+        this.fetchTradesByFolderId(sourceFolderId, { force: true }),
+        this.fetchTradesByFolderId(targetFolderId, { force: true })
       ])
       const movedTrades = sourceSnapshot.filter((trade) => trade.categoryId === categoryId)
       const nextSourceTrades = sourceSnapshot.filter((trade) => trade.categoryId !== categoryId)
@@ -1381,8 +1381,8 @@ export class BookmarksService {
       }
 
       const [sourceSnapshot, targetSnapshot] = await Promise.all([
-        this.fetchTrades(sourceFolderId).then((trades) => this.normalizeTrades(trades)),
-        this.fetchTrades(targetFolderId).then((trades) => this.normalizeTrades(trades))
+        this.fetchTradesByFolderId(sourceFolderId, { force: true }),
+        this.fetchTradesByFolderId(targetFolderId, { force: true })
       ])
       const sourceTrades = this.cloneTrades(sourceSnapshot)
       const targetTrades = this.cloneTrades(targetSnapshot)
