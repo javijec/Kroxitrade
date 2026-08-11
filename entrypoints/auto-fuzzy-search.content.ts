@@ -1,5 +1,6 @@
 import { tradeHosts } from "~/lib/config/trade-hosts"
 import { storageService } from "~/lib/services/storage"
+import { getPendingSyncValue } from "~/lib/services/sync-journal"
 
 type FuzzySearchSettings = {
   autoFuzzySearch?: boolean
@@ -15,11 +16,14 @@ export default defineContentScript({
       : "app-settings-poe1"
 
     const apply = async () => {
-      const settings = await storageService.getValue<FuzzySearchSettings>(
-        settingsKey,
-        null,
-        "sync"
-      )
+      const settings =
+        (await getPendingSyncValue<FuzzySearchSettings>(settingsKey)) ??
+        (await storageService.getValue<FuzzySearchSettings>(
+          settingsKey,
+          null,
+          "sync"
+        )) ??
+        (await storageService.getValue<FuzzySearchSettings>(settingsKey))
       // New installs and profiles without this setting keep the historical
       // behavior: fuzzy matching is on until explicitly disabled.
       document.documentElement.dataset.kroxAutoFuzzy =

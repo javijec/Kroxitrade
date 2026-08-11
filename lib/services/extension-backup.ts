@@ -3,6 +3,10 @@ import {
   isExtensionContextInvalidatedError
 } from "../utilities/extension-context"
 import { bookmarksService } from "./bookmarks"
+import {
+  stageRawSyncDeletion,
+  stageRawSyncValue
+} from "./sync-journal"
 
 const BACKUP_SCHEMA = 2
 const APP_NAME = "Poe Trade Plus"
@@ -118,15 +122,22 @@ const writeStorage = async (values: ExtensionBackup["data"]["storage"]) => {
       ...new Set([...Object.keys(local), ...Object.keys(sync)])
     ].filter(isManagedStorageKey)
     if (keysToRemove.length > 0) {
-      await Promise.all([
-        chrome.storage.local.remove(keysToRemove),
-        chrome.storage.sync.remove(keysToRemove)
-      ])
+      await chrome.storage.local.remove(keysToRemove)
     }
-    await Promise.all([
-      chrome.storage.local.set(values.local),
-      chrome.storage.sync.set(values.sync)
-    ])
+    await chrome.storage.local.set(values.local)
+
+    const nextSyncKeys = new Set(Object.keys(values.sync))
+    for (const key of keysToRemove) {
+      if (nextSyncKeys.has(key)) continue
+      if (!(await stageRawSyncDeletion(key))) return false
+    }
+    for (const [key, value] of Object.entries(values.sync)) {
+      if (!(await stageRawSyncValue(key, value))) return false
+    }
+    void chrome.runtime?.sendMessage?.({
+      type: "sync-journal-flush",
+      delayMs: 500
+    }).catch(() => undefined)
     return true
   } catch (error) {
     if (!isExtensionContextInvalidatedError(error)) {

@@ -3,6 +3,7 @@ import { writable } from "svelte/store"
 import type { TradeSiteVersion } from "../types/trade-location"
 import { setLanguage, type AppLanguage } from "./i18n"
 import { storageService, type StorageArea } from "./storage"
+import { getPendingSyncValue, stageSyncValue } from "./sync-journal"
 
 export type SidebarSide = "left" | "right"
 export type BookmarkTradeActionId =
@@ -253,22 +254,27 @@ function bindStorageSync() {
     if (areaName !== SETTINGS_STORAGE_AREA) return
 
     for (const version of ["1", "2"] as const) {
-      const change = changes[versionSettingsKey(version)]
+      const key = versionSettingsKey(version)
+      const change = changes[key]
       if (!change) continue
-
-      const next = normalizeVersionSettings(
-        getStorageChangeValue<Partial<VersionSettings>>(change)
-      )
-      versionCache.set(version, next)
-      if (version === activeVersion) {
-        activeVersionSettings = next
-        publish()
-      }
+      void getPendingSyncValue(key).then((pending) => {
+        if (pending !== null) return
+        const next = normalizeVersionSettings(
+          getStorageChangeValue<Partial<VersionSettings>>(change)
+        )
+        versionCache.set(version, next)
+        if (version === activeVersion) {
+          activeVersionSettings = next
+          publish()
+        }
+      })
     }
   })
 }
 
 async function fetchSynced<T>(key: string): Promise<T | null> {
+  const pending = await getPendingSyncValue<T>(key)
+  if (pending !== null) return pending
   const local = await storageService.getValue<T>(key)
   const synced = await storageService.getValue<T>(
     key,
@@ -293,21 +299,15 @@ async function fetchSynced<T>(key: string): Promise<T | null> {
 }
 
 async function persistSynced(key: string, value: unknown): Promise<boolean> {
-  const persisted = await storageService.setValue(
-    key,
-    value,
-    null,
-    SETTINGS_STORAGE_AREA,
-    { awaitSync: false }
-  )
-  if (!persisted) {
-    // A full or temporarily unavailable browser Sync area must not prevent a
-    // user from changing an extension setting. The next successful load will
-    // retry the normal local-to-Sync migration.
-    return storageService.setValue(key, value)
+  const localSaved = await storageService.setValue(key, value)
+  if (!localSaved) return false
+  const journaled = await stageSyncValue(key, value)
+  if (!journaled) return false
+  if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
+    void chrome.runtime
+      .sendMessage({ type: "sync-journal-flush", delayMs: 500 })
+      .catch(() => undefined)
   }
-
-  await storageService.deleteValue(key, null, "local")
   return true
 }
 

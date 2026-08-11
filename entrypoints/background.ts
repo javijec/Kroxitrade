@@ -7,6 +7,7 @@ import { loadChineseStatTemplates } from "~/lib/services/chinese-trade/stat-temp
 import { getTradeTranslationState } from "~/lib/services/trade-translation"
 import { storageService } from "~/lib/services/storage"
 import { bookmarksService } from "~/lib/services/bookmarks"
+import { flushSyncJournal } from "~/lib/services/sync-journal"
 import {
   BOOKMARK_SCROLL_RESTORE_MAX_AGE_MS,
   bookmarkScrollMessage,
@@ -59,8 +60,11 @@ const scheduleBookmarkFlush = (delayMs = 500) => {
   if (bookmarkFlushTimer) clearTimeout(bookmarkFlushTimer)
   bookmarkFlushTimer = setTimeout(() => {
     bookmarkFlushTimer = null
-    void bookmarksService.flushPendingOperations().catch((error) => {
-      console.warn("[PoeTradePlus] Could not flush pending bookmark changes", error)
+    void Promise.all([
+      bookmarksService.flushPendingOperations(),
+      flushSyncJournal()
+    ]).catch((error) => {
+      console.warn("[PoeTradePlus] Could not flush pending local changes", error)
     })
   }, Math.max(0, delayMs))
 
@@ -150,8 +154,11 @@ export default defineBackground({
     scheduleBookmarkFlush()
     chrome.alarms.onAlarm.addListener((alarm) => {
       if (alarm.name !== BOOKMARK_REPOSITORY_FLUSH_ALARM) return
-      void bookmarksService.flushPendingOperations().catch((error) => {
-        console.warn("[PoeTradePlus] Could not flush pending bookmark changes", error)
+      void Promise.all([
+        bookmarksService.flushPendingOperations(),
+        flushSyncJournal()
+      ]).catch((error) => {
+        console.warn("[PoeTradePlus] Could not flush pending local changes", error)
       })
     })
     void prepareChineseTradeCaches()
@@ -164,6 +171,14 @@ export default defineBackground({
         typeof tabId === "number" ? getBookmarkScrollRestoreKey(tabId) : null
 
       if (request?.type === "bookmark-repository-flush") {
+        scheduleBookmarkFlush(
+          typeof request.delayMs === "number" ? request.delayMs : 500
+        )
+        sendResponse({ ok: true })
+        return false
+      }
+
+      if (request?.type === "sync-journal-flush") {
         scheduleBookmarkFlush(
           typeof request.delayMs === "number" ? request.delayMs : 500
         )

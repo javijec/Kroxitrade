@@ -1,4 +1,5 @@
 import { storageService } from "./storage"
+import { getPendingSyncValue } from "./sync-journal"
 
 export const TRADE_TRANSLATION_LANGS = new Set(["zh-tw", "zh-cn"])
 
@@ -9,21 +10,25 @@ export interface TradeTranslationState {
 }
 
 const getStoredTradeLanguage = async () => {
-  const syncedSettings = await storageService.getValue<Record<string, unknown>>(
-    "app-settings",
-    null,
-    "sync"
-  )
+  const syncedSettings =
+    (await getPendingSyncValue<Record<string, unknown>>("app-settings")) ??
+    (await storageService.getValue<Record<string, unknown>>(
+      "app-settings",
+      null,
+      "sync"
+    ))
   const settings = syncedSettings ?? await storageService.getValue<Record<string, unknown>>(
     "app-settings"
   )
   const version = isPoe2TradeSite() ? "poe2" : "poe1"
   const versionSettingsKey = `app-settings-${version}`
-  const syncedVersionSettings = await storageService.getValue<Record<string, unknown>>(
-    versionSettingsKey,
-    null,
-    "sync"
-  )
+  const syncedVersionSettings =
+    (await getPendingSyncValue<Record<string, unknown>>(versionSettingsKey)) ??
+    (await storageService.getValue<Record<string, unknown>>(
+      versionSettingsKey,
+      null,
+      "sync"
+    ))
   const versionSettings =
     syncedVersionSettings ??
     await storageService.getValue<Record<string, unknown>>(versionSettingsKey)

@@ -52,6 +52,14 @@ type BookmarksChangeEvent = {
   folderId?: string
 }
 
+type BookmarkTransactionOperation =
+  | { type: "folders"; folders: BookmarksFolderStruct[] }
+  | {
+      type: "trades"
+      folderId: string
+      trades: BookmarksTradeStruct[]
+    }
+
 interface ExportedFolderStruct {
   icn: string
   tit: string
@@ -1042,6 +1050,42 @@ export class BookmarksService {
     }
   }
 
+  private async persistTransaction(
+    operations: BookmarkTransactionOperation[]
+  ) {
+    if (!this.journalHydrated) await this.journalReady
+
+    const changedTradeFolderIds = new Set<string>()
+    let foldersChanged = false
+    for (const operation of operations) {
+      if (operation.type === "folders") {
+        this.repository.stageFolders(this.normalizeFolders(operation.folders))
+        foldersChanged = true
+      } else {
+        this.assertFolderCanPersist(operation.folderId)
+        this.repository.stageTrades(
+          operation.folderId,
+          this.normalizeTrades(operation.trades)
+        )
+        changedTradeFolderIds.add(operation.folderId)
+      }
+    }
+
+    if (foldersChanged) {
+      this.foldersStore.set(this.repository.getFolders())
+      this.notifyChange({ foldersChanged: true })
+    }
+    for (const folderId of changedTradeFolderIds) {
+      this.tradesCache.set(folderId, this.repository.getTrades(folderId))
+      if (!this.isCategoryTransferPending(folderId)) {
+        this.notifyChange({ tradesChanged: true, folderId })
+      }
+    }
+
+    await this.persistJournal()
+    await this.requestBackgroundFlush()
+  }
+
   async duplicateTrade(
     trade: BookmarksTradeStruct,
     targetFolderId: string
@@ -1199,48 +1243,6 @@ export class BookmarksService {
     this.setCategoryTransferPending(sourceFolderId, true)
     this.setCategoryTransferPending(targetFolderId, true)
 
-    const cachedFolders = get(this.foldersStore)
-    const cachedSource = cachedFolders.find((folder) => folder.id === sourceFolderId)
-    const cachedTarget = cachedFolders.find((folder) => folder.id === targetFolderId)
-    const cachedCategory = this.normalizeCategories(cachedSource?.categories)
-      .find((category) => category.id === categoryId)
-    if (cachedSource && cachedTarget && cachedCategory) {
-      const sourceTrades = this.tradesCache.get(sourceFolderId)
-      const targetTrades = this.tradesCache.get(targetFolderId)
-      const movedTrades = sourceTrades?.filter((trade) => trade.categoryId === categoryId) || []
-      if (sourceTrades) {
-        this.tradesCache.set(
-          sourceFolderId,
-          this.cloneTrades(sourceTrades.filter((trade) => trade.categoryId !== categoryId))
-        )
-      }
-      if (targetTrades) {
-        this.tradesCache.set(
-          targetFolderId,
-          this.cloneTrades([...targetTrades, ...movedTrades])
-        )
-      }
-      this.foldersStore.set(cachedFolders.map((folder) => {
-        if (folder.id === sourceFolderId) {
-          return {
-            ...folder,
-            categories: this.normalizeCategories(folder.categories)
-              .filter((category) => category.id !== categoryId)
-          }
-        }
-        if (folder.id === targetFolderId) {
-          return {
-            ...folder,
-            categories: [...this.normalizeCategories(folder.categories), cachedCategory]
-          }
-        }
-        return folder
-      }))
-      this.notifyChange({ foldersChanged: true })
-      if (sourceTrades) this.notifyChange({ tradesChanged: true, folderId: sourceFolderId })
-      if (targetTrades) this.notifyChange({ tradesChanged: true, folderId: targetFolderId })
-    }
-
     const transfer = this.enqueueTradesMutation(async () => {
       const folders = await this.fetchFolders()
       const source = folders.find((folder) => folder.id === sourceFolderId)
@@ -1276,20 +1278,17 @@ export class BookmarksService {
       })
 
       try {
-        // Persist a second durable copy before removing the original. A page
-        // reload can interrupt this multi-folder operation at any await, so
-        // removing the source first could make the moved bookmarks disappear.
-        await this.persistTrades(nextTargetTrades, targetFolderId)
-        await this.persistFolders(nextFolders)
-        await this.persistTrades(nextSourceTrades, sourceFolderId)
-        await this.refresh()
-      } catch (error) {
-        await Promise.allSettled([
-          this.persistFolders(folders),
-          this.persistTrades(sourceSnapshot, sourceFolderId),
-          this.persistTrades(targetSnapshot, targetFolderId)
+        await this.persistTransaction([
+          { type: "trades", folderId: targetFolderId, trades: nextTargetTrades },
+          { type: "folders", folders: nextFolders },
+          { type: "trades", folderId: sourceFolderId, trades: nextSourceTrades }
         ])
-        await this.refresh()
+      } catch (error) {
+        await this.persistTransaction([
+          { type: "trades", folderId: targetFolderId, trades: targetSnapshot },
+          { type: "folders", folders },
+          { type: "trades", folderId: sourceFolderId, trades: sourceSnapshot }
+        ]).catch(() => undefined)
         throw error
       }
     })

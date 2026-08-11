@@ -64,6 +64,12 @@ globalThis.chrome = {
 
 const { BookmarksService } = await import("../lib/services/bookmarks.ts")
 const { storageService } = await import("../lib/services/storage.ts")
+const {
+  flushSyncJournal,
+  getPendingSyncValue,
+  stageRawSyncValue,
+  stageSyncValue
+} = await import("../lib/services/sync-journal.ts")
 
 const sync = storageService
 sync.enqueueSyncOperation = async (operation) => operation()
@@ -212,6 +218,42 @@ test("rehydrates a pending local bookmark journal before Sync is flushed", async
   } finally {
     chrome.runtime.sendMessage = previousSendMessage
   }
+})
+
+test("keeps the latest generic Sync mutation locally until the worker flushes it", async () => {
+  reset()
+  await stageSyncValue("app-settings-poe1", { language: "es" })
+  await stageSyncValue("app-settings-poe1", { language: "pt" })
+
+  assert.deepEqual(
+    await getPendingSyncValue("app-settings-poe1"),
+    { language: "pt" }
+  )
+  assert.equal(
+    await storageService.getValue("app-settings-poe1", null, "sync"),
+    null
+  )
+
+  await flushSyncJournal()
+  assert.deepEqual(
+    await storageService.getValue("app-settings-poe1", null, "sync"),
+    { language: "pt" }
+  )
+  assert.equal(await getPendingSyncValue("app-settings-poe1"), null)
+})
+
+test("flushes raw backup payloads through the same durable journal", async () => {
+  reset()
+  await stageRawSyncValue("app-settings-poe1", {
+    expiresAt: null,
+    value: { language: "es" }
+  })
+
+  await flushSyncJournal()
+  assert.deepEqual(
+    await storageService.getValue("app-settings-poe1", null, "sync"),
+    { language: "es" }
+  )
 })
 
 test("does not publish staged chunks when manifest publication fails", async () => {
@@ -417,7 +459,7 @@ test("moveCategory uses the requested final visual index", async () => {
   )
 })
 
-test("keeps source bookmarks durable while a category transfer is still publishing its target", async () => {
+test("rehydrates the final category transfer while its Sync flush is still publishing", async () => {
   reset()
   const bookmarks = new BookmarksService()
   await bookmarks.persistFolders([
@@ -453,6 +495,10 @@ test("keeps source bookmarks durable while a category transfer is still publishi
   const reloaded = new BookmarksService()
   assert.deepEqual(
     (await reloaded.fetchTradesByFolderId("source", { force: true })).map(({ id }) => id),
+    []
+  )
+  assert.deepEqual(
+    (await reloaded.fetchTradesByFolderId("target", { force: true })).map(({ id }) => id),
     ["moved"]
   )
 
