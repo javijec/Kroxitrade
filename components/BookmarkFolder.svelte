@@ -14,7 +14,8 @@
   import {
     getActiveTradeTabTitle,
     openUrlInActiveTab,
-    openUrlInNewTab
+    openUrlInNewTab,
+    openUrlInNewWindow
   } from "../lib/services/active-trade-tab"
   import { saveBookmarkScroll } from "../lib/services/bookmark-scroll"
   import { bookmarksService } from "../lib/services/bookmarks"
@@ -739,8 +740,13 @@
     )
   }
 
-  const openTrade = async (trade: BookmarksTradeStruct, inNewTab = false) => {
-    if (!inNewTab) {
+  type TradeOpenTarget = "active" | "tab" | "window"
+
+  const openTrade = async (
+    trade: BookmarksTradeStruct,
+    target: TradeOpenTarget = "active"
+  ) => {
+    if (target === "active") {
       if (scrollContainer) {
         await saveBookmarkScroll(scrollContainer.scrollTop)
       }
@@ -749,7 +755,13 @@
       [trade.location.slug]: trade.title
     })
     const url = resolveTradeUrl(trade.location, "", true)
-    await (inNewTab ? openUrlInNewTab(url) : openUrlInActiveTab(url))
+    await (
+      target === "tab"
+        ? openUrlInNewTab(url)
+        : target === "window"
+          ? openUrlInNewWindow(url)
+          : openUrlInActiveTab(url)
+    )
   }
 
   const toggleTradeArchive = async (trade: BookmarksTradeStruct) => {
@@ -935,9 +947,12 @@
     editingTradeId = null
   }
 
-  const openTradeFromCard = (trade: BookmarksTradeStruct, inNewTab = false) => {
+  const openTradeFromCard = (
+    trade: BookmarksTradeStruct,
+    target: TradeOpenTarget = "active"
+  ) => {
     if (suppressNextTradeOpen || editingTradeId === trade.id) return
-    void openTrade(trade, inNewTab)
+    void openTrade(trade, target)
   }
 
   const shouldIgnoreTradeCardClick = (target: EventTarget | null) => {
@@ -953,9 +968,15 @@
 
   const handleTradeCardClick = (event: MouseEvent | PointerEvent, trade: BookmarksTradeStruct) => {
     if (shouldIgnoreTradeCardClick(event.target)) return
-    if (event.button === 1) {
+    if (event.shiftKey) {
       event.preventDefault()
-      openTradeFromCard(trade, true)
+      openTradeFromCard(trade, "window")
+      return
+    }
+
+    if (event.ctrlKey || event.metaKey || event.button === 1) {
+      event.preventDefault()
+      openTradeFromCard(trade, "tab")
       return
     }
 
@@ -1415,7 +1436,7 @@
                             onEdit={() => void startEditingTrade(trade)}
                             onReplace={() => void replaceSearchWithCurrent(trade)}
                             onCopy={() => copyTrade(trade)}
-                            onOpenNewTab={() => void openTrade(trade, true)}
+                            onOpenNewTab={() => void openTrade(trade, "tab")}
                             onDuplicate={() => void duplicateTrade(trade)}
                             onOpenLive={() => void openTradeLive(trade)}
                             onToggleArchive={() => void toggleTradeArchive(trade)}
@@ -1436,7 +1457,7 @@
                           onEdit={() => void startEditingTrade(trade)}
                           onReplace={() => void replaceSearchWithCurrent(trade)}
                           onCopy={() => copyTrade(trade)}
-                          onOpenNewTab={() => void openTrade(trade, true)}
+                          onOpenNewTab={() => void openTrade(trade, "tab")}
                           onDuplicate={() => void duplicateTrade(trade)}
                           onOpenLive={() => void openTradeLive(trade)}
                           onToggleArchive={() => void toggleTradeArchive(trade)}

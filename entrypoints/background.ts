@@ -170,6 +170,32 @@ export default defineBackground({
       const bookmarkScrollKey =
         typeof tabId === "number" ? getBookmarkScrollRestoreKey(tabId) : null
 
+      if (request?.type === "open-url-in-new-window") {
+        if (typeof request.url !== "string") {
+          sendResponse({ ok: false })
+          return false
+        }
+        let url: URL
+        try {
+          url = new URL(request.url)
+        } catch {
+          sendResponse({ ok: false })
+          return false
+        }
+        if (!/^https:$/.test(url.protocol)) {
+          sendResponse({ ok: false })
+          return false
+        }
+        chrome.windows
+          .create({ url: url.href, type: "normal", focused: true })
+          .then(() => sendResponse({ ok: true }))
+          .catch((error) => {
+            console.warn("[Poe Trade Plus] Failed to open a new window", error)
+            sendResponse({ ok: false })
+          })
+        return true
+      }
+
       if (request?.type === "bookmark-repository-flush") {
         scheduleBookmarkFlush(
           typeof request.delayMs === "number" ? request.delayMs : 500
