@@ -95,6 +95,8 @@
   let archiveCompletedPending = $state(false)
   let showArchivedTrades = $state(false)
   let categoryPendingDelete: BookmarksCategoryStruct | null = $state(null)
+  let categoryDeletingId: string | null = $state(null)
+  let pendingDeletedCategoryIds: string[] = $state([])
   let currentFolderId: string | null = $state(null)
   let collapsedCategoryIds: string[] = $state([])
   let loadRequestId = 0
@@ -238,11 +240,18 @@
     return categoryById.has(trade.categoryId) ? trade.categoryId : null
   }
 
+  const hasAssignedCategories = () =>
+    trades.some((trade) => categoryIdForTrade(trade) !== null)
+
   const getDisplayedTrades = () => {
     const visibleTrades = trades.filter((trade) =>
       showArchivedTrades ? !!trade.archivedAt : !trade.archivedAt
     )
-    if (!$settings.bookmarkCategoriesEnabled || categoryOptions.length === 0) {
+    if (
+      !$settings.bookmarkCategoriesEnabled ||
+      categoryOptions.length === 0 ||
+      !hasAssignedCategories()
+    ) {
       return visibleTrades
     }
 
@@ -268,7 +277,11 @@
   }
 
   const getTradeListEntries = (): TradeListEntry[] => {
-    if (!$settings.bookmarkCategoriesEnabled || categoryOptions.length === 0) {
+    if (
+      !$settings.bookmarkCategoriesEnabled ||
+      categoryOptions.length === 0 ||
+      !hasAssignedCategories()
+    ) {
       return displayedTrades.map((trade, displayIndex) => ({
         type: "trade",
         id: trade.id || `trade-${displayIndex}`,
@@ -374,16 +387,35 @@
   }
 
   const deleteCategory = async (category: BookmarksCategoryStruct) => {
-    if (!folder.id) return
-    trades = await bookmarksService.deleteCategory(folder, category.id)
-    await bookmarksService.refresh()
+    if (!folder.id || categoryDeletingId) return
+    const previousTrades = [...trades]
+    categoryDeletingId = category.id
+    categoryPendingDelete = null
+    pendingDeletedCategoryIds = [...pendingDeletedCategoryIds, category.id]
+    trades = trades.map((trade) =>
+      trade.categoryId === category.id ? { ...trade, categoryId: null } : trade
+    )
+    hasLoadedTrades = true
     collapsedCategoryIds = collapsedCategoryIds.filter((id) => id !== category.id)
     persistCollapsedCategoryIds()
-    categoryPendingDelete = null
-    hasLoadedTrades = true
-    flashMessages.success(
-      translate($languageStore, "folder.categoryDeleted", { title: category.title })
-    )
+    try {
+      trades = await bookmarksService.deleteCategory(folder, category.id)
+      pendingDeletedCategoryIds = pendingDeletedCategoryIds.filter(
+        (id) => id !== category.id
+      )
+      flashMessages.success(
+        translate($languageStore, "folder.categoryDeleted", { title: category.title })
+      )
+    } catch {
+      pendingDeletedCategoryIds = pendingDeletedCategoryIds.filter(
+        (id) => id !== category.id
+      )
+      trades = previousTrades
+      await bookmarksService.refresh()
+      flashMessages.alert(translate($languageStore, "folder.dragSaveError"))
+    } finally {
+      categoryDeletingId = null
+    }
   }
 
   const requestCategoryDelete = (category: BookmarksCategoryStruct) => {
@@ -971,7 +1003,11 @@
     }
     return groups
   })
-  let categoryOptions = $derived(optimisticCategoryOptions || folder.categories || [])
+  let categoryOptions = $derived(
+    (optimisticCategoryOptions || folder.categories || []).filter(
+      (category) => !pendingDeletedCategoryIds.includes(category.id)
+    )
+  )
   let categoryById = $derived(new Map(categoryOptions.map((category) => [category.id, category])))
   let displayedTrades = $derived(getDisplayedTrades())
   let tradeListEntries = $derived(getTradeListEntries())
@@ -1201,6 +1237,9 @@
                   <span class="category-heading__rule" aria-hidden="true"></span>
                   <span
                     class="category-heading__title category-heading__drag-area"
+                    role="button"
+                    aria-label={entry.title}
+                    tabindex={entry.category ? 0 : -1}
                     draggable={!!entry.category}
                     ondragstart={entry.category
                       ? (event) => handleCategoryDragStart(event, entry.category!)

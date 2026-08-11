@@ -93,6 +93,7 @@ const reset = () => {
   failSyncSet = null
   syncSetCalls = 0
   syncSetGate = null
+  sync.syncBatchDelay = 0
   sync.syncRecoveryTimer = null
   sync.syncRecoveryInitialized = false
 }
@@ -141,6 +142,20 @@ test("batches concurrent Sync writes into one storage call", async () => {
     storageService.setValue("batch-two", { value: 2 }, null, "sync")
   ])
 
+  assert.equal(syncSetCalls, 1)
+})
+
+test("waits for a quiet Sync window before publishing batched changes", async () => {
+  reset()
+  sync.syncBatchDelay = 30
+
+  const first = storageService.setValue("batch-one", { value: 1 }, null, "sync")
+  await new Promise((resolve) => setTimeout(resolve, 15))
+  const second = storageService.setValue("batch-two", { value: 2 }, null, "sync")
+  await new Promise((resolve) => setTimeout(resolve, 20))
+
+  assert.equal(syncSetCalls, 0)
+  await Promise.all([first, second])
   assert.equal(syncSetCalls, 1)
 })
 
@@ -258,7 +273,28 @@ test("persistTrades rejects when chunk persistence fails", async () => {
   assert.deepEqual(await bookmarks.fetchTradesByFolderId("failure", { force: true }), [])
 })
 
-test("moveTradeBetweenFolders clears a category missing from its target", async () => {
+test("creates new bookmarks without inheriting a category", async () => {
+  reset()
+  const bookmarks = new BookmarksService()
+  await bookmarks.persistFolders([
+    { ...folder("created"), categories: [{ id: "category", title: "Category" }] }
+  ])
+
+  const { id: _ignoredId, ...newTrade } = {
+    ...trade("temporary"),
+    categoryId: "category"
+  }
+  const id = await bookmarks.persistTrade(newTrade, "created")
+
+  assert.equal(
+    (await bookmarks.fetchTradesByFolderId("created", { force: true }))
+      .find((entry) => entry.id === id)
+      .categoryId,
+    null
+  )
+})
+
+test("moveTradeBetweenFolders carries a missing category into its target", async () => {
   reset()
   const bookmarks = new BookmarksService()
   await bookmarks.persistFolders([
@@ -273,7 +309,13 @@ test("moveTradeBetweenFolders clears a category missing from its target", async 
   assert.deepEqual(await bookmarks.fetchTradesByFolderId("source", { force: true }), [])
   assert.equal(
     (await bookmarks.fetchTradesByFolderId("target", { force: true }))[0].categoryId,
-    null
+    "source-category"
+  )
+  assert.deepEqual(
+    (await bookmarks.fetchFolders())
+      .find(({ id }) => id === "target")
+      .categories.map(({ id }) => id),
+    ["other-category", "source-category"]
   )
 })
 
@@ -294,6 +336,59 @@ test("moveCategory uses the requested final visual index", async () => {
   assert.deepEqual(
     (await bookmarks.fetchFolders())[0].categories.map(({ id }) => id),
     ["b", "c", "a"]
+  )
+})
+
+test("keeps source bookmarks durable while a category transfer is still publishing its target", async () => {
+  reset()
+  const bookmarks = new BookmarksService()
+  await bookmarks.persistFolders([
+    { ...folder("source"), categories: [{ id: "moved-category", title: "Moved" }] },
+    folder("target")
+  ])
+  await bookmarks.persistTrades(
+    [{ ...trade("moved"), categoryId: "moved-category" }],
+    "source"
+  )
+  await bookmarks.persistTrades([], "target")
+
+  let entered
+  let release
+  const enteredGate = new Promise((resolve) => { entered = resolve })
+  const releaseGate = new Promise((resolve) => { release = resolve })
+  let blocked = false
+  syncSetGate = (_name, values) => {
+    if (!blocked && "bookmark-trades-manifest--target" in values) {
+      blocked = true
+      entered()
+      return releaseGate
+    }
+  }
+
+  const transfer = bookmarks.moveCategoryBetweenFolders(
+    "moved-category",
+    "source",
+    "target"
+  )
+  await enteredGate
+
+  const reloaded = new BookmarksService()
+  assert.deepEqual(
+    (await reloaded.fetchTradesByFolderId("source", { force: true })).map(({ id }) => id),
+    ["moved"]
+  )
+
+  release()
+  await transfer
+
+  const completed = new BookmarksService()
+  assert.deepEqual(
+    await completed.fetchTradesByFolderId("source", { force: true }),
+    []
+  )
+  assert.deepEqual(
+    (await completed.fetchTradesByFolderId("target", { force: true })).map(({ id }) => id),
+    ["moved"]
   )
 })
 

@@ -439,7 +439,7 @@ export class StorageService {
   private enqueueSyncMutation(key: string, value?: StoragePayload): Promise<void> {
     return new Promise((resolve, reject) => {
       this.pendingSyncMutations.push({ key, value, resolve, reject })
-      if (this.syncBatchTimer !== null) return
+      if (this.syncBatchTimer !== null) clearTimeout(this.syncBatchTimer)
 
       this.syncBatchTimer = setTimeout(() => {
         this.syncBatchTimer = null

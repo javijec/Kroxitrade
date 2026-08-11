@@ -621,6 +621,43 @@ export class BookmarksService {
     }))
   }
 
+  private resolveTargetTradeCategory(
+    sourceFolder: BookmarksFolderStruct,
+    targetFolder: BookmarksFolderStruct,
+    categoryId: string | null | undefined
+  ) {
+    const targetCategories = this.normalizeCategories(targetFolder.categories)
+    if (!categoryId) {
+      return { categoryId: null, targetCategories, addedToTarget: false }
+    }
+
+    const sourceCategory = this.normalizeCategories(sourceFolder.categories)
+      .find((category) => category.id === categoryId)
+    if (!sourceCategory) {
+      return { categoryId: null, targetCategories, addedToTarget: false }
+    }
+
+    const targetCategory = targetCategories.find(
+      (category) =>
+        category.id === sourceCategory.id ||
+        category.title.trim().toLocaleLowerCase() ===
+          sourceCategory.title.trim().toLocaleLowerCase()
+    )
+    if (targetCategory) {
+      return {
+        categoryId: targetCategory.id,
+        targetCategories,
+        addedToTarget: false
+      }
+    }
+
+    return {
+      categoryId: sourceCategory.id,
+      targetCategories: [...targetCategories, sourceCategory],
+      addedToTarget: true
+    }
+  }
+
   getCachedTradesByFolderId(folderId: string): BookmarksTradeStruct[] | null {
     const cached = this.tradesCache.get(folderId)
     return cached ? [...cached] : null
@@ -786,9 +823,18 @@ export class BookmarksService {
   }
 
   async persistFolders(folders: BookmarksFolderStruct[]) {
+    const safeFolders = this.normalizeFolders(folders)
+    // All folder mutations share this optimistic publication path. The Sync
+    // write remains queued below, so adding, editing, moving, archiving and
+    // deleting folders never wait for storage before updating the UI.
+    this.foldersStore.set(safeFolders)
+    this.notifyChange({ foldersChanged: true })
     this.foldersWriteDepth++
     try {
-      await this.persistFoldersToChunks(folders)
+      await this.persistFoldersToChunks(safeFolders)
+    } catch (error) {
+      await this.refresh({ force: true })
+      throw error
     } finally {
       this.foldersWriteDepth--
     }
@@ -798,29 +844,37 @@ export class BookmarksService {
     trade: BookmarksTradeStruct,
     folderId: string
   ): Promise<string> {
-    return this.enqueueTradesWrite(folderId, async () => {
-      const trades = await this.fetchTradesByFolderId(folderId, { force: true })
-      const id = trade.id || uniqueId()
-      const nextTrade = { ...trade, id }
-      const updated = trade.id
+    this.assertFolderCanPersist(folderId)
+    const trades = this.getCachedTradesByFolderId(folderId) ??
+      await this.fetchTradesByFolderId(folderId, { force: true })
+    const id = trade.id || uniqueId()
+    const nextTrade = {
+      ...trade,
+      id,
+      // New bookmarks always start uncategorized. Assignment is an explicit
+      // follow-up action, so a stale UI payload cannot inherit a category.
+      categoryId: trade.id ? trade.categoryId || null : null
+    }
+    const updated = this.normalizeTrades(
+      trade.id
         ? trades.map((entry) =>
             entry.id === trade.id ? { ...entry, ...nextTrade } : entry
           )
         : [...trades, nextTrade]
+    )
 
-      const savedIncrementally = await this.persistTradeToAffectedChunk(
-        folderId,
-        this.normalizeTrades([nextTrade])[0]
-      )
-      if (!savedIncrementally) {
-        await this.persistTradesToChunks(
-          folderId,
-          this.normalizeTrades(updated)
-        )
-      }
-      this.tradesCache.set(folderId, this.normalizeTrades(updated))
-      await this.refresh()
+    this.tradesCache.set(folderId, this.cloneTrades(updated))
+    this.notifyChange({ tradesChanged: true, folderId })
+    const queued = this.enqueueTradesWrite(folderId, async () => {
+      this.assertFolderCanPersist(folderId)
+      await this.persistTradesToChunks(folderId, updated)
       return id
+    })
+    return queued.catch(async (error) => {
+      this.tradesCache.delete(folderId)
+      this.tradesRequests.delete(folderId)
+      await this.refreshTradesFromStorage(folderId)
+      throw error
     })
   }
 
@@ -833,14 +887,23 @@ export class BookmarksService {
       trades.map((trade) => ({ ...trade, id: trade.id || uniqueId() }))
     )
 
-    return this.enqueueTradesWrite(folderId, async () => {
+    // Publish the final list immediately. Every caller (create, edit, move,
+    // delete, archive and category assignment) flows through here, while the
+    // actual Sync work is coalesced by StorageService after the quiet period.
+    this.tradesCache.set(folderId, this.cloneTrades(safeTrades))
+    if (!this.isCategoryTransferPending(folderId)) {
+      this.notifyChange({ tradesChanged: true, folderId })
+    }
+    const queued = this.enqueueTradesWrite(folderId, async () => {
       this.assertFolderCanPersist(folderId)
       await this.persistTradesToChunks(folderId, safeTrades)
-      this.tradesCache.set(folderId, this.cloneTrades(safeTrades))
-      if (!this.isCategoryTransferPending(folderId)) {
-        this.notifyChange({ tradesChanged: true, folderId })
-      }
       return this.cloneTrades(safeTrades)
+    })
+    return queued.catch(async (error) => {
+      this.tradesCache.delete(folderId)
+      this.tradesRequests.delete(folderId)
+      await this.refreshTradesFromStorage(folderId)
+      throw error
     })
   }
 
@@ -918,7 +981,7 @@ export class BookmarksService {
     trade: BookmarksTradeStruct,
     targetFolderId: string
   ): Promise<BookmarksTradeStruct[]> {
-    const newTrade = { ...trade, id: uniqueId() }
+    const newTrade = { ...trade, id: uniqueId(), categoryId: null }
     const trades = await this.fetchTradesByFolderId(targetFolderId, {
       force: true
     })
@@ -1148,9 +1211,12 @@ export class BookmarksService {
       })
 
       try {
+        // Persist a second durable copy before removing the original. A page
+        // reload can interrupt this multi-folder operation at any await, so
+        // removing the source first could make the moved bookmarks disappear.
+        await this.persistTrades(nextTargetTrades, targetFolderId)
         await this.persistFolders(nextFolders)
         await this.persistTrades(nextSourceTrades, sourceFolderId)
-        await this.persistTrades(nextTargetTrades, targetFolderId)
         await this.refresh()
       } catch (error) {
         await Promise.allSettled([
@@ -1203,7 +1269,9 @@ export class BookmarksService {
     // serialized, but expanded folders should not wait for the Sync queue.
     const cachedSource = this.tradesCache.get(sourceFolderId)
     const cachedTarget = this.tradesCache.get(targetFolderId)
-    const targetFolder = get(this.foldersStore).find((folder) => folder.id === targetFolderId)
+    const cachedFolders = get(this.foldersStore)
+    const sourceFolder = cachedFolders.find((folder) => folder.id === sourceFolderId)
+    const targetFolder = cachedFolders.find((folder) => folder.id === targetFolderId)
     const cachedSourceIndex = cachedSource?.findIndex((trade) => trade.id === tradeId) ?? -1
     if (cachedSource && cachedSourceIndex >= 0) {
       const sourceTrades = this.cloneTrades(cachedSource)
@@ -1211,20 +1279,31 @@ export class BookmarksService {
       this.tradesCache.set(sourceFolderId, sourceTrades)
       this.notifyChange({ tradesChanged: true, folderId: sourceFolderId })
 
-      if (cachedTarget && targetFolder) {
+      if (cachedTarget && sourceFolder && targetFolder) {
         const targetTrades = this.cloneTrades(cachedTarget)
-        const categoryExistsInTarget = this.normalizeCategories(targetFolder.categories)
-          .some((category) => category.id === movedTrade.categoryId)
+        const category = this.resolveTargetTradeCategory(
+          sourceFolder,
+          targetFolder,
+          movedTrade.categoryId
+        )
         const insertionIndex = targetIndex === undefined
           ? targetTrades.length
           : Math.min(targetIndex, targetTrades.length)
         targetTrades.splice(insertionIndex, 0, {
           ...movedTrade,
           location: { ...movedTrade.location },
-          categoryId: categoryExistsInTarget ? movedTrade.categoryId || null : null
+          categoryId: category.categoryId
         })
         this.tradesCache.set(targetFolderId, targetTrades)
         this.notifyChange({ tradesChanged: true, folderId: targetFolderId })
+        if (category.addedToTarget) {
+          this.foldersStore.set(cachedFolders.map((folder) =>
+            folder.id === targetFolderId
+              ? { ...folder, categories: category.targetCategories }
+              : folder
+          ))
+          this.notifyChange({ foldersChanged: true, folderId: targetFolderId })
+        }
       }
     }
 
@@ -1246,12 +1325,15 @@ export class BookmarksService {
       if (sourceIndex < 0) throw new Error("Bookmark trade no longer exists in the source folder")
 
       const [movedTrade] = sourceTrades.splice(sourceIndex, 1)
-      const categoryExistsInTarget = this.normalizeCategories(targetFolder.categories)
-        .some((category) => category.id === movedTrade.categoryId)
+      const category = this.resolveTargetTradeCategory(
+        sourceFolder,
+        targetFolder,
+        movedTrade.categoryId
+      )
       const moved = {
         ...movedTrade,
         location: { ...movedTrade.location },
-        categoryId: categoryExistsInTarget ? movedTrade.categoryId || null : null
+        categoryId: category.categoryId
       }
       const insertionIndex = targetIndex === undefined
         ? targetTrades.length
@@ -1260,9 +1342,19 @@ export class BookmarksService {
 
       const nextSource = this.normalizeTrades(sourceTrades)
       const nextTarget = this.normalizeTrades(targetTrades)
+      const nextFolders = category.addedToTarget
+        ? folders.map((folder) =>
+            folder.id === targetFolderId
+              ? { ...folder, categories: category.targetCategories }
+              : folder
+          )
+        : folders
       try {
-        await this.persistTrades(nextSource, sourceFolderId)
+        // Copy first, then remove. This keeps at least one durable version if
+        // a reload interrupts a cross-folder move between Sync writes.
         await this.persistTrades(nextTarget, targetFolderId)
+        if (category.addedToTarget) await this.persistFolders(nextFolders)
+        await this.persistTrades(nextSource, sourceFolderId)
       } catch (error) {
         // Sync has no transaction. Restore both snapshots so the cache and the
         // published manifests converge on the same state after a partial write.
