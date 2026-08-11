@@ -68,6 +68,9 @@ export class BookmarksService {
   private tradesWriteQueues = new Map<string, Promise<unknown>>()
   private deletedTradeFolderIds = new Set<string>()
   private tradesMutationTail: Promise<void> = Promise.resolve()
+  private pendingCategoryTransfers = 0
+  private pendingCategoryTransferFolders = new Map<string, number>()
+  private completedCategoryTransferFolders = new Set<string>()
   private foldersMigration: Promise<void> | null = null
   private tradesMigrations = new Map<string, Promise<void>>()
   public subscribe = this.foldersStore.subscribe
@@ -77,7 +80,8 @@ export class BookmarksService {
     this.bindStorageSync()
   }
 
-  async refresh() {
+  async refresh(options?: { force?: boolean }) {
+    if (!options?.force && this.pendingCategoryTransfers > 0) return
     const folders = await this.fetchFolders()
     this.foldersStore.set(folders)
     this.notifyChange()
@@ -114,7 +118,7 @@ export class BookmarksService {
         if (folderId) changedTradeFolderIds.add(folderId)
       }
       for (const folderId of changedTradeFolderIds) {
-        if (this.hasLocalTradesEdits(folderId)) continue
+        if (this.hasLocalTradesEdits(folderId) || this.isCategoryTransferPending(folderId)) continue
         this.tradesCache.delete(folderId)
         this.tradesRequests.delete(folderId)
         void this.refreshTradesFromStorage(folderId)
@@ -524,6 +528,21 @@ export class BookmarksService {
     return this.tradesWriteQueues.has(folderId)
   }
 
+  private isCategoryTransferPending(folderId: string) {
+    return (this.pendingCategoryTransferFolders.get(folderId) || 0) > 0
+  }
+
+  private setCategoryTransferPending(folderId: string, pending: boolean) {
+    const count = this.pendingCategoryTransferFolders.get(folderId) || 0
+    if (pending) {
+      this.pendingCategoryTransferFolders.set(folderId, count + 1)
+    } else if (count <= 1) {
+      this.pendingCategoryTransferFolders.delete(folderId)
+    } else {
+      this.pendingCategoryTransferFolders.set(folderId, count - 1)
+    }
+  }
+
   private cloneTrades(trades: BookmarksTradeStruct[]): BookmarksTradeStruct[] {
     return trades.map((trade) => ({
       ...trade,
@@ -812,7 +831,9 @@ export class BookmarksService {
       this.assertFolderCanPersist(folderId)
       await this.persistTradesToChunks(folderId, safeTrades)
       this.tradesCache.set(folderId, this.cloneTrades(safeTrades))
-      this.notifyChange({ tradesChanged: true, folderId })
+      if (!this.isCategoryTransferPending(folderId)) {
+        this.notifyChange({ tradesChanged: true, folderId })
+      }
       return this.cloneTrades(safeTrades)
     })
   }
@@ -993,6 +1014,128 @@ export class BookmarksService {
     })
   }
 
+  async moveCategoryBetweenFolders(
+    categoryId: string,
+    sourceFolderId: string,
+    targetFolderId: string
+  ): Promise<void> {
+    if (!categoryId || !sourceFolderId || !targetFolderId || sourceFolderId === targetFolderId) {
+      throw new Error("A category and two different bookmark folders are required")
+    }
+
+    this.pendingCategoryTransfers += 1
+    this.setCategoryTransferPending(sourceFolderId, true)
+    this.setCategoryTransferPending(targetFolderId, true)
+
+    const cachedFolders = get(this.foldersStore)
+    const cachedSource = cachedFolders.find((folder) => folder.id === sourceFolderId)
+    const cachedTarget = cachedFolders.find((folder) => folder.id === targetFolderId)
+    const cachedCategory = this.normalizeCategories(cachedSource?.categories)
+      .find((category) => category.id === categoryId)
+    if (cachedSource && cachedTarget && cachedCategory) {
+      const sourceTrades = this.tradesCache.get(sourceFolderId)
+      const targetTrades = this.tradesCache.get(targetFolderId)
+      const movedTrades = sourceTrades?.filter((trade) => trade.categoryId === categoryId) || []
+      if (sourceTrades) {
+        this.tradesCache.set(
+          sourceFolderId,
+          this.cloneTrades(sourceTrades.filter((trade) => trade.categoryId !== categoryId))
+        )
+      }
+      if (targetTrades) {
+        this.tradesCache.set(
+          targetFolderId,
+          this.cloneTrades([...targetTrades, ...movedTrades])
+        )
+      }
+      this.foldersStore.set(cachedFolders.map((folder) => {
+        if (folder.id === sourceFolderId) {
+          return {
+            ...folder,
+            categories: this.normalizeCategories(folder.categories)
+              .filter((category) => category.id !== categoryId)
+          }
+        }
+        if (folder.id === targetFolderId) {
+          return {
+            ...folder,
+            categories: [...this.normalizeCategories(folder.categories), cachedCategory]
+          }
+        }
+        return folder
+      }))
+      this.notifyChange({ foldersChanged: true })
+      if (sourceTrades) this.notifyChange({ tradesChanged: true, folderId: sourceFolderId })
+      if (targetTrades) this.notifyChange({ tradesChanged: true, folderId: targetFolderId })
+    }
+
+    const transfer = this.enqueueTradesMutation(async () => {
+      const folders = await this.fetchFolders()
+      const source = folders.find((folder) => folder.id === sourceFolderId)
+      const target = folders.find((folder) => folder.id === targetFolderId)
+      const movedCategory = this.normalizeCategories(source?.categories)
+        .find((entry) => entry.id === categoryId)
+      if (!source || !target || !movedCategory) {
+        throw new Error("Bookmark category no longer exists in the source folder")
+      }
+
+      const [sourceSnapshot, targetSnapshot] = await Promise.all([
+        this.fetchTrades(sourceFolderId).then((trades) => this.normalizeTrades(trades)),
+        this.fetchTrades(targetFolderId).then((trades) => this.normalizeTrades(trades))
+      ])
+      const movedTrades = sourceSnapshot.filter((trade) => trade.categoryId === categoryId)
+      const nextSourceTrades = sourceSnapshot.filter((trade) => trade.categoryId !== categoryId)
+      const nextTargetTrades = [...targetSnapshot, ...movedTrades]
+      const nextFolders = folders.map((folder) => {
+        if (folder.id === sourceFolderId) {
+          return {
+            ...folder,
+            categories: this.normalizeCategories(folder.categories)
+              .filter((entry) => entry.id !== categoryId)
+          }
+        }
+        if (folder.id === targetFolderId) {
+          return {
+            ...folder,
+            categories: [...this.normalizeCategories(folder.categories), movedCategory]
+          }
+        }
+        return folder
+      })
+
+      try {
+        await this.persistFolders(nextFolders)
+        await this.persistTrades(nextSourceTrades, sourceFolderId)
+        await this.persistTrades(nextTargetTrades, targetFolderId)
+        await this.refresh()
+      } catch (error) {
+        await Promise.allSettled([
+          this.persistFolders(folders),
+          this.persistTrades(sourceSnapshot, sourceFolderId),
+          this.persistTrades(targetSnapshot, targetFolderId)
+        ])
+        await this.refresh()
+        throw error
+      }
+    })
+
+    return transfer.finally(async () => {
+      this.pendingCategoryTransfers -= 1
+      this.setCategoryTransferPending(sourceFolderId, false)
+      this.setCategoryTransferPending(targetFolderId, false)
+      this.completedCategoryTransferFolders.add(sourceFolderId)
+      this.completedCategoryTransferFolders.add(targetFolderId)
+      if (this.pendingCategoryTransfers === 0) {
+        await this.refresh({ force: true })
+        const completedFolderIds = [...this.completedCategoryTransferFolders]
+        this.completedCategoryTransferFolders.clear()
+        for (const folderId of completedFolderIds) {
+          this.notifyChange({ tradesChanged: true, folderId })
+        }
+      }
+    })
+  }
+
   async moveTradeBetweenFolders(
     tradeId: string,
     sourceFolderId: string,
@@ -1012,6 +1155,35 @@ export class BookmarksService {
       throw new Error("The target trade position is invalid")
     }
 
+    // Move already-loaded lists immediately. Persistence below remains
+    // serialized, but expanded folders should not wait for the Sync queue.
+    const cachedSource = this.tradesCache.get(sourceFolderId)
+    const cachedTarget = this.tradesCache.get(targetFolderId)
+    const targetFolder = get(this.foldersStore).find((folder) => folder.id === targetFolderId)
+    const cachedSourceIndex = cachedSource?.findIndex((trade) => trade.id === tradeId) ?? -1
+    if (cachedSource && cachedSourceIndex >= 0) {
+      const sourceTrades = this.cloneTrades(cachedSource)
+      const [movedTrade] = sourceTrades.splice(cachedSourceIndex, 1)
+      this.tradesCache.set(sourceFolderId, sourceTrades)
+      this.notifyChange({ tradesChanged: true, folderId: sourceFolderId })
+
+      if (cachedTarget && targetFolder) {
+        const targetTrades = this.cloneTrades(cachedTarget)
+        const categoryExistsInTarget = this.normalizeCategories(targetFolder.categories)
+          .some((category) => category.id === movedTrade.categoryId)
+        const insertionIndex = targetIndex === undefined
+          ? targetTrades.length
+          : Math.min(targetIndex, targetTrades.length)
+        targetTrades.splice(insertionIndex, 0, {
+          ...movedTrade,
+          location: { ...movedTrade.location },
+          categoryId: categoryExistsInTarget ? movedTrade.categoryId || null : null
+        })
+        this.tradesCache.set(targetFolderId, targetTrades)
+        this.notifyChange({ tradesChanged: true, folderId: targetFolderId })
+      }
+    }
+
     return this.enqueueTradesMutation(async () => {
       const folders = await this.fetchFolders()
       const sourceFolder = folders.find((folder) => folder.id === sourceFolderId)
@@ -1021,8 +1193,8 @@ export class BookmarksService {
       }
 
       const [sourceSnapshot, targetSnapshot] = await Promise.all([
-        this.fetchTradesByFolderId(sourceFolderId, { force: true }),
-        this.fetchTradesByFolderId(targetFolderId, { force: true })
+        this.fetchTrades(sourceFolderId).then((trades) => this.normalizeTrades(trades)),
+        this.fetchTrades(targetFolderId).then((trades) => this.normalizeTrades(trades))
       ])
       const sourceTrades = this.cloneTrades(sourceSnapshot)
       const targetTrades = this.cloneTrades(targetSnapshot)

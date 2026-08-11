@@ -205,6 +205,10 @@
     if (payload.type === "trade" && payload.sourceFolderId !== folderId) {
       dragOverFolderId = folderId;
     }
+
+    if (payload.type === "category" && payload.folderId !== folderId) {
+      dragOverFolderId = folderId;
+    }
   };
 
   const handleFolderDrop = async (event: DragEvent, folderId: string) => {
@@ -242,6 +246,19 @@
         await bookmarksService.moveTradeBetweenFolders(
           payload.tradeId,
           payload.sourceFolderId,
+          folderId
+        );
+      } catch {
+        await bookmarksService.refresh();
+        flashMessages.alert(translate($languageStore, "bookmarks.restoreFailed"));
+      }
+    }
+
+    if (payload.type === "category" && payload.folderId !== folderId) {
+      try {
+        await bookmarksService.moveCategoryBetweenFolders(
+          payload.categoryId,
+          payload.folderId,
           folderId
         );
       } catch {
