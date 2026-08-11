@@ -583,7 +583,7 @@
   }
 
   const handleCategoryDragOver = (event: DragEvent, categoryId: string) => {
-    if (!draggedCategoryId) return
+    if (!draggedCategoryId && draggedIndex === null) return
     event.preventDefault()
     if (dragOverCategoryId !== categoryId) {
       dragOverCategoryId = categoryId
@@ -657,6 +657,31 @@
 
   const handleCategoryDrop = async (event: DragEvent, targetCategoryId: string) => {
     event.preventDefault()
+    if (draggedIndex !== null) {
+      const draggedTrade = displayedTrades[draggedIndex]
+      draggedIndex = null
+      dragOverIndex = null
+      dragOverCategoryId = null
+      if (!draggedTrade?.id || !folder.id) return
+
+      const previousTrades = [...trades]
+      const updatedTrades = displayedTrades.map((trade) =>
+        trade.id === draggedTrade.id
+          ? { ...trade, categoryId: targetCategoryId }
+          : trade
+      )
+      trades = updatedTrades
+      hasLoadedTrades = true
+      try {
+        trades = await bookmarksService.persistTrades(updatedTrades, folder.id)
+      } catch {
+        trades = previousTrades
+        await bookmarksService.refresh()
+        flashMessages.alert(translate($languageStore, "folder.dragSaveError"))
+      }
+      return
+    }
+
     const sourceIndex = categoryOptions.findIndex((category) => category.id === draggedCategoryId)
     const targetIndex = categoryOptions.findIndex((category) => category.id === targetCategoryId)
     clearCategoryDragState()
@@ -673,6 +698,7 @@
   const handleDragEnd = () => {
     draggedIndex = null
     dragOverIndex = null
+    dragOverCategoryId = null
     window.setTimeout(() => {
       suppressNextTradeOpen = false
     }, 0)
