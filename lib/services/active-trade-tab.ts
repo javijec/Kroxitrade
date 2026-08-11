@@ -90,6 +90,39 @@ export const openUrlInNewTab = async (url: string) => {
   }
 }
 
+export const openUrlInNewWindow = async (url: string) => {
+  if (hasValidExtensionContext() && chrome.windows?.create) {
+    try {
+      await chrome.windows.create({ url, type: "normal", focused: true })
+      return
+    } catch (error) {
+      if (!isExtensionContextInvalidatedError(error)) {
+        console.warn("[Poe Trade Plus] Failed to open a new window", error)
+      }
+    }
+  }
+
+  // Content scripts cannot access chrome.windows. Ask the background worker,
+  // where the Windows API is available, before falling back to window.open.
+  if (hasValidExtensionContext() && chrome.runtime?.sendMessage) {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: "open-url-in-new-window",
+        url
+      })
+      if (response?.ok) return
+    } catch (error) {
+      if (!isExtensionContextInvalidatedError(error)) {
+        console.warn("[Poe Trade Plus] Failed to request a new window", error)
+      }
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    window.open(url, "_blank", "noopener,noreferrer")
+  }
+}
+
 export const sendMessageToActiveTradeTab = async <T>(message: unknown) => {
   const tab = await getActiveTradeTab()
 

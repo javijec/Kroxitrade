@@ -16,6 +16,12 @@
   import { tradeLocationService } from "../../lib/services/trade-location";
   import { flashMessages } from "../../lib/services/flash";
   import { storageService } from "../../lib/services/storage";
+  import {
+    BOOKMARK_DRAG_MIME_TYPE,
+    parseBookmarkDragPayload,
+    setBookmarkDragPayload,
+    type BookmarkDragPayload
+  } from "../../lib/types/bookmark-drag";
   import type { BookmarksFolderStruct } from "../../lib/types/bookmarks";
 
   import BookmarkFolder from "../BookmarkFolder.svelte";
@@ -143,11 +149,16 @@
     await bookmarksService.toggleFolderArchive(folder);
   };
 
-  const deleteFolder = async (folder: BookmarksFolderStruct) => {
+  const deleteFolder = (folder: BookmarksFolderStruct) => {
     if (!folder.id) return;
-    await bookmarksService.deleteFolder(folder.id);
     folderPendingDelete = null;
-    flashMessages.success(translate($languageStore, "bookmarks.folderDeleted"));
+    void bookmarksService.deleteFolder(folder.id).then((deleted) => {
+      if (deleted) {
+        flashMessages.success(translate($languageStore, "bookmarks.folderDeleted"));
+      } else {
+        flashMessages.alert(translate($languageStore, "bookmarks.folderDeleteError"));
+      }
+    });
   };
 
   const requestFolderDelete = (folder: BookmarksFolderStruct) => {
@@ -162,43 +173,106 @@
       expandedFolderIds = [];
   };
 
+  const parseDragPayload = (event: DragEvent): BookmarkDragPayload | null => {
+    if (!event.dataTransfer) return null
+    const primary = parseBookmarkDragPayload(
+      event.dataTransfer.getData(BOOKMARK_DRAG_MIME_TYPE)
+    )
+    if (primary) return primary
+
+    const legacy = parseBookmarkDragPayload(event.dataTransfer.getData("text/plain"))
+    if (legacy) return legacy
+
+    const legacyFolderId = event.dataTransfer.getData("text/plain")
+    return displayedFolderIndexById.has(legacyFolderId)
+      ? { type: "folder", folderId: legacyFolderId }
+      : null
+  }
+
   const handleFolderDragStart = (event: DragEvent, folderId: string) => {
     draggedFolderId = folderId;
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", folderId);
+      setBookmarkDragPayload(event.dataTransfer, { type: "folder", folderId });
     }
   };
 
   const handleFolderDragEnter = (event: DragEvent, folderId: string) => {
+    const payload = parseDragPayload(event);
+    if (!payload) return;
+
     event.preventDefault();
-    if (draggedFolderId && draggedFolderId !== folderId) {
+    if (payload.type === "folder" && draggedFolderId && draggedFolderId !== folderId) {
+      dragOverFolderId = folderId;
+      return;
+    }
+
+    if (payload.type === "trade" && payload.sourceFolderId !== folderId) {
+      dragOverFolderId = folderId;
+    }
+
+    if (payload.type === "category" && payload.folderId !== folderId) {
       dragOverFolderId = folderId;
     }
   };
 
   const handleFolderDrop = async (event: DragEvent, folderId: string) => {
     event.preventDefault();
-    if (!draggedFolderId || draggedFolderId === folderId) {
+    dragOverFolderId = null;
+
+    const payload = parseDragPayload(event);
+    if (!payload) {
       draggedFolderId = null;
-      dragOverFolderId = null;
       return;
     }
 
-    const targetIndex = displayedFolderIndexById.get(folderId) ?? -1;
-    if (targetIndex === -1) {
+    if (payload.type === "folder") {
+      if (!draggedFolderId || draggedFolderId === folderId) {
+        draggedFolderId = null;
+        return;
+      }
+
+      const targetIndex = displayedFolderIndexById.get(folderId) ?? -1;
+      if (targetIndex === -1) {
+        draggedFolderId = null;
+        return;
+      }
+
+      await bookmarksService.moveFolder(draggedFolderId, targetIndex, {
+        version: currentVersion,
+        archived: showArchived
+      });
       draggedFolderId = null;
-      dragOverFolderId = null;
       return;
     }
 
-    await bookmarksService.moveFolder(draggedFolderId, targetIndex, {
-      version: currentVersion,
-      archived: showArchived
-    });
+    if (payload.type === "trade" && payload.sourceFolderId !== folderId) {
+      try {
+        await bookmarksService.moveTradeBetweenFolders(
+          payload.tradeId,
+          payload.sourceFolderId,
+          folderId
+        );
+      } catch {
+        await bookmarksService.refresh();
+        flashMessages.alert(translate($languageStore, "bookmarks.restoreFailed"));
+      }
+    }
+
+    if (payload.type === "category" && payload.folderId !== folderId) {
+      try {
+        await bookmarksService.moveCategoryBetweenFolders(
+          payload.categoryId,
+          payload.folderId,
+          folderId
+        );
+      } catch {
+        await bookmarksService.refresh();
+        flashMessages.alert(translate($languageStore, "bookmarks.restoreFailed"));
+      }
+    }
 
     draggedFolderId = null;
-    dragOverFolderId = null;
   };
 
   const handleFolderDragEnd = () => {

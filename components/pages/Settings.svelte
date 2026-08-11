@@ -488,7 +488,7 @@
       const dataString = loadEvent.target?.result as string;
       const success = await extensionBackupService.restoreFromDataString(dataString);
       if (success) {
-        await settings.load();
+        await settings.reload();
         experimentalSettings.useVersion(tradeLocationService.current.version);
         flashMessages.success(translate($languageStore, "bookmarks.restored"));
       } else {
