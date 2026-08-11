@@ -70,6 +70,17 @@ const {
   stageRawSyncValue,
   stageSyncValue
 } = await import("../lib/services/sync-journal.ts")
+const {
+  BookmarkOplog,
+  BOOKMARK_OPLOG_MAX_ITEM_BYTES,
+  BOOKMARK_OPLOG_MAX_TOTAL_BYTES,
+  bookmarkOplogChunkKey,
+  createBookmarkOplogChunks,
+  compactBookmarkOplog,
+  publishBookmarkOplog,
+  readBookmarkOplog,
+  replayBookmarkOplog
+} = await import("../lib/services/bookmark-oplog.ts")
 
 const sync = storageService
 sync.enqueueSyncOperation = async (operation) => operation()
@@ -254,6 +265,74 @@ test("flushes raw backup payloads through the same durable journal", async () =>
     await storageService.getValue("app-settings-poe1", null, "sync"),
     { language: "es" }
   )
+})
+
+test("merges independent offline bookmark operations from two devices", () => {
+  const left = new BookmarkOplog("device-a")
+  const right = new BookmarkOplog("device-b")
+  const sharedFolder = folder("shared")
+  const operations = [
+    left.upsertFolder(sharedFolder),
+    left.upsertTrade("shared", trade("from-a")),
+    right.upsertTrade("shared", trade("from-b"))
+  ]
+
+  const merged = replayBookmarkOplog(operations)
+  assert.deepEqual(
+    merged.tradesByFolder.get("shared").map(({ id }) => id).sort(),
+    ["from-a", "from-b"]
+  )
+})
+
+test("compacts an actor oplog and keeps tombstones before segmenting it", () => {
+  const oplog = new BookmarkOplog("device-a")
+  const first = oplog.upsertTrade("folder", trade("replace", "before"))
+  const latest = oplog.upsertTrade("folder", trade("replace", "after"))
+  const deleted = oplog.deleteTrade("folder", "gone")
+  const compacted = compactBookmarkOplog([first, latest, deleted])
+
+  assert.deepEqual(compacted.map(({ id }) => id), [latest.id, deleted.id])
+  const segmented = createBookmarkOplogChunks("device-a", [first, latest, deleted])
+  assert.equal(segmented.manifest.chunkKeys[0], bookmarkOplogChunkKey("device-a", 0))
+  assert.deepEqual(Object.values(segmented.chunks).flat().map(({ id }) => id), [latest.id, deleted.id])
+})
+
+test("segments oplog records below 8 KB and rejects the 100 KB budget", () => {
+  const oplog = new BookmarkOplog("device-a")
+  const operations = Array.from({ length: 8 }, (_, index) =>
+    oplog.upsertTrade("folder", trade(`large-${index}`, "x".repeat(1_400)))
+  )
+  const segmented = createBookmarkOplogChunks("device-a", operations)
+  assert.ok(Object.values(segmented.chunks).every((chunk, index) =>
+    new TextEncoder().encode(
+      bookmarkOplogChunkKey("device-a", index) + JSON.stringify({ expiresAt: null, value: chunk })
+    ).length <= BOOKMARK_OPLOG_MAX_ITEM_BYTES
+  ))
+  assert.throws(
+    () => createBookmarkOplogChunks("device-a", operations, BOOKMARK_OPLOG_MAX_TOTAL_BYTES),
+    /100 KB/
+  )
+})
+
+test("publishes independent actor streams atomically and reads their merged operations", async () => {
+  reset()
+  const deviceA = new BookmarkOplog("device-a")
+  const deviceB = new BookmarkOplog("device-b")
+  await publishBookmarkOplog("device-a", [
+    deviceA.upsertFolder(folder("shared")),
+    deviceA.upsertTrade("shared", trade("from-a"))
+  ])
+  await publishBookmarkOplog("device-b", [
+    deviceB.upsertTrade("shared", trade("from-b"))
+  ])
+
+  const merged = replayBookmarkOplog(await readBookmarkOplog())
+  assert.deepEqual(
+    merged.tradesByFolder.get("shared").map(({ id }) => id).sort(),
+    ["from-a", "from-b"]
+  )
+  assert.ok(stores.sync.has("bookmark-oplog--device-a--manifest"))
+  assert.ok(stores.sync.has("bookmark-oplog--device-b--manifest"))
 })
 
 test("does not publish staged chunks when manifest publication fails", async () => {

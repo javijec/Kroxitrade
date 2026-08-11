@@ -15,6 +15,14 @@ import {
   BOOKMARK_REPOSITORY_JOURNAL_KEY,
   type BookmarkRepositoryJournal
 } from "./bookmark-repository"
+import {
+  BookmarkOplog,
+  type BookmarkOplogOperation,
+  getBookmarkOplogDeviceId,
+  publishBookmarkOplog,
+  readBookmarkOplog,
+  replayBookmarkOplog
+} from "./bookmark-oplog"
 import { languageStore, translate } from "./i18n"
 import { storageService, type StorageArea } from "./storage"
 
@@ -172,6 +180,7 @@ export class BookmarksService {
   async flushPendingOperations() {
     await this.journalReady
     for (const operation of this.repository.pendingOperations()) {
+      await this.publishPendingOperationToOplog(operation)
       if (operation.type === "folders") {
         await this.persistFoldersToChunks(operation.folders)
       } else if (operation.type === "trades") {
@@ -182,6 +191,75 @@ export class BookmarksService {
       this.repository.acknowledge(operation.id)
       await this.persistJournal([operation.id])
     }
+  }
+
+  private sameBookmarkValue(left: unknown, right: unknown) {
+    return JSON.stringify(left) === JSON.stringify(right)
+  }
+
+  private async getOplogSeed(oplog: BookmarkOplog) {
+    const folders = this.repository.getFolders()
+    const operations: BookmarkOplogOperation[] = folders.map((folder) =>
+      oplog.upsertFolder(folder)
+    )
+    for (const folder of folders) {
+      if (!folder.id) continue
+      const trades = await this.fetchTradesByFolderId(folder.id, { force: true })
+      operations.push(...trades.map((trade) => oplog.upsertTrade(folder.id!, trade)))
+    }
+    return operations
+  }
+
+  /**
+   * Mirrors the already-durable local journal as entity operations. The old
+   * chunk snapshots are kept below as a migration bridge, but every modern
+   * reader projects the merged per-device oplog first.
+   */
+  private async publishPendingOperationToOplog(
+    operation: BookmarkRepositoryJournal["operations"][number]
+  ) {
+    const remote = await readBookmarkOplog()
+    const actor = await getBookmarkOplogDeviceId()
+    const oplog = new BookmarkOplog(actor)
+    remote.forEach((entry) => oplog.observe(entry.clock))
+    const own = remote.filter((entry) => entry.clock.actor === actor)
+    const baseline = replayBookmarkOplog(remote)
+
+    // The first publication converts the complete existing snapshot. Without
+    // this seed, enabling the new protocol during an edit would hide folders
+    // that were created by an older extension version.
+    if (remote.length === 0) {
+      await publishBookmarkOplog(actor, await this.getOplogSeed(oplog))
+      return
+    }
+
+    const changes: BookmarkOplogOperation[] = []
+    if (operation.type === "folders") {
+      const next = new Map(operation.folders.filter((folder) => folder.id).map((folder) => [folder.id!, folder]))
+      for (const folder of operation.folders) {
+        if (!folder.id || this.sameBookmarkValue(baseline.folders.find(({ id }) => id === folder.id), folder)) continue
+        changes.push(oplog.upsertFolder(folder))
+      }
+      for (const folder of baseline.folders) {
+        if (folder.id && !next.has(folder.id)) changes.push(oplog.deleteFolder(folder.id))
+      }
+    } else if (operation.type === "trades") {
+      const current = baseline.tradesByFolder.get(operation.folderId) || []
+      const next = new Map(operation.trades.filter((trade) => trade.id).map((trade) => [trade.id!, trade]))
+      for (const trade of operation.trades) {
+        if (!trade.id || this.sameBookmarkValue(current.find(({ id }) => id === trade.id), trade)) continue
+        changes.push(oplog.upsertTrade(operation.folderId, trade))
+      }
+      for (const trade of current) {
+        if (trade.id && !next.has(trade.id)) changes.push(oplog.deleteTrade(operation.folderId, trade.id))
+      }
+    } else {
+      changes.push(oplog.deleteFolder(operation.folderId))
+      for (const trade of baseline.tradesByFolder.get(operation.folderId) || []) {
+        if (trade.id) changes.push(oplog.deleteTrade(operation.folderId, trade.id))
+      }
+    }
+    if (changes.length > 0) await publishBookmarkOplog(actor, [...own, ...changes])
   }
 
   private bindStorageSync() {
@@ -218,6 +296,11 @@ export class BookmarksService {
 
   async fetchFolders(): Promise<BookmarksFolderStruct[]> {
     if (!this.journalHydrated) await this.journalReady
+    const operations = await readBookmarkOplog()
+    if (operations.length > 0) {
+      this.repository.replaceFolders(this.normalizeFolders(replayBookmarkOplog(operations).folders))
+      return this.repository.getFolders()
+    }
     const chunkedFolders = await this.fetchChunkedFolders()
     if (chunkedFolders !== null) {
       this.repository.replaceFolders(this.normalizeFolders(chunkedFolders))
@@ -396,6 +479,10 @@ export class BookmarksService {
   }
 
   private async fetchTrades(folderId: string): Promise<BookmarksTradeStruct[]> {
+    const operations = await readBookmarkOplog()
+    if (operations.length > 0) {
+      return replayBookmarkOplog(operations).tradesByFolder.get(folderId) || []
+    }
     const chunkedTrades = await this.fetchChunkedTrades(folderId)
     if (chunkedTrades !== null) return chunkedTrades
 

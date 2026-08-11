@@ -26,6 +26,7 @@ const MANAGED_SYNC_KEYS = new Set([
   "bookmark-folders-manifest"
 ])
 const MANAGED_SYNC_PREFIXES = [
+  "bookmark-oplog--",
   "bookmark-trades--",
   "bookmark-trades-manifest--",
   "bookmark-trades-chunk--",
@@ -274,6 +275,49 @@ export class StorageService {
       expiresAt: null,
       value
     }, area, options)
+  }
+
+  /**
+   * Publishes a related set of Sync values in one storage mutation. This is
+   * used for manifest/chunk protocols so readers never observe a manifest
+   * that points at only half of its generation.
+   */
+  async setValues(
+    values: Record<string, unknown>,
+    area: StorageArea = "local",
+    options?: SyncWriteOptions
+  ): Promise<boolean> {
+    const storageArea = this.getStorageArea(area)
+    if (!storageArea) return false
+    try {
+      const payload = Object.fromEntries(
+        await Promise.all(
+          Object.entries(values).map(async ([key, value]) => [
+            this.formatKey(key, null),
+            {
+              expiresAt: null,
+              value: area === "sync" ? await encodeSyncValue(value) : value
+            }
+          ])
+        )
+      )
+      if (area === "sync") {
+        const queued = this.enqueueSyncOperation(async () => {
+          await chrome.storage.sync.set(payload)
+          void this.snapshotManagedSyncData()
+        })
+        if (options?.awaitSync !== false) await queued
+        else void queued.catch((error) => {
+          if (!isExtensionContextInvalidatedError(error)) console.warn("Deferred Sync write failed", error)
+        })
+      } else {
+        await storageArea.set(payload)
+      }
+      return true
+    } catch (error) {
+      if (!isExtensionContextInvalidatedError(error)) console.warn("Storage batch write failed", error)
+      return false
+    }
   }
 
   async setEphemeralValue(
