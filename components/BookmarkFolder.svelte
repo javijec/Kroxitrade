@@ -1,5 +1,8 @@
 <script lang="ts">
   import gripVerticalIcon from "lucide-static/icons/grip-vertical.svg?raw";
+  import arrowDownIcon from "lucide-static/icons/arrow-down.svg?raw";
+  import arrowUpIcon from "lucide-static/icons/arrow-up.svg?raw";
+  import moreIcon from "lucide-static/icons/more-horizontal.svg?raw";
   import pencilIcon from "lucide-static/icons/pencil.svg?raw";
   import trashIcon from "lucide-static/icons/trash-2.svg?raw";
   import xIcon from "lucide-static/icons/x.svg?raw";
@@ -32,13 +35,12 @@
     BookmarksTradeStruct
   } from "../lib/types/bookmarks"
   import {
-    BOOKMARK_DRAG_MIME_TYPE,
-    parseBookmarkDragPayload,
     setBookmarkDragPayload
   } from "../lib/types/bookmark-drag"
   import { copyToClipboard } from "../lib/utilities/copy-to-clipboard"
   import { resolveTradeUrl } from "../lib/utilities/trade-url"
   import Button from "./Button.svelte"
+  import ActionsMenu from "./ActionsMenu.svelte"
   import ConfirmDialog from "./ConfirmDialog.svelte"
   import FolderActionsMenu from "./FolderActionsMenu.svelte"
   import LoadingContainer from "./LoadingContainer.svelte"
@@ -261,8 +263,8 @@
     }
 
     return [
-      ...uncategorized,
-      ...categoryOptions.flatMap((category) => grouped.get(category.id) || [])
+      ...categoryOptions.flatMap((category) => grouped.get(category.id) || []),
+      ...uncategorized
     ]
   }
 
@@ -293,25 +295,6 @@
       }
     }
 
-    if (uncategorized.length > 0) {
-      entries.push({
-        type: "category",
-        id: "category-none",
-        title: translate($languageStore, "folder.uncategorized"),
-        category: null,
-        categoryId: UNCATEGORIZED_CATEGORY_ID,
-        tradeCount: uncategorized.length
-      })
-      if (!isCategoryCollapsed(UNCATEGORIZED_CATEGORY_ID)) {
-        entries.push(...uncategorized.map((trade) => ({
-          type: "trade" as const,
-          id: trade.id || `trade-${displayedTrades.indexOf(trade)}`,
-          trade,
-          displayIndex: displayedTrades.indexOf(trade)
-        })))
-      }
-    }
-
     for (const category of categoryOptions) {
       const categoryTrades = tradesByCategory.get(category.id) || []
       entries.push({
@@ -324,6 +307,25 @@
       })
       if (!isCategoryCollapsed(category.id)) {
         entries.push(...categoryTrades.map((trade) => ({
+          type: "trade" as const,
+          id: trade.id || `trade-${displayedTrades.indexOf(trade)}`,
+          trade,
+          displayIndex: displayedTrades.indexOf(trade)
+        })))
+      }
+    }
+
+    if (uncategorized.length > 0) {
+      entries.push({
+        type: "category",
+        id: "category-none",
+        title: translate($languageStore, "folder.uncategorized"),
+        category: null,
+        categoryId: UNCATEGORIZED_CATEGORY_ID,
+        tradeCount: uncategorized.length
+      })
+      if (!isCategoryCollapsed(UNCATEGORIZED_CATEGORY_ID)) {
+        entries.push(...uncategorized.map((trade) => ({
           type: "trade" as const,
           id: trade.id || `trade-${displayedTrades.indexOf(trade)}`,
           trade,
@@ -482,8 +484,10 @@
 
   let draggedIndex: number | null = $state(null)
   let dragOverIndex: number | null = $state(null)
-  let draggedCategoryIndex: number | null = $state(null)
-  let dragOverCategoryIndex: number | null = $state(null)
+  let draggedCategoryId: string | null = $state(null)
+  let dragOverCategoryId: string | null = $state(null)
+  let optimisticCategoryOptions: BookmarksCategoryStruct[] | null = $state(null)
+  let pendingCategoryMoves = 0
   let suppressNextTradeOpen = false
   let suppressNextFolderToggle = false
 
@@ -506,12 +510,13 @@
 
   const handleCategoryDragStart = (
     event: DragEvent,
-    category: BookmarksCategoryStruct,
-    index: number
+    category: BookmarksCategoryStruct
   ) => {
     event.stopPropagation()
     if (!folder.id || !event.dataTransfer) return
-    draggedCategoryIndex = index
+    const index = categoryOptions.findIndex((entry) => entry.id === category.id)
+    if (index < 0) return
+    draggedCategoryId = category.id
     event.dataTransfer.effectAllowed = "move"
     setBookmarkDragPayload(event.dataTransfer, {
       type: "category",
@@ -528,23 +533,17 @@
     }
   }
 
-  const getCategoryDropIndex = (event: DragEvent, targetIndex: number) => {
-    const row = event.currentTarget as HTMLElement
-    const afterTarget = event.clientY >= row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2
-    const sourceIndex = draggedCategoryIndex ?? targetIndex
-    const rawIndex = afterTarget
-      ? (sourceIndex < targetIndex ? targetIndex : targetIndex + 1)
-      : (sourceIndex < targetIndex ? targetIndex - 1 : targetIndex)
-    return Math.max(0, Math.min(rawIndex, categoryOptions.length - 1))
+  const handleCategoryDragOver = (event: DragEvent, categoryId: string) => {
+    if (!draggedCategoryId) return
+    event.preventDefault()
+    if (dragOverCategoryId !== categoryId) {
+      dragOverCategoryId = categoryId
+    }
   }
 
-  const handleCategoryDragEnter = (event: DragEvent, index: number) => {
-    const payload = event.dataTransfer
-      ? parseBookmarkDragPayload(event.dataTransfer.getData(BOOKMARK_DRAG_MIME_TYPE))
-      : null
-    if (!payload || payload.type !== "category" || payload.folderId !== folder.id) return
-    event.preventDefault()
-    if (payload.categoryIndex !== index) dragOverCategoryIndex = getCategoryDropIndex(event, index)
+  const clearCategoryDragState = () => {
+    draggedCategoryId = null
+    dragOverCategoryId = null
   }
 
   const handleDrop = async (e: DragEvent, index: number) => {
@@ -577,53 +576,49 @@
     dragOverIndex = null
   }
 
-  const handleCategoryDrop = async (event: DragEvent, index: number) => {
-    event.preventDefault()
-    const payload = event.dataTransfer
-      ? parseBookmarkDragPayload(event.dataTransfer.getData(BOOKMARK_DRAG_MIME_TYPE))
-      : null
-    if (payload?.type === "category" && folder.id && payload.folderId === folder.id) {
-      try {
-        await bookmarksService.moveCategory(
-          folder.id,
-          payload.categoryIndex,
-          getCategoryDropIndex(event, index)
-        )
-      } catch {
-        await bookmarksService.refresh()
-        flashMessages.alert(translate($languageStore, "folder.dragSaveError"))
-      }
-    }
-    draggedCategoryIndex = null
-    dragOverCategoryIndex = null
-  }
+  const moveCategoryOptimistically = async (fromIndex: number, toIndex: number) => {
+    if (!folder.id || fromIndex === toIndex) return
 
-  const handleCategoryDropAtEnd = async (event: DragEvent) => {
-    event.preventDefault()
-    const payload = event.dataTransfer
-      ? parseBookmarkDragPayload(event.dataTransfer.getData(BOOKMARK_DRAG_MIME_TYPE))
-      : null
-    if (payload?.type === "category" && folder.id && payload.folderId === folder.id) {
-      try {
-        await bookmarksService.moveCategory(folder.id, payload.categoryIndex, categoryOptions.length - 1)
-      } catch {
-        await bookmarksService.refresh()
-        flashMessages.alert(translate($languageStore, "folder.dragSaveError"))
-      }
-    }
-    draggedCategoryIndex = null
-    dragOverCategoryIndex = null
-  }
+    const categories = [...categoryOptions]
+    if (
+      fromIndex < 0 ||
+      fromIndex >= categories.length ||
+      toIndex < 0 ||
+      toIndex >= categories.length
+    ) return
 
-  const moveCategoryWithKeyboard = async (fromIndex: number, direction: "up" | "down") => {
-    if (!folder.id) return
-    const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1
+    const [moved] = categories.splice(fromIndex, 1)
+    categories.splice(toIndex, 0, moved)
+    optimisticCategoryOptions = categories
+    pendingCategoryMoves += 1
+
     try {
       await bookmarksService.moveCategory(folder.id, fromIndex, toIndex)
     } catch {
+      optimisticCategoryOptions = null
       await bookmarksService.refresh()
       flashMessages.alert(translate($languageStore, "folder.dragSaveError"))
+    } finally {
+      pendingCategoryMoves -= 1
+      if (pendingCategoryMoves === 0) {
+        optimisticCategoryOptions = null
+      }
     }
+  }
+
+  const handleCategoryDrop = async (event: DragEvent, targetCategoryId: string) => {
+    event.preventDefault()
+    const sourceIndex = categoryOptions.findIndex((category) => category.id === draggedCategoryId)
+    const targetIndex = categoryOptions.findIndex((category) => category.id === targetCategoryId)
+    clearCategoryDragState()
+    if (sourceIndex >= 0 && targetIndex >= 0 && sourceIndex !== targetIndex) {
+      await moveCategoryOptimistically(sourceIndex, targetIndex)
+    }
+  }
+
+  const moveCategoryWithKeyboard = async (fromIndex: number, direction: "up" | "down") => {
+    const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1
+    await moveCategoryOptimistically(fromIndex, toIndex)
   }
 
   const handleDragEnd = () => {
@@ -635,8 +630,7 @@
   }
 
   const handleCategoryDragEnd = () => {
-    draggedCategoryIndex = null
-    dragOverCategoryIndex = null
+    clearCategoryDragState()
   }
 
   const createTradeFromCurrent = async () => {
@@ -999,7 +993,7 @@
     }
     return groups
   })
-  let categoryOptions = $derived(folder.categories || [])
+  let categoryOptions = $derived(optimisticCategoryOptions || folder.categories || [])
   let categoryById = $derived(new Map(categoryOptions.map((category) => [category.id, category])))
   let displayedTrades = $derived(getDisplayedTrades())
   let tradeListEntries = $derived(getTradeListEntries())
@@ -1213,13 +1207,12 @@
               {@const categoryIndex = entry.category ? categoryOptions.findIndex((category) => category.id === entry.category.id) : -1}
               <li
                 class="category-row"
-                class:is-drag-over={entry.category && dragOverCategoryIndex === categoryIndex}
-                class:is-dragging={entry.category && draggedCategoryIndex === categoryIndex}
-                ondragenter={entry.category ? (e) => handleCategoryDragEnter(e, categoryIndex) : undefined}
-                ondragover={(event) => event.preventDefault()}
+                class:is-drag-over={entry.category && dragOverCategoryId === entry.category.id}
+                class:is-dragging={entry.category && draggedCategoryId === entry.category.id}
+                ondragover={entry.category ? (event) => handleCategoryDragOver(event, entry.category!.id) : undefined}
                 ondrop={entry.category ? (event) => {
                   event.preventDefault()
-                  void handleCategoryDrop(event, categoryIndex)
+                  void handleCategoryDrop(event, entry.category!.id)
                 } : undefined}
                 ondragend={entry.category ? handleCategoryDragEnd : undefined}>
                 <div class="category-heading">
@@ -1230,7 +1223,7 @@
                       draggable="true"
                       title={translate($languageStore, "folder.dragCategory")}
                       aria-label={translate($languageStore, "folder.dragCategory")}
-                      ondragstart={(event) => handleCategoryDragStart(event, entry.category!, categoryIndex)}
+                      ondragstart={(event) => handleCategoryDragStart(event, entry.category!)}
                       ondragend={handleCategoryDragEnd}>
                       <span class="action-icon"><SvgIcon svg={gripVerticalIcon} /></span>
                     </button>
@@ -1245,43 +1238,50 @@
                     {isCategoryCollapsed(entry.categoryId) ? "▸" : "▾"}
                   </button>
                   <span class="category-heading__rule" aria-hidden="true"></span>
-                  <span class="category-heading__title">{entry.title}</span>
+                  <span
+                    class="category-heading__title category-heading__drag-area"
+                    draggable={!!entry.category}
+                    ondragstart={entry.category
+                      ? (event) => handleCategoryDragStart(event, entry.category!)
+                      : undefined}
+                    ondragend={entry.category ? handleCategoryDragEnd : undefined}>{entry.title}</span>
                   <span class="category-heading__count">{entry.tradeCount}</span>
                   <span class="category-heading__rule" aria-hidden="true"></span>
                   {#if entry.category}
                     <div class="category-heading__actions">
-                      <button
-                        type="button"
-                        class="category-action"
-                        disabled={categoryIndex === 0}
-                        title={translate($languageStore, "folder.moveCategoryUp")}
-                        aria-label={translate($languageStore, "folder.moveCategoryUp")}
-                        onclick={() => void moveCategoryWithKeyboard(categoryIndex, "up")}>↑</button>
-                      <button
-                        type="button"
-                        class="category-action"
-                        disabled={categoryIndex === categoryOptions.length - 1}
-                        title={translate($languageStore, "folder.moveCategoryDown")}
-                        aria-label={translate($languageStore, "folder.moveCategoryDown")}
-                        onclick={() => void moveCategoryWithKeyboard(categoryIndex, "down")}>↓</button>
-                      <button
-                        type="button"
-                        class="category-action"
-                        title={translate($languageStore, "folder.renameCategory")}
-                        aria-label={translate($languageStore, "folder.renameCategory")}
-                        onclick={() => void renameCategory(entry.category!)}
-                      >
-                        <span class="action-icon"><SvgIcon svg={pencilIcon} /></span>
-                      </button>
-                      <button
-                        type="button"
-                        class="category-action is-danger"
-                        title={translate($languageStore, "folder.deleteCategory")}
-                        aria-label={translate($languageStore, "folder.deleteCategory")}
-                        onclick={() => requestCategoryDelete(entry.category!)}
-                      >
-                        <span class="action-icon"><SvgIcon svg={trashIcon} /></span>
-                      </button>
+                      <ActionsMenu
+                        actions={[
+                          ...(categoryIndex > 0 ? [{
+                            id: "move-up",
+                            icon: arrowUpIcon,
+                            labelKey: "folder.moveCategoryUp",
+                            handler: () => void moveCategoryWithKeyboard(categoryIndex, "up")
+                          }] : []),
+                          ...(categoryIndex < categoryOptions.length - 1 ? [{
+                            id: "move-down",
+                            icon: arrowDownIcon,
+                            labelKey: "folder.moveCategoryDown",
+                            handler: () => void moveCategoryWithKeyboard(categoryIndex, "down")
+                          }] : []),
+                          {
+                            id: "rename",
+                            icon: pencilIcon,
+                            labelKey: "folder.renameCategory",
+                            handler: () => void renameCategory(entry.category!)
+                          },
+                          {
+                            id: "delete",
+                            icon: trashIcon,
+                            labelKey: "folder.deleteCategory",
+                            handler: () => requestCategoryDelete(entry.category!),
+                            danger: true
+                          }
+                        ]}
+                        primaryActionIds={[]}
+                        compactVisibleActionIds={[]}
+                        dropdownLabel="folder.actionsMenu"
+                        dropdownIcon={moreIcon}
+                        translate={(key) => translate($languageStore, key)} />
                     </div>
                   {/if}
                 </div>
@@ -1289,13 +1289,36 @@
             {:else}
               {@const trade = entry.trade}
               {@const i = entry.displayIndex}
+              {@const tradeCategoryId = categoryIdForTrade(trade)}
               <li
                 draggable="true"
                 ondragstart={(e) => handleDragStart(e, i)}
-                ondragenter={(e) => handleDragEnter(e, i)}
-                ondragover={(event) => event.preventDefault()}
+                ondragenter={(event) => {
+                  if (draggedCategoryId !== null) {
+                    if (tradeCategoryId) {
+                      handleCategoryDragOver(event, tradeCategoryId)
+                    }
+                    return
+                  }
+                  handleDragEnter(event, i)
+                }}
+                ondragover={(event) => {
+                  if (draggedCategoryId !== null) {
+                    if (tradeCategoryId) {
+                      handleCategoryDragOver(event, tradeCategoryId)
+                    }
+                    return
+                  }
+                  event.preventDefault()
+                }}
                 ondrop={(event) => {
                   event.preventDefault()
+                  if (draggedCategoryId !== null) {
+                    if (tradeCategoryId) {
+                      void handleCategoryDrop(event, tradeCategoryId)
+                    }
+                    return
+                  }
                   void handleDrop(event, i)
                 }}
                 ondragend={handleDragEnd}>
@@ -1394,13 +1417,6 @@
               </li>
             {/if}
           {/each}
-          {#if categoryOptions.length > 0}
-            <li
-              class="category-drop-end"
-              aria-label={translate($languageStore, "folder.dropCategoryAtEnd")}
-              ondragover={(event) => event.preventDefault()}
-              ondrop={(event) => void handleCategoryDropAtEnd(event)}></li>
-          {/if}
         </ul>
         {#if !previewTrades}
           <div class="footer-actions">
@@ -1777,32 +1793,59 @@
 }
 
 .category-row {
+  position: relative;
   list-style: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-.category-row.is-drag-over {
-  border-top: 2px solid var(--accent-color, #a38d6d);
+.category-row.is-drag-over .category-heading {
+  border-radius: 4px;
+  background: rgba(163, 141, 109, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(163, 141, 109, 0.2), 0 0 0 1px rgba(163, 141, 109, 0.14);
 }
 
 .category-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  min-width: 18px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: rgba(238, 238, 238, 0.3);
   cursor: grab;
+  user-select: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.category-drag-handle:hover {
+  color: #a38d6d;
+  background: rgba(238, 238, 238, 0.05);
+}
+
+.category-drag-handle:focus-visible {
+  outline: 1px solid rgba(163, 141, 109, 0.65);
+  outline-offset: 1px;
 }
 
 .category-drag-handle:active {
   cursor: grabbing;
 }
 
-.category-drop-end {
-  min-height: 10px;
-  border-bottom: 2px solid transparent;
-}
-
-.category-drop-end:hover {
-  border-bottom-color: var(--accent-color, #a38d6d);
+.category-drag-handle :global(.action-svg) {
+  width: 13px;
+  height: 13px;
+  min-width: 13px;
+  min-height: 13px;
+  stroke-width: 1.6;
 }
 
 .category-row.is-dragging {
-  opacity: 0.7;
+  opacity: 0.45;
+  transform: scale(0.985);
 }
 
 .category-heading {
@@ -1857,6 +1900,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.category-heading__drag-area {
+  cursor: grab;
+  user-select: none;
+}
+
+.category-heading__drag-area:active {
+  cursor: grabbing;
 }
 
 .category-heading__count {
