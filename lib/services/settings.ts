@@ -19,6 +19,7 @@ export type BookmarkTradeActionId =
 export type QuickFiltersPlacement = "page" | "sidebar"
 export type TextSizePreference = "small" | "medium" | "large" | "extraLarge"
 export const DEFAULT_TEXT_SIZE: TextSizePreference = "large"
+export const DEFAULT_HIGHLIGHTED_MOD_COLOR = "#28a745"
 export type BookmarkLayout = "classic" | "compact" | "ultra"
 
 const DEFAULT_CLASSIC_BOOKMARK_TRADE_ACTIONS: BookmarkTradeActionId[] = [
@@ -37,6 +38,7 @@ export interface VersionSettings {
   showEquivalentPricing: boolean
   showValdoRewardPricing: boolean
   showMagebloodLegacyDescriptions: boolean
+  highlightedModColor: string
   showBulkSellers: boolean
   showPinnedItems: boolean
   showHistory: boolean
@@ -98,6 +100,7 @@ const DEFAULT_VERSION_SETTINGS: VersionSettings = {
   showEquivalentPricing: false,
   showValdoRewardPricing: false,
   showMagebloodLegacyDescriptions: true,
+  highlightedModColor: DEFAULT_HIGHLIGHTED_MOD_COLOR,
   showBulkSellers: false,
   showPinnedItems: false,
   showHistory: true,
@@ -120,6 +123,20 @@ function normalizeTextSize(textSize: unknown): TextSizePreference {
     textSize === "extraLarge"
     ? textSize
     : DEFAULT_TEXT_SIZE
+}
+
+function normalizeHighlightedModColor(color: unknown): string {
+  return typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color)
+    ? color
+    : DEFAULT_HIGHLIGHTED_MOD_COLOR
+}
+
+function highlightedModBackgroundColor(color: string, opacity: number): string {
+  const normalized = normalizeHighlightedModColor(color)
+  const red = Number.parseInt(normalized.slice(1, 3), 16)
+  const green = Number.parseInt(normalized.slice(3, 5), 16)
+  const blue = Number.parseInt(normalized.slice(5, 7), 16)
+  return `rgba(${red}, ${green}, ${blue}, ${opacity})`
 }
 
 function getStorageChangeValue<T>(
@@ -171,6 +188,7 @@ function normalizeVersionSettings(
   return {
     ...DEFAULT_VERSION_SETTINGS,
     ...defined,
+    highlightedModColor: normalizeHighlightedModColor(defined.highlightedModColor),
     classicBookmarkTradeActions: [
       ...(defined.classicBookmarkTradeActions ??
         DEFAULT_CLASSIC_BOOKMARK_TRADE_ACTIONS)
@@ -196,6 +214,7 @@ function legacyVersionSettings(
     showEquivalentPricing: value?.showEquivalentPricing,
     showValdoRewardPricing: value?.showValdoRewardPricing,
     showMagebloodLegacyDescriptions: value?.showMagebloodLegacyDescriptions,
+    highlightedModColor: value?.highlightedModColor,
     showBulkSellers: value?.showBulkSellers,
     showPinnedItems: value?.showPinnedItems,
     showHistory: value?.showHistory,
@@ -228,6 +247,10 @@ function publish() {
     window.localStorage.setItem(
       `bt-language-poe${activeVersion}`,
       currentSettings.language
+    )
+    document.documentElement.style.setProperty(
+      "--bt-finer-filtered-background",
+      highlightedModBackgroundColor(currentSettings.highlightedModColor, 0.1)
     )
     window.sessionStorage.setItem(
       `${LANGUAGE_SESSION_KEY}-poe${activeVersion}`,
@@ -436,6 +459,12 @@ export const settings = {
     return saveVersion({
       ...activeVersionSettings,
       showMagebloodLegacyDescriptions
+    })
+  },
+  async updateHighlightedModColor(highlightedModColor: string) {
+    return saveVersion({
+      ...activeVersionSettings,
+      highlightedModColor: normalizeHighlightedModColor(highlightedModColor)
     })
   },
   async updateBulkSellersVisibility(showBulkSellers: boolean) {

@@ -175,7 +175,14 @@
 
   let isLanguageMenuOpen = $state(false);
   let isRefreshingEquivalentRatios = $state(false);
+  let isHighlightedModColorPickerOpen = $state(false);
+  let draftHighlightedModColor = $state("");
   let languageSelectorEl: HTMLDivElement | null = $state(null);
+  const highlightedModColorPresets = [
+    "#28a745", "#f0f0f0", "#a38d6d", "#6c757d",
+    "#3b82f6", "#8b5cf6", "#ec4899", "#ef4444",
+    "#f97316", "#eab308", "#14b8a6", "#22c55e"
+  ];
 
   async function handleSideChange(side: SidebarSide) {
     if (!(await settings.updateSide(side))) {
@@ -199,6 +206,28 @@
     if (!(await settings.updateMagebloodLegacyDescriptionsVisibility(showMagebloodLegacyDescriptions))) {
       flashMessages.alert(translate($languageStore, "settings.saveFailed"));
     }
+  }
+
+  async function saveHighlightedModColor(color: string) {
+    if (!(await settings.updateHighlightedModColor(color))) {
+      flashMessages.alert(translate($languageStore, "settings.saveFailed"));
+    }
+  }
+
+  function toggleHighlightedModColorPicker() {
+    draftHighlightedModColor = $settings.highlightedModColor;
+    isHighlightedModColorPickerOpen = !isHighlightedModColorPickerOpen;
+  }
+
+  async function selectHighlightedModColor(color: string) {
+    draftHighlightedModColor = color;
+    await saveHighlightedModColor(color);
+    isHighlightedModColorPickerOpen = false;
+  }
+
+  async function commitHighlightedModColor() {
+    if (!/^#[0-9a-f]{6}$/i.test(draftHighlightedModColor)) return;
+    await selectHighlightedModColor(draftHighlightedModColor);
   }
 
   async function handleEquivalentPricingRefresh() {
@@ -1094,6 +1123,50 @@
           />
         </div>
 
+        <div class="settings-row">
+          <div class="settings-row__copy">
+            <div class="settings-row__title">{translate($languageStore, "settings.highlightedModColorTitle")}</div>
+            <div class="settings-row__description">{translate($languageStore, "settings.highlightedModColorBody")}</div>
+          </div>
+          <div class="highlight-color-control">
+            <button
+              class="highlight-color-picker"
+              type="button"
+              aria-label={translate($languageStore, "settings.highlightedModColorTitle")}
+              aria-expanded={isHighlightedModColorPickerOpen}
+              onclick={toggleHighlightedModColorPicker}
+            >
+              <span style:background-color={$settings.highlightedModColor}></span>
+            </button>
+            {#if isHighlightedModColorPickerOpen}
+              <div class="highlight-color-popover">
+                <div class="highlight-color-presets">
+                  {#each highlightedModColorPresets as color}
+                    <button
+                      class:active-color={color === $settings.highlightedModColor}
+                      type="button"
+                      aria-label={color}
+                      onclick={() => selectHighlightedModColor(color)}
+                    >
+                      <span style:background-color={color}></span>
+                    </button>
+                  {/each}
+                </div>
+                <div class="highlight-color-hex">
+                  <input
+                    bind:value={draftHighlightedModColor}
+                    aria-label={translate($languageStore, "settings.highlightedModColorTitle")}
+                    maxlength="7"
+                    onkeydown={(event) => event.key === "Enter" && void commitHighlightedModColor()}
+                    onchange={commitHighlightedModColor}
+                  />
+                  <span style:background-color={draftHighlightedModColor}></span>
+                </div>
+              </div>
+            {/if}
+          </div>
+        </div>
+
         {#if isPoe2Trade}
           <div class="settings-row">
             <div class="settings-row__copy">
@@ -1176,6 +1249,96 @@
   padding: 5px;
   color: #eeeeee;
   animation: fade-in 0.3s ease;
+}
+
+.highlight-color-control {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.highlight-color-picker {
+  width: 38px;
+  height: 32px;
+  padding: 4px;
+  border: 1px solid rgba(163, 141, 109, 0.34);
+  border-radius: 6px;
+  background: rgba(163, 141, 109, 0.06);
+  cursor: pointer;
+}
+.highlight-color-picker:hover,
+.highlight-color-picker:focus-visible {
+  border-color: #a38d6d;
+  outline: none;
+}
+.highlight-color-picker span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+}
+.highlight-color-popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 188px;
+  padding: 10px;
+  border: 1px solid rgba(163, 141, 109, 0.34);
+  border-radius: 7px;
+  background: #171512;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.42);
+}
+.highlight-color-presets {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+.highlight-color-presets button {
+  aspect-ratio: 1;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+.highlight-color-presets button:hover,
+.highlight-color-presets button:focus-visible,
+.highlight-color-presets button.active-color {
+  border-color: #a38d6d;
+  outline: none;
+}
+.highlight-color-presets span,
+.highlight-color-hex > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+}
+.highlight-color-hex {
+  display: grid;
+  grid-template-columns: 1fr 24px;
+  gap: 7px;
+  align-items: center;
+  margin-top: 10px;
+}
+.highlight-color-hex input {
+  min-width: 0;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid rgba(238, 238, 238, 0.12);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #eeeeee;
+  font: inherit;
+  text-transform: uppercase;
+}
+.highlight-color-hex input:focus {
+  border-color: #a38d6d;
+  outline: none;
+}
+.highlight-color-hex > span {
+  height: 24px;
+  border: 1px solid rgba(238, 238, 238, 0.18);
 }
 
 .settings-grid {

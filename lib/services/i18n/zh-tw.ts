@@ -304,6 +304,8 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
     "settings.coeDesecratedModsTitle": "包含褻瀆詞綴",
     "settings.coeDesecratedModsBody":
       "將褻瀆詞綴視為一般詞綴一併包含。Craft of Exile 目前不支援匯入褻瀆詞綴。",
+    "settings.highlightedModColorTitle": "醒目提示詞綴顏色",
+    "settings.highlightedModColorBody": "選擇用於醒目提示符合搜尋篩選條件詞綴的顏色。",
     "settings.wikiTitle": "Wiki 按鈕",
     "settings.wikiBody":
       "在傳奇物品與技能寶石結果加入 W 按鈕，開啟 PoE Wiki 上對應的頁面（中文介面下也可使用）。",

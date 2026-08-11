@@ -5,11 +5,9 @@ import {
 } from "./poe-ninja";
 import { translate } from "./i18n";
 import { tradeLocationService } from "./trade-location";
-import { searchPanelService } from "./search-panel";
 import { settings } from "./settings";
 import { slugify } from "../utilities/slugify";
 import { normalizeValdoRewardName } from "../utilities/normalize-valdo-reward-name";
-import { escapeRegex } from "../utilities/escape-regex";
 import { emitPageDebug } from "../utilities/page-debug";
 import { getCurrencyIconUrl } from "../data/currency-icons";
 import {
@@ -210,7 +208,6 @@ export class ItemResultsService {
   private currencyData: PoeNinjaCurrencyData | null = null;
   private valdoUniqueDivinePrices: PoeNinjaUniqueDivinePrices | null = null;
   private valdoPriceRequest: Promise<void> | null = null;
-  private statNeedles: RegExp[] = [];
   private readonly CHAOS_SLUG = "chaos-orb";
   private readonly referenceSlugs = {
     "1": ["divine-orb", "chaos-orb"],
@@ -371,7 +368,6 @@ export class ItemResultsService {
       console.error("[Poe Trade Plus] Failed to fetch ratios from poe.ninja:", e);
     }
 
-    this.prepareHighlighting();
     this.startObserving();
     document.removeEventListener("click", this.handleDocumentClick, true);
     document.addEventListener("click", this.handleDocumentClick, true);
@@ -770,11 +766,6 @@ export class ItemResultsService {
     element.setAttribute("aria-hidden", String(isHidden));
   }
 
-  private prepareHighlighting() {
-    const stats = searchPanelService.getStats();
-    this.statNeedles = stats.map(s => new RegExp(escapeRegex(s).replace(/#/g, '[\\+\\-]?\\d+'), 'i'));
-  }
-
   private observerTimer: ReturnType<typeof setTimeout> | null = null;
   private observerRetries = 0;
   private readonly OBSERVER_MAX_RETRIES = 10;
@@ -819,8 +810,6 @@ export class ItemResultsService {
     // Current trade site uses .result-item, but some pages or versions use .row.
     // Re-run equivalent pricing on every visible result because the trade site can recycle DOM nodes between searches.
     const results = document.querySelectorAll(".search-results .result-item, .search-results .row, .result-list .result-item, .row");
-    const newResults = Array.from(results).filter((row) => !row.hasAttribute("bt-enhanced"));
-
     results.forEach((row: Element) => {
       const typedRow = row as HTMLElement;
       this.enablePoe2CopyButton(typedRow);
@@ -831,13 +820,11 @@ export class ItemResultsService {
       this.injectValdoRewardPricing(typedRow);
        this.enhanceMagebloodLegacy(typedRow);
        this.syncPinButton(typedRow);
-
       if (typedRow.hasAttribute("bt-enhanced")) {
         return;
       }
 
       typedRow.setAttribute("bt-enhanced", "true");
-      this.highlightStats(typedRow);
       this.checkMaximumSockets(typedRow);
     });
   }
@@ -1094,19 +1081,6 @@ export class ItemResultsService {
   private refreshValdoRewardPricing() {
     const results = document.querySelectorAll(".search-results .result-item, .search-results .row, .result-list .result-item, .row");
     results.forEach((row) => this.injectValdoRewardPricing(row as HTMLElement));
-  }
-
-  private highlightStats(row: HTMLElement) {
-    if (this.statNeedles.length === 0) return;
-
-    const mods = row.querySelectorAll(".explicitMod, .pseudoMod, .implicitMod, .item-mod");
-    mods.forEach((mod) => {
-        const element = mod as HTMLElement;
-        const text = element.textContent || "";
-        if (this.statNeedles.some(n => n.test(text))) {
-            element.classList.add("bt-highlight-stat-filters");
-        }
-    });
   }
 
   private enhanceMagebloodLegacy(row: HTMLElement) {

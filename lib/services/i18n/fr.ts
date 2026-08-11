@@ -142,6 +142,8 @@ export const frenchTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Inclure les mods profanés",
   "settings.coeDesecratedModsBody":
     "Inclut les mods profanés comme modificateurs normaux. Craft of Exile ne permet pas encore de les importer.",
+  "settings.highlightedModColorTitle": "Couleur des mods surlignés",
+  "settings.highlightedModColorBody": "Choisissez la couleur des modificateurs correspondant à vos filtres de recherche.",
   "settings.wikiTitle": "Bouton wiki",
   "settings.wikiBody":
     "Ajoute un bouton W aux objets uniques pour ouvrir la page correspondante sur le wiki PoE.",

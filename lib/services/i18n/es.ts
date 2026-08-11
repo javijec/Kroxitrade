@@ -352,6 +352,8 @@ export const spanishTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Incluir mods desecrated",
   "settings.coeDesecratedModsBody":
     "Incluye los mods desecrated como modificadores normales. Craft of Exile actualmente no permite importarlos.",
+  "settings.highlightedModColorTitle": "Color de mods resaltados",
+  "settings.highlightedModColorBody": "Elegí el color usado para resaltar modificadores que coinciden con los filtros de búsqueda.",
   "settings.wikiTitle": "Botón de wiki",
   "settings.wikiBody":
     "Agrega un botón W a los resultados de objetos únicos para abrir su página correspondiente en la wiki de PoE.",

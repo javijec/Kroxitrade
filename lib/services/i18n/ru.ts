@@ -141,6 +141,8 @@ export const russianTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Включать осквернённые модификаторы",
   "settings.coeDesecratedModsBody":
     "Добавляет осквернённые модификаторы как обычные. Craft of Exile пока не поддерживает их импорт.",
+  "settings.highlightedModColorTitle": "Цвет выделенных модификаторов",
+  "settings.highlightedModColorBody": "Выберите цвет для модификаторов, соответствующих фильтрам поиска.",
   "settings.wikiTitle": "Кнопка wiki",
   "settings.wikiBody":
     "Добавляет кнопку W к уникальным предметам, чтобы открыть соответствующую страницу на wiki PoE.",

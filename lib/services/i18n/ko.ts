@@ -146,6 +146,8 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Desecrated 모드 포함",
   "settings.coeDesecratedModsBody":
     "Desecrated 모드를 일반 모드로 포함합니다. Craft of Exile은 현재 Desecrated 모드 가져오기를 지원하지 않습니다.",
+  "settings.highlightedModColorTitle": "강조된 모드 색상",
+  "settings.highlightedModColorBody": "검색 필터와 일치하는 모드를 강조할 색상을 선택하세요.",
   "settings.wikiTitle": "위키 버튼",
   "settings.wikiBody":
     "고유 아이템 결과에 W 버튼을 추가해 해당 PoE 위키 페이지를 엽니다.",

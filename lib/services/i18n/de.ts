@@ -141,6 +141,8 @@ export const germanTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Entweihte Mods einschließen",
   "settings.coeDesecratedModsBody":
     "Fügt entweihte Mods als normale Modifikatoren ein. Craft of Exile unterstützt deren Import derzeit nicht.",
+  "settings.highlightedModColorTitle": "Farbe hervorgehobener Mods",
+  "settings.highlightedModColorBody": "Wähle die Farbe für Modifikatoren, die deinen Suchfiltern entsprechen.",
   "settings.wikiTitle": "Wiki-Schaltfläche",
   "settings.wikiBody":
     "Fügt einzigartigen Gegenständen eine W-Schaltfläche hinzu, die die passende Seite im PoE-Wiki öffnet.",

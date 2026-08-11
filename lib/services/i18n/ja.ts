@@ -146,6 +146,8 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "Desecrated モッドを含める",
   "settings.coeDesecratedModsBody":
     "Desecrated モッドを通常のモッドとして含めます。Craft of Exile は現在 Desecrated モッドのインポートに対応していません。",
+  "settings.highlightedModColorTitle": "強調表示するモッドの色",
+  "settings.highlightedModColorBody": "検索フィルターに一致するモッドを強調表示する色を選択します。",
   "settings.wikiTitle": "Wiki ボタン",
   "settings.wikiBody":
     "ユニークアイテムの結果に W ボタンを追加し、対応する PoE Wiki ページを開きます。",

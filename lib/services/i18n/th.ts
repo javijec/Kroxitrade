@@ -141,6 +141,8 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "รวมม็อด Desecrated",
   "settings.coeDesecratedModsBody":
     "รวมม็อด Desecrated เป็นม็อดปกติ ขณะนี้ Craft of Exile ยังไม่รองรับการนำเข้าม็อด Desecrated",
+  "settings.highlightedModColorTitle": "สีม็อดที่ไฮไลต์",
+  "settings.highlightedModColorBody": "เลือกสีที่ใช้ไฮไลต์ม็อดที่ตรงกับตัวกรองการค้นหาของคุณ",
   "settings.wikiTitle": "ปุ่มวิกิ",
   "settings.wikiBody":
     "เพิ่มปุ่ม W ให้ผลลัพธ์ไอเทม unique เพื่อเปิดหน้าที่ตรงกันในวิกิ PoE",

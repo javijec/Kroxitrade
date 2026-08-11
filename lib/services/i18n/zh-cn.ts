@@ -298,6 +298,8 @@ export const simplifiedChineseTranslations: Record<string, TranslationValue> = {
   "settings.coeDesecratedModsTitle": "包含亵渎词缀",
   "settings.coeDesecratedModsBody":
     "将亵渎词缀视为一般词缀一并包含。Craft of Exile 目前不支持导入亵渎词缀。",
+  "settings.highlightedModColorTitle": "高亮词缀颜色",
+  "settings.highlightedModColorBody": "选择用于高亮与搜索筛选条件匹配词缀的颜色。",
   "settings.wikiTitle": "Wiki 按钮",
   "settings.wikiBody":
     "在传奇物品与技能宝石结果加入 W 按钮，打开 PoE Wiki 上对应的页面（中文界面下也可使用）。",
