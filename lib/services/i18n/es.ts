@@ -387,6 +387,7 @@ export const spanishTranslations: Record<string, TranslationValue> = {
   "bookmarks.newFolder": "Nueva carpeta",
   "bookmarks.folderCreated": "¡Carpeta creada!",
   "bookmarks.folderDeleted": "¡Carpeta eliminada!",
+  "bookmarks.folderDeleteError": "No se pudo eliminar la carpeta. Se restauró.",
   "bookmarks.exported": "¡Respaldo exportado!",
   "bookmarks.restored": "¡Respaldo restaurado!",
   "bookmarks.restoreFailed": "No se pudo restaurar el respaldo.",

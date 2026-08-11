@@ -73,6 +73,13 @@ type SyncRecoverySnapshot = {
   data: Record<string, unknown>
 }
 
+type SyncMutation = {
+  key: string
+  value?: StoragePayload
+  resolve: () => void
+  reject: (error: unknown) => void
+}
+
 const isManagedSyncKey = (key: string) =>
   MANAGED_SYNC_KEYS.has(key) ||
   MANAGED_SYNC_PREFIXES.some((prefix) => key.startsWith(prefix))
@@ -187,6 +194,9 @@ export class StorageService {
   private syncRecoveryInitialized = false
   private syncOperationQueue: Promise<void> = Promise.resolve()
   private lastSyncOperationAt = 0
+  private pendingSyncMutations: SyncMutation[] = []
+  private syncBatchTimer: ReturnType<typeof setTimeout> | null = null
+  private syncBatchDelay = 500
 
   static getInstance() {
     if (!this.instance) this.instance = new StorageService()
@@ -371,20 +381,15 @@ export class StorageService {
   ): Promise<boolean> {
     const storageArea = this.getStorageArea(area)
     if (!storageArea) return false
-    const operation = async () => {
-      const storedValue =
-        area === "sync" ? await encodeSyncValue(value.value) : value
-      await storageArea.set({
-        [key]:
-          area === "sync" ? { ...value, value: storedValue } : value
-      })
-      if (area === "sync") void this.snapshotManagedSyncData()
-    }
     try {
       if (area === "sync") {
-        await this.enqueueSyncOperation(operation)
+        const storedValue = await encodeSyncValue(value.value)
+        await this.enqueueSyncMutation(key, {
+          ...value,
+          value: storedValue
+        })
       } else {
-        await operation()
+        await storageArea.set({ [key]: value })
       }
       return true
     } catch (error) {
@@ -401,15 +406,15 @@ export class StorageService {
   ): Promise<boolean> {
     const storageArea = this.getStorageArea(area)
     if (!storageArea) return false
-    const operation = async () => {
-      await storageArea.remove(keys)
-      if (area === "sync") void this.snapshotManagedSyncData()
-    }
     try {
       if (area === "sync") {
-        await this.enqueueSyncOperation(operation)
+        await Promise.all(
+          (Array.isArray(keys) ? keys : [keys]).map((key) =>
+            this.enqueueSyncMutation(key)
+          )
+        )
       } else {
-        await operation()
+        await storageArea.remove(keys)
       }
       return true
     } catch (error) {
@@ -429,6 +434,49 @@ export class StorageService {
     })
     this.syncOperationQueue = queued.catch(() => undefined)
     return queued
+  }
+
+  private enqueueSyncMutation(key: string, value?: StoragePayload): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.pendingSyncMutations.push({ key, value, resolve, reject })
+      if (this.syncBatchTimer !== null) return
+
+      this.syncBatchTimer = setTimeout(() => {
+        this.syncBatchTimer = null
+        const mutations = this.pendingSyncMutations.splice(0)
+        void this.flushSyncMutations(mutations)
+      }, this.syncBatchDelay)
+    })
+  }
+
+  private async flushSyncMutations(mutations: SyncMutation[]) {
+    const latestByKey = new Map<string, SyncMutation>()
+    for (const mutation of mutations) latestByKey.set(mutation.key, mutation)
+
+    try {
+      await this.enqueueSyncOperation(async () => {
+        const values: Record<string, StoragePayload> = {}
+        const keysToRemove: string[] = []
+        for (const mutation of latestByKey.values()) {
+          if (mutation.value) {
+            values[mutation.key] = mutation.value
+          } else {
+            keysToRemove.push(mutation.key)
+          }
+        }
+
+        if (Object.keys(values).length > 0) {
+          await chrome.storage.sync.set(values)
+        }
+        if (keysToRemove.length > 0) {
+          await chrome.storage.sync.remove(keysToRemove)
+        }
+        void this.snapshotManagedSyncData()
+      })
+      mutations.forEach((mutation) => mutation.resolve())
+    } catch (error) {
+      mutations.forEach((mutation) => mutation.reject(error))
+    }
   }
 }
 

@@ -181,6 +181,7 @@ export const russianTranslations: Record<string, TranslationValue> = {
   "bookmarks.newFolder": "Новая папка",
   "bookmarks.folderCreated": "Папка создана!",
   "bookmarks.folderDeleted": "Папка удалена!",
+  "bookmarks.folderDeleteError": "Не удалось удалить папку. Она была восстановлена.",
   "bookmarks.exported": "Резервная копия экспортирована!",
   "bookmarks.restored": "Резервная копия восстановлена!",
   "bookmarks.restoreFailed": "Не удалось восстановить резервную копию.",

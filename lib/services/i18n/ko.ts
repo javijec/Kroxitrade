@@ -186,6 +186,7 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "bookmarks.newFolder": "새 폴더",
   "bookmarks.folderCreated": "폴더를 만들었습니다!",
   "bookmarks.folderDeleted": "폴더를 삭제했습니다!",
+  "bookmarks.folderDeleteError": "폴더를 삭제하지 못해 복원했습니다.",
   "bookmarks.exported": "백업을 내보냈습니다!",
   "bookmarks.restored": "백업을 복원했습니다!",
   "bookmarks.restoreFailed": "백업 복원에 실패했습니다.",

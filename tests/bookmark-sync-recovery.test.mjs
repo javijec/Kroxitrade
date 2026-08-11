@@ -7,6 +7,7 @@ const stores = {
 }
 const listeners = new Set()
 let failSyncSet = null
+let syncSetCalls = 0
 
 const clone = (value) => structuredClone(value)
 
@@ -25,6 +26,7 @@ const createArea = (name) => ({
     if (name === "sync" && failSyncSet?.(values)) {
       throw new Error("Injected sync write failure")
     }
+    if (name === "sync") syncSetCalls++
     const changes = {}
     for (const [key, value] of Object.entries(values)) {
       const oldValue = stores[name].get(key)
@@ -63,6 +65,7 @@ const { storageService } = await import("../lib/services/storage.ts")
 
 const sync = storageService
 sync.enqueueSyncOperation = async (operation) => operation()
+sync.syncBatchDelay = 0
 
 const folder = (id, title = id) => ({
   id,
@@ -86,6 +89,7 @@ const reset = () => {
   stores.local.clear()
   stores.sync.clear()
   failSyncSet = null
+  syncSetCalls = 0
   sync.syncRecoveryTimer = null
   sync.syncRecoveryInitialized = false
 }
@@ -105,20 +109,14 @@ const seedPreviousFolders = async () => {
   )
 }
 
-test("keeps the previous manifest readable when a later chunk write fails", async () => {
+test("keeps the previous manifest readable when a staged chunk batch fails", async () => {
   reset()
   await seedPreviousFolders()
   const bookmarks = new BookmarksService()
-  let chunkWrites = 0
   failSyncSet = (values) => {
-    if (
-      !Object.keys(values).some((key) =>
-        key.startsWith("bookmark-folders-chunk--")
-      )
+    return Object.keys(values).some((key) =>
+      key.startsWith("bookmark-folders-chunk--")
     )
-      return false
-    chunkWrites += 1
-    return chunkWrites === 2
   }
 
   await assert.rejects(
@@ -132,6 +130,17 @@ test("keeps the previous manifest readable when a later chunk write fails", asyn
     (await bookmarks.fetchFolders()).map(({ id }) => id),
     ["previous"]
   )
+})
+
+test("batches concurrent Sync writes into one storage call", async () => {
+  reset()
+
+  await Promise.all([
+    storageService.setValue("batch-one", { value: 1 }, null, "sync"),
+    storageService.setValue("batch-two", { value: 2 }, null, "sync")
+  ])
+
+  assert.equal(syncSetCalls, 1)
 })
 
 test("does not publish staged chunks when manifest publication fails", async () => {
@@ -233,4 +242,46 @@ test("keeps independent folder changes from two devices during concurrent add, d
     (await reader.fetchTradesByFolderId("folder-edit"))[0].title,
     "after"
   )
+})
+
+test("removes a folder from the visible store before its Sync cleanup completes", async () => {
+  reset()
+  const bookmarks = new BookmarksService()
+  await bookmarks.persistFolders([folder("optimistic")])
+  await bookmarks.persistTrades([trade("optimistic-trade")], "optimistic")
+  await bookmarks.refresh()
+
+  let visibleFolders = []
+  const unsubscribe = bookmarks.subscribe((folders) => {
+    visibleFolders = folders
+  })
+
+  const deletion = bookmarks.deleteFolder("optimistic")
+  assert.deepEqual(visibleFolders, [])
+
+  await deletion
+  unsubscribe()
+  assert.deepEqual(await bookmarks.fetchFolders(), [])
+})
+
+test("restores the visible folder when its Sync deletion fails", async () => {
+  reset()
+  const bookmarks = new BookmarksService()
+  await bookmarks.persistFolders([folder("rollback")])
+  await bookmarks.persistTrades([trade("rollback-trade")], "rollback")
+  await bookmarks.refresh()
+
+  let visibleFolders = []
+  const unsubscribe = bookmarks.subscribe((folders) => {
+    visibleFolders = folders
+  })
+  failSyncSet = (values) =>
+    Object.keys(values).some((key) => key === "bookmark-folders-manifest")
+
+  await bookmarks.deleteFolder("rollback")
+
+  failSyncSet = null
+  unsubscribe()
+  assert.deepEqual(visibleFolders.map(({ id }) => id), ["rollback"])
+  assert.deepEqual((await bookmarks.fetchFolders()).map(({ id }) => id), ["rollback"])
 })

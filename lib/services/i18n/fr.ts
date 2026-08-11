@@ -185,6 +185,7 @@ export const frenchTranslations: Record<string, TranslationValue> = {
   "bookmarks.newFolder": "Nouveau dossier",
   "bookmarks.folderCreated": "Dossier créé !",
   "bookmarks.folderDeleted": "Dossier supprimé !",
+  "bookmarks.folderDeleteError": "Impossible de supprimer le dossier. Il a été restauré.",
   "bookmarks.exported": "Sauvegarde exportée !",
   "bookmarks.restored": "Sauvegarde restaurée !",
   "bookmarks.restoreFailed": "Échec de la restauration de la sauvegarde.",

@@ -186,6 +186,7 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "bookmarks.newFolder": "新しいフォルダー",
   "bookmarks.folderCreated": "フォルダーを作成しました！",
   "bookmarks.folderDeleted": "フォルダーを削除しました！",
+  "bookmarks.folderDeleteError": "フォルダーを削除できなかったため、復元しました。",
   "bookmarks.exported": "バックアップをエクスポートしました！",
   "bookmarks.restored": "バックアップを復元しました！",
   "bookmarks.restoreFailed": "バックアップの復元に失敗しました。",

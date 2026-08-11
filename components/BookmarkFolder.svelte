@@ -438,15 +438,23 @@
     )
   }
 
-  const deleteTrade = async (trade: BookmarksTradeStruct) => {
+  const deleteTrade = (trade: BookmarksTradeStruct) => {
     if (!folder.id || !trade.id) return
-    try {
-      trades = await bookmarksService.deleteTrade(trade.id, folder.id)
-      hasLoadedTrades = true
-      tradePendingDelete = null
-    } catch {
-      flashMessages.alert(translate($languageStore, "folder.deleteTradeError"))
-    }
+    const previousTrades = trades
+    trades = trades.filter((entry) => entry.id !== trade.id)
+    hasLoadedTrades = true
+    tradePendingDelete = null
+
+    void bookmarksService.deleteTrade(trade.id, folder.id)
+      .then((persisted) => {
+        trades = persisted
+        hasLoadedTrades = true
+      })
+      .catch(() => {
+        trades = previousTrades
+        hasLoadedTrades = true
+        flashMessages.alert(translate($languageStore, "folder.deleteTradeError"))
+      })
   }
 
   const requestTradeDelete = (trade: BookmarksTradeStruct) => {

@@ -789,13 +789,43 @@ export class BookmarksService {
   }
 
   async deleteFolder(folderId: string) {
-    const folders = await this.fetchFolders()
+    let folders = get(this.foldersStore)
+    if (!folders.some((folder) => folder.id === folderId)) {
+      folders = await this.fetchFolders()
+    }
+    if (!folders.some((folder) => folder.id === folderId)) return
+
     const updated = folders.filter((f) => f.id !== folderId)
-    await this.persistFolders(updated)
+
+    // Make deletion feel immediate. The durable Sync cleanup continues below;
+    // if it fails, the original folder and its trades are restored.
+    this.foldersStore.set(updated)
+    this.notifyChange({ foldersChanged: true, folderId })
     this.tradesCache.delete(folderId)
     this.tradesRequests.delete(folderId)
-    await this.deleteChunkedTrades(folderId)
-    await this.refresh()
+
+    let trades: BookmarksTradeStruct[] = []
+    try {
+      trades = await this.fetchTradesByFolderId(folderId, { force: true })
+      await this.persistFolders(updated)
+      await this.deleteChunkedTrades(folderId)
+      await this.refresh()
+      return true
+    } catch (error) {
+      console.warn("Could not delete bookmark folder; restoring it", error)
+
+      try {
+        await this.persistFolders(folders)
+        await this.persistTrades(trades, folderId)
+        this.tradesCache.set(folderId, trades)
+      } catch (rollbackError) {
+        console.warn("Could not restore bookmark folder after a failed deletion", rollbackError)
+      }
+
+      this.foldersStore.set(folders)
+      this.notifyChange({ foldersChanged: true, folderId })
+      return false
+    }
   }
 
   async duplicateTrade(
