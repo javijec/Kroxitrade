@@ -532,24 +532,34 @@
     return value ? translate($languageStore, "settings.on") : translate($languageStore, "settings.off");
   }
 
-  function handleResultActionsVisibleChange(value: boolean) {
-    experimentalSettings.setResultActionsVisible(value);
+  async function handleResultActionsVisibleChange(value: boolean) {
+    if (!(await experimentalSettings.setResultActionsVisible(value))) {
+      flashMessages.alert(translate($languageStore, "settings.saveFailed"));
+    }
   }
 
-  function handlePoe2CopyVisibleChange(value: boolean) {
-    experimentalSettings.setPoe2CopyVisible(value);
+  async function handlePoe2CopyVisibleChange(value: boolean) {
+    if (!(await experimentalSettings.setPoe2CopyVisible(value))) {
+      flashMessages.alert(translate($languageStore, "settings.saveFailed"));
+    }
   }
 
-  function handleCoeVisibleChange(value: boolean) {
-    experimentalSettings.setCoeVisible(value);
+  async function handleCoeVisibleChange(value: boolean) {
+    if (!(await experimentalSettings.setCoeVisible(value))) {
+      flashMessages.alert(translate($languageStore, "settings.saveFailed"));
+    }
   }
 
-  function handleCoeDesecratedModsChange(value: boolean) {
-    experimentalSettings.setCoeDesecratedModsEnabled(value);
+  async function handleCoeDesecratedModsChange(value: boolean) {
+    if (!(await experimentalSettings.setCoeDesecratedModsEnabled(value))) {
+      flashMessages.alert(translate($languageStore, "settings.saveFailed"));
+    }
   }
 
-  function handleWikiVisibleChange(value: boolean) {
-    experimentalSettings.setWikiVisible(value);
+  async function handleWikiVisibleChange(value: boolean) {
+    if (!(await experimentalSettings.setWikiVisible(value))) {
+      flashMessages.alert(translate($languageStore, "settings.saveFailed"));
+    }
   }
 
   function toggleLanguageMenu(event: MouseEvent) {

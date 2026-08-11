@@ -39,6 +39,11 @@ export interface VersionSettings {
   showValdoRewardPricing: boolean
   showMagebloodLegacyDescriptions: boolean
   highlightedModColor: string
+  showResultActions: boolean
+  showPoe2CopyButton: boolean
+  showCraftOfExileButton: boolean
+  includeDesecratedMods: boolean
+  showWikiButton: boolean
   showBulkSellers: boolean
   showPinnedItems: boolean
   showHistory: boolean
@@ -101,6 +106,11 @@ const DEFAULT_VERSION_SETTINGS: VersionSettings = {
   showValdoRewardPricing: false,
   showMagebloodLegacyDescriptions: true,
   highlightedModColor: DEFAULT_HIGHLIGHTED_MOD_COLOR,
+  showResultActions: false,
+  showPoe2CopyButton: true,
+  showCraftOfExileButton: false,
+  includeDesecratedMods: false,
+  showWikiButton: false,
   showBulkSellers: false,
   showPinnedItems: false,
   showHistory: true,
@@ -137,6 +147,21 @@ function highlightedModBackgroundColor(color: string, opacity: number): string {
   const green = Number.parseInt(normalized.slice(3, 5), 16)
   const blue = Number.parseInt(normalized.slice(5, 7), 16)
   return `rgba(${red}, ${green}, ${blue}, ${opacity})`
+}
+
+const legacyExperimentalStorageKey = (key: string, version: TradeSiteVersion) =>
+  `bt-${key}-poe${version}`
+
+function readLegacyExperimentalSettings(version: TradeSiteVersion) {
+  if (typeof window === "undefined") return {}
+  const read = (key: string) => window.localStorage.getItem(legacyExperimentalStorageKey(key, version))
+  return {
+    showResultActions: read("experimental-result-actions-visible") === "true",
+    showPoe2CopyButton: read("experimental-poe2-copy-visible") !== "false",
+    showCraftOfExileButton: read("experimental-coe-visible") === "true",
+    includeDesecratedMods: read("experimental-coe-desecrated-mods-enabled") === "true",
+    showWikiButton: read("experimental-wiki-visible") === "true"
+  }
 }
 
 function getStorageChangeValue<T>(
@@ -189,6 +214,11 @@ function normalizeVersionSettings(
     ...DEFAULT_VERSION_SETTINGS,
     ...defined,
     highlightedModColor: normalizeHighlightedModColor(defined.highlightedModColor),
+    showResultActions: defined.showResultActions === true,
+    showPoe2CopyButton: defined.showPoe2CopyButton !== false,
+    showCraftOfExileButton: defined.showCraftOfExileButton === true,
+    includeDesecratedMods: defined.includeDesecratedMods === true,
+    showWikiButton: defined.showWikiButton === true,
     classicBookmarkTradeActions: [
       ...(defined.classicBookmarkTradeActions ??
         DEFAULT_CLASSIC_BOOKMARK_TRADE_ACTIONS)
@@ -215,6 +245,11 @@ function legacyVersionSettings(
     showValdoRewardPricing: value?.showValdoRewardPricing,
     showMagebloodLegacyDescriptions: value?.showMagebloodLegacyDescriptions,
     highlightedModColor: value?.highlightedModColor,
+    showResultActions: value?.showResultActions,
+    showPoe2CopyButton: value?.showPoe2CopyButton,
+    showCraftOfExileButton: value?.showCraftOfExileButton,
+    includeDesecratedMods: value?.includeDesecratedMods,
+    showWikiButton: value?.showWikiButton,
     showBulkSellers: value?.showBulkSellers,
     showPinnedItems: value?.showPinnedItems,
     showHistory: value?.showHistory,
@@ -348,13 +383,22 @@ async function loadVersionSettings(
     typeof stored?.language === "string" &&
     typeof stored?.textSize === "string"
   const legacySettings = legacyVersionSettings(legacy)
+  const legacyExperimentalSettings = readLegacyExperimentalSettings(version)
   const next = stored
-    ? normalizeVersionSettings({ ...legacySettings, ...stored })
-    : legacySettings
+    ? normalizeVersionSettings({ ...legacySettings, ...legacyExperimentalSettings, ...stored })
+    : normalizeVersionSettings({ ...legacySettings, ...legacyExperimentalSettings })
 
   versionCache.set(version, next)
 
-  if (!stored || !hasIndependentInterfaceSettings) {
+  if (
+    !stored ||
+    !hasIndependentInterfaceSettings ||
+    typeof stored.showResultActions !== "boolean" ||
+    typeof stored.showPoe2CopyButton !== "boolean" ||
+    typeof stored.showCraftOfExileButton !== "boolean" ||
+    typeof stored.includeDesecratedMods !== "boolean" ||
+    typeof stored.showWikiButton !== "boolean"
+  ) {
     await persistSynced(versionSettingsKey(version), next)
   }
 
@@ -381,7 +425,8 @@ async function load(force = false) {
 }
 
 async function saveVersionForReload(next: VersionSettings) {
-  const saved = await persistSynced(versionSettingsKey(activeVersion), next)
+  const merged = await mergeVersionUpdate(next)
+  const saved = await persistSynced(versionSettingsKey(activeVersion), merged)
   if (!saved) {
     console.warn(
       `[Poe Trade Plus] Failed to persist PoE ${activeVersion} settings`
@@ -389,23 +434,24 @@ async function saveVersionForReload(next: VersionSettings) {
     return false
   }
 
-  activeVersionSettings = next
-  versionCache.set(activeVersion, next)
+  activeVersionSettings = merged
+  versionCache.set(activeVersion, merged)
   if (typeof window !== "undefined") {
     window.localStorage.setItem(
       `bt-language-poe${activeVersion}`,
-      next.language
+      merged.language
     )
     window.sessionStorage.setItem(
       `${LANGUAGE_SESSION_KEY}-poe${activeVersion}`,
-      next.language
+      merged.language
     )
   }
   return true
 }
 
 async function saveVersion(next: VersionSettings) {
-  const saved = await persistSynced(versionSettingsKey(activeVersion), next)
+  const merged = await mergeVersionUpdate(next)
+  const saved = await persistSynced(versionSettingsKey(activeVersion), merged)
   if (!saved) {
     console.warn(
       `[Poe Trade Plus] Failed to persist PoE ${activeVersion} settings`
@@ -413,10 +459,38 @@ async function saveVersion(next: VersionSettings) {
     return false
   }
 
-  activeVersionSettings = next
-  versionCache.set(activeVersion, next)
+  activeVersionSettings = merged
+  versionCache.set(activeVersion, merged)
   publish()
   return true
+}
+
+function changedSettings(
+  previous: VersionSettings,
+  next: VersionSettings
+): Partial<VersionSettings> {
+  return Object.fromEntries(
+    Object.entries(next).filter(([key, value]) =>
+      JSON.stringify(value) !== JSON.stringify(previous[key as keyof VersionSettings])
+    )
+  ) as Partial<VersionSettings>
+}
+
+async function mergeVersionUpdate(next: VersionSettings): Promise<VersionSettings> {
+  const key = versionSettingsKey(activeVersion)
+  const pending = await getPendingSyncValue<VersionSettings>(key)
+  const synced = pending ?? await storageService.getValue<VersionSettings>(
+    key,
+    null,
+    SETTINGS_STORAGE_AREA
+  )
+  const latest = synced
+    ? normalizeVersionSettings(synced)
+    : activeVersionSettings
+  return normalizeVersionSettings({
+    ...latest,
+    ...changedSettings(activeVersionSettings, next)
+  })
 }
 
 bindStorageSync()
@@ -466,6 +540,21 @@ export const settings = {
       ...activeVersionSettings,
       highlightedModColor: normalizeHighlightedModColor(highlightedModColor)
     })
+  },
+  async updateResultActionsVisibility(showResultActions: boolean) {
+    return saveVersion({ ...activeVersionSettings, showResultActions })
+  },
+  async updatePoe2CopyButtonVisibility(showPoe2CopyButton: boolean) {
+    return saveVersion({ ...activeVersionSettings, showPoe2CopyButton })
+  },
+  async updateCraftOfExileButtonVisibility(showCraftOfExileButton: boolean) {
+    return saveVersion({ ...activeVersionSettings, showCraftOfExileButton })
+  },
+  async updateDesecratedModsVisibility(includeDesecratedMods: boolean) {
+    return saveVersion({ ...activeVersionSettings, includeDesecratedMods })
+  },
+  async updateWikiButtonVisibility(showWikiButton: boolean) {
+    return saveVersion({ ...activeVersionSettings, showWikiButton })
   },
   async updateBulkSellersVisibility(showBulkSellers: boolean) {
     return saveVersion({ ...activeVersionSettings, showBulkSellers })
