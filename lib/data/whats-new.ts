@@ -437,10 +437,45 @@ const version1110Features: WhatsNewItem[] = [
   }
 ];
 
+const version1126Features: WhatsNewItem[] = [
+  {
+    titleKey: "whatsNew.item.filterOverlayColorTitle",
+    descriptionKey: "whatsNew.item.filterOverlayColorDescription"
+  }
+];
+
+const version1126Fixes: WhatsNewItem[] = [
+  {
+    titleKey: "whatsNew.item.betterTradingSearchStateTitle",
+    descriptionKey: "whatsNew.item.betterTradingSearchStateDescription"
+  },
+  {
+    titleKey: "whatsNew.item.settingsBackupReliabilityTitle",
+    descriptionKey: "whatsNew.item.settingsBackupReliabilityDescription"
+  },
+  {
+    titleKey: "whatsNew.item.cancelNewFolderTitle",
+    descriptionKey: "whatsNew.item.cancelNewFolderDescription"
+  }
+];
+
 export const latestWhatsNew: WhatsNewEntry = {
-  version: "1.1.24",
-  date: "2026-08-10",
+  version: "1.1.26",
+  date: "2026-08-11",
   sections: [
+    {
+      title: "1.1.26",
+      groups: [
+        {
+          titleKey: "whatsNew.section.features",
+          items: version1126Features
+        },
+        {
+          titleKey: "whatsNew.section.fixes",
+          items: version1126Fixes
+        }
+      ]
+    },
     {
       title: "1.1.24",
       groups: [

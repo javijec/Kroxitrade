@@ -380,5 +380,13 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "settings.off": "Desligado",
   "settings.tradeActionsTitle": "Ações visíveis de trade",
   "settings.tradeActionsDescription":
-    "Escolha quais ações de busca salva ficam visíveis fora do menu no layout clássico e no compacto. Se nenhuma for selecionada, apenas o menu de três pontos aparece."
+    "Escolha quais ações de busca salva ficam visíveis fora do menu no layout clássico e no compacto. Se nenhuma for selecionada, apenas o menu de três pontos aparece.",
+  "whatsNew.item.filterOverlayColorTitle": "Cor de filtro personalizada",
+  "whatsNew.item.filterOverlayColorDescription": "Escolha a cor usada na sobreposição do filtro selecionado nos resultados de trade.",
+  "whatsNew.item.betterTradingSearchStateTitle": "Buscas salvas do Better Trading continuam compatíveis",
+  "whatsNew.item.betterTradingSearchStateDescription": "Buscas salvas copiadas do Better Trading mantêm o estado incorporado ao serem abertas.",
+  "whatsNew.item.settingsBackupReliabilityTitle": "Configurações e backups são restaurados com segurança",
+  "whatsNew.item.settingsBackupReliabilityDescription": "Seu layout, categorias de favoritos e preferências são preservados ao sincronizar configurações ou restaurar um backup portátil.",
+  "whatsNew.item.cancelNewFolderTitle": "Cancelar uma nova pasta não deixa pastas extras",
+  "whatsNew.item.cancelNewFolderDescription": "Cancele ou pressione Escape ao nomear uma nova pasta de favoritos para removê-la em vez de manter uma pasta vazia."
 }

@@ -369,5 +369,13 @@ export const germanTranslations: Record<string, TranslationValue> = {
   "settings.off": "Aus",
   "settings.tradeActionsTitle": "Sichtbare Handelsaktionen",
   "settings.tradeActionsDescription":
-    "Wähle aus, welche Aktionen gespeicherter Suchen in klassischem und kompaktem Layout außerhalb des Menüs sichtbar bleiben. Wenn nichts ausgewählt ist, wird nur das Drei-Punkte-Menü angezeigt."
+    "Wähle aus, welche Aktionen gespeicherter Suchen in klassischem und kompaktem Layout außerhalb des Menüs sichtbar bleiben. Wenn nichts ausgewählt ist, wird nur das Drei-Punkte-Menü angezeigt.",
+  "whatsNew.item.filterOverlayColorTitle": "Eigene Filterfarbe",
+  "whatsNew.item.filterOverlayColorDescription": "Wähle die Farbe für die Überlagerung des ausgewählten Filters in den Trade-Ergebnissen.",
+  "whatsNew.item.betterTradingSearchStateTitle": "Gespeicherte Better-Trading-Suchen bleiben kompatibel",
+  "whatsNew.item.betterTradingSearchStateDescription": "Aus Better Trading kopierte gespeicherte Suchen behalten beim Öffnen ihren eingebetteten Zustand.",
+  "whatsNew.item.settingsBackupReliabilityTitle": "Einstellungen und Backups werden zuverlässig wiederhergestellt",
+  "whatsNew.item.settingsBackupReliabilityDescription": "Dein Layout, Lesezeichenkategorien und Einstellungen bleiben beim Synchronisieren oder Wiederherstellen eines portablen Backups erhalten.",
+  "whatsNew.item.cancelNewFolderTitle": "Abbrechen eines neuen Ordners hinterlässt keinen leeren Ordner",
+  "whatsNew.item.cancelNewFolderDescription": "Brich beim Benennen eines neuen Lesezeichenordners ab oder drücke Escape, um ihn zu entfernen statt einen leeren Ordner zu behalten."
 }

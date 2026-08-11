@@ -376,5 +376,13 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "settings.off": "オフ",
   "settings.tradeActionsTitle": "表示するトレード操作",
   "settings.tradeActionsDescription":
-    "クラシック/コンパクト両方のレイアウトで、メニュー外に表示しておく保存済み検索の操作を選択します。何も選ばない場合は3点メニューのみ表示されます。"
+    "クラシック/コンパクト両方のレイアウトで、メニュー外に表示しておく保存済み検索の操作を選択します。何も選ばない場合は3点メニューのみ表示されます。",
+  "whatsNew.item.filterOverlayColorTitle": "カスタムフィルター色",
+  "whatsNew.item.filterOverlayColorDescription": "トレード結果で選択したフィルターのハイライトに使う色を選べます。",
+  "whatsNew.item.betterTradingSearchStateTitle": "Better Trading の保存済み検索との互換性を維持",
+  "whatsNew.item.betterTradingSearchStateDescription": "Better Trading からコピーした保存済み検索は、開いたときに埋め込み状態を維持します。",
+  "whatsNew.item.settingsBackupReliabilityTitle": "設定とバックアップを確実に復元",
+  "whatsNew.item.settingsBackupReliabilityDescription": "設定の同期またはポータブルバックアップの復元時に、レイアウト、ブックマークカテゴリ、設定が保持されます。",
+  "whatsNew.item.cancelNewFolderTitle": "新規フォルダーをキャンセルしても空のフォルダーを残さない",
+  "whatsNew.item.cancelNewFolderDescription": "新しいブックマークフォルダーの名前を付ける途中でキャンセルするか Escape を押すと、空のフォルダーを残さず削除します。"
 }

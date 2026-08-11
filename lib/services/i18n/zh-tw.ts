@@ -542,5 +542,13 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
       "以 Better Trading 的原始流程重新實作；選用的釘選可在目前搜尋期間保留結果，並從側邊欄回到該項目。",
     "whatsNew.item.duplicateBookmarksTitle": "直接複製書籤",
     "whatsNew.item.duplicateBookmarksDescription":
-      "已儲存搜尋的操作現在包含「複製書籤」，可不必重新建立搜尋就建立副本。"
+      "已儲存搜尋的操作現在包含「複製書籤」，可不必重新建立搜尋就建立副本。",
+    "whatsNew.item.filterOverlayColorTitle": "自訂篩選顏色",
+    "whatsNew.item.filterOverlayColorDescription": "選擇交易結果中所選篩選條件醒目提示使用的顏色。",
+    "whatsNew.item.betterTradingSearchStateTitle": "Better Trading 已儲存搜尋維持相容",
+    "whatsNew.item.betterTradingSearchStateDescription": "從 Better Trading 複製的已儲存搜尋在開啟時會保留其內嵌狀態。",
+    "whatsNew.item.settingsBackupReliabilityTitle": "設定與備份可可靠還原",
+    "whatsNew.item.settingsBackupReliabilityDescription": "同步設定或還原可攜備份時，會保留你的版面、書籤分類與偏好設定。",
+    "whatsNew.item.cancelNewFolderTitle": "取消新資料夾不會留下空資料夾",
+    "whatsNew.item.cancelNewFolderDescription": "為新書籤資料夾命名時取消或按 Escape，會將其移除而不留下空資料夾。"
   } as Record<string, TranslationValue>

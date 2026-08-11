@@ -366,5 +366,13 @@ export const russianTranslations: Record<string, TranslationValue> = {
   "settings.off": "Выкл",
   "settings.tradeActionsTitle": "Видимые действия трейда",
   "settings.tradeActionsDescription":
-    "Выберите, какие действия сохраненного поиска будут видны вне меню в классическом и компактном режиме. Если ничего не выбрано, отображается только меню из трех точек."
+    "Выберите, какие действия сохраненного поиска будут видны вне меню в классическом и компактном режиме. Если ничего не выбрано, отображается только меню из трех точек.",
+  "whatsNew.item.filterOverlayColorTitle": "Настраиваемый цвет фильтра",
+  "whatsNew.item.filterOverlayColorDescription": "Выберите цвет подсветки выбранного фильтра в результатах трейда.",
+  "whatsNew.item.betterTradingSearchStateTitle": "Сохраненные поиски Better Trading остаются совместимыми",
+  "whatsNew.item.betterTradingSearchStateDescription": "Сохраненные поиски, скопированные из Better Trading, сохраняют встроенное состояние при открытии.",
+  "whatsNew.item.settingsBackupReliabilityTitle": "Настройки и резервные копии восстанавливаются надежно",
+  "whatsNew.item.settingsBackupReliabilityDescription": "Ваш макет, категории закладок и предпочтения сохраняются при синхронизации настроек или восстановлении переносимой резервной копии.",
+  "whatsNew.item.cancelNewFolderTitle": "Отмена новой папки не оставляет пустую папку",
+  "whatsNew.item.cancelNewFolderDescription": "Отмените действие или нажмите Escape при именовании новой папки закладок, чтобы удалить ее, а не сохранять пустой папкой."
 }

@@ -535,5 +535,13 @@ export const simplifiedChineseTranslations: Record<string, TranslationValue> = {
     "根据 Better Trading 的原始流程重新实现；可选固定会在当前搜索期间保留结果，并能从侧边栏回到该项目。",
   "whatsNew.item.duplicateBookmarksTitle": "直接复制书签",
   "whatsNew.item.duplicateBookmarksDescription":
-    "已保存搜索的操作现在包含“复制书签”，无需重新建立搜索即可创建副本。"
+    "已保存搜索的操作现在包含“复制书签”，无需重新建立搜索即可创建副本。",
+  "whatsNew.item.filterOverlayColorTitle": "自定义筛选颜色",
+  "whatsNew.item.filterOverlayColorDescription": "选择交易结果中已选筛选条件高亮所使用的颜色。",
+  "whatsNew.item.betterTradingSearchStateTitle": "Better Trading 已保存搜索保持兼容",
+  "whatsNew.item.betterTradingSearchStateDescription": "从 Better Trading 复制的已保存搜索在打开时会保留其内嵌状态。",
+  "whatsNew.item.settingsBackupReliabilityTitle": "设置和备份可可靠还原",
+  "whatsNew.item.settingsBackupReliabilityDescription": "同步设置或还原可携备份时，你的布局、书签分类和偏好会被保留。",
+  "whatsNew.item.cancelNewFolderTitle": "取消新文件夹不会留下空文件夹",
+  "whatsNew.item.cancelNewFolderDescription": "为新书签文件夹命名时取消或按 Escape 会将其移除，而不会留下空文件夹。"
 } as Record<string, TranslationValue>

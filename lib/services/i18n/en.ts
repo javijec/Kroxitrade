@@ -555,5 +555,17 @@ export const englishTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.duplicateBookmarksDescription": "Saved-search actions now include Duplicate bookmark, so you can make a copy without recreating the search.",
   "whatsNew.item.buyoutClearTitle": "Clear Buyout Price shortcut",
   "whatsNew.item.buyoutClearDescription":
-    "Quick Filter Presets now include a Clear button that resets Buyout Price to Chaos Orb Equivalent and works with supported trade-site languages."
+    "Quick Filter Presets now include a Clear button that resets Buyout Price to Chaos Orb Equivalent and works with supported trade-site languages.",
+  "whatsNew.item.filterOverlayColorTitle": "Custom filter color",
+  "whatsNew.item.filterOverlayColorDescription":
+    "Choose the color used for the selected filter overlay on trade results.",
+  "whatsNew.item.betterTradingSearchStateTitle": "Better Trading saved searches stay compatible",
+  "whatsNew.item.betterTradingSearchStateDescription":
+    "Saved searches copied from Better Trading keep their embedded state when opened.",
+  "whatsNew.item.settingsBackupReliabilityTitle": "Settings and backups restore reliably",
+  "whatsNew.item.settingsBackupReliabilityDescription":
+    "Your layout, bookmark categories, and preferences are preserved when settings sync or a portable backup is restored.",
+  "whatsNew.item.cancelNewFolderTitle": "Canceling a new folder leaves no extra folder",
+  "whatsNew.item.cancelNewFolderDescription":
+    "Cancel or press Escape while naming a new bookmark folder to remove it instead of keeping an empty folder."
 } as Record<string, TranslationValue>

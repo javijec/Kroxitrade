@@ -363,5 +363,13 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "settings.off": "ปิด",
   "settings.tradeActionsTitle": "การทำงานเทรดที่แสดงอยู่",
   "settings.tradeActionsDescription":
-    "เลือกการทำงานของการค้นหาที่บันทึกไว้ซึ่งจะแสดงนอกเมนูในทั้งเลย์เอาต์แบบคลาสสิกและแบบกะทัดรัด หากไม่เลือกเลย จะแสดงเฉพาะเมนูสามจุด"
+    "เลือกการทำงานของการค้นหาที่บันทึกไว้ซึ่งจะแสดงนอกเมนูในทั้งเลย์เอาต์แบบคลาสสิกและแบบกะทัดรัด หากไม่เลือกเลย จะแสดงเฉพาะเมนูสามจุด",
+  "whatsNew.item.filterOverlayColorTitle": "สีตัวกรองแบบกำหนดเอง",
+  "whatsNew.item.filterOverlayColorDescription": "เลือกสีที่ใช้กับการไฮไลต์ตัวกรองที่เลือกในผลลัพธ์การเทรด",
+  "whatsNew.item.betterTradingSearchStateTitle": "การค้นหาที่บันทึกจาก Better Trading ยังคงใช้งานร่วมกันได้",
+  "whatsNew.item.betterTradingSearchStateDescription": "การค้นหาที่บันทึกซึ่งคัดลอกจาก Better Trading จะคงสถานะที่ฝังไว้เมื่อเปิด",
+  "whatsNew.item.settingsBackupReliabilityTitle": "กู้คืนการตั้งค่าและข้อมูลสำรองได้อย่างน่าเชื่อถือ",
+  "whatsNew.item.settingsBackupReliabilityDescription": "เลย์เอาต์ หมวดหมู่บุ๊กมาร์ก และการตั้งค่าของคุณจะคงอยู่เมื่อซิงก์การตั้งค่าหรือกู้คืนข้อมูลสำรองแบบพกพา",
+  "whatsNew.item.cancelNewFolderTitle": "การยกเลิกโฟลเดอร์ใหม่จะไม่ทิ้งโฟลเดอร์ว่างไว้",
+  "whatsNew.item.cancelNewFolderDescription": "ยกเลิกหรือกด Escape ขณะตั้งชื่อโฟลเดอร์บุ๊กมาร์กใหม่เพื่อลบออก แทนที่จะเก็บโฟลเดอร์ว่างไว้"
 }
