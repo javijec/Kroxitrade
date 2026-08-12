@@ -13,6 +13,11 @@ import {
   bookmarkScrollMessage,
   getBookmarkScrollRestoreKey
 } from "~/lib/services/bookmark-scroll"
+import {
+  ACTIVE_BOOKMARK_RESTORE_MAX_AGE_MS,
+  activeBookmarkMessage,
+  getActiveBookmarkTabKey
+} from "~/lib/services/active-bookmark"
 import { tabsCreateMessage } from "~/lib/services/active-trade-tab"
 
 const getStorageUsage = async () => {
@@ -216,6 +221,8 @@ export default defineBackground({
       if (request?.type === tabsCreateMessage.create) {
         const url = request.url
         const active = request.active === true
+        const bookmarkId =
+          typeof request.bookmarkId === "string" ? request.bookmarkId : ""
         const scrollTop =
           typeof request.scrollTop === "number" &&
           Number.isFinite(request.scrollTop) &&
@@ -230,15 +237,76 @@ export default defineBackground({
         chrome.tabs
           .create({ url, active })
           .then(async (tab) => {
-            if (scrollTop !== null && typeof tab.id === "number") {
-              await storageService.setValue(getBookmarkScrollRestoreKey(tab.id), {
-                top: scrollTop,
-                savedAt: Date.now()
-              })
+            if (typeof tab.id === "number") {
+              if (bookmarkId) {
+                await storageService.setValue(getActiveBookmarkTabKey(tab.id), {
+                  id: bookmarkId,
+                  savedAt: Date.now()
+                })
+              }
+              if (scrollTop !== null) {
+                await storageService.setValue(getBookmarkScrollRestoreKey(tab.id), {
+                  top: scrollTop,
+                  savedAt: Date.now()
+                })
+              }
             }
             sendResponse({ ok: true })
           })
           .catch(() => sendResponse({ ok: false }))
+        return true
+      }
+
+      if (request?.type === activeBookmarkMessage.save) {
+        const activeTabId =
+          typeof request.tabId === "number" ? request.tabId : sender.tab?.id
+        const value = request.value
+        if (
+          typeof activeTabId !== "number" ||
+          typeof value?.id !== "string" ||
+          !value.id ||
+          typeof value.savedAt !== "number"
+        ) {
+          sendResponse({ ok: false })
+          return false
+        }
+
+        storageService
+          .setValue(getActiveBookmarkTabKey(activeTabId), {
+            id: value.id,
+            savedAt: value.savedAt
+          })
+          .then((ok) => sendResponse({ ok }))
+          .catch(() => sendResponse({ ok: false }))
+        return true
+      }
+
+      if (request?.type === activeBookmarkMessage.consume) {
+        const activeBookmarkKey =
+          typeof tabId === "number" ? getActiveBookmarkTabKey(tabId) : null
+        if (!activeBookmarkKey) {
+          sendResponse({ id: null })
+          return false
+        }
+
+        storageService
+          .getValue<{ id: string; savedAt: number }>(activeBookmarkKey)
+          .then(async (saved) => {
+            if (
+              !saved ||
+              typeof saved.id !== "string" ||
+              !saved.id ||
+              typeof saved.savedAt !== "number" ||
+              Date.now() - saved.savedAt > ACTIVE_BOOKMARK_RESTORE_MAX_AGE_MS
+            ) {
+              if (saved) await storageService.deleteValue(activeBookmarkKey)
+              sendResponse({ id: null })
+              return
+            }
+            await storageService.deleteValue(activeBookmarkKey)
+            sendResponse({ id: saved.id })
+          })
+          .catch(() => sendResponse({ id: null }))
         return true
       }
 

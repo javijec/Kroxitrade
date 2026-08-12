@@ -2,6 +2,7 @@ import {
   hasValidExtensionContext,
   isExtensionContextInvalidatedError
 } from "../utilities/extension-context"
+import { saveActiveBookmarkForTab } from "./active-bookmark"
 import { saveBookmarkScrollForTab } from "./bookmark-scroll"
 
 const TRADE_URL_PATTERN =
@@ -119,8 +120,13 @@ export const openUrlInNewTab = async (
   if (hasValidExtensionContext() && chrome.tabs?.create) {
     try {
       const tab = await chrome.tabs.create({ url, active })
-      if (typeof tab.id === "number" && typeof scrollTop === "number") {
-        await saveBookmarkScrollForTab(tab.id, scrollTop)
+      if (typeof tab.id === "number") {
+        if (bookmarkId) {
+          await saveActiveBookmarkForTab(tab.id, bookmarkId)
+        }
+        if (typeof scrollTop === "number") {
+          await saveBookmarkScrollForTab(tab.id, scrollTop)
+        }
       }
       return
     } catch (error) {

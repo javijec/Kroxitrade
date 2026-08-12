@@ -12,6 +12,11 @@
 
 
   import {
+    activeBookmarkId,
+    clearActiveBookmarkId,
+    setActiveBookmarkId
+  } from "../lib/services/active-bookmark"
+  import {
     getActiveTradeTabTitle,
     openUrlInActiveTab,
     openUrlInNewTab,
@@ -489,6 +494,9 @@
   }
 
   const openTradeLive = async (trade: BookmarksTradeStruct) => {
+    if (trade.id) {
+      setActiveBookmarkId(trade.id)
+    }
     await openUrlInActiveTab(
       resolveTradeUrl(trade.location, "/live", true)
     )
@@ -500,6 +508,10 @@
     trades = trades.filter((entry) => entry.id !== trade.id)
     hasLoadedTrades = true
     tradePendingDelete = null
+
+    if (trade.id === $activeBookmarkId) {
+      clearActiveBookmarkId()
+    }
 
     void bookmarksService.deleteTrade(trade.id, folder.id)
       .then((persisted) => {
@@ -752,6 +764,9 @@
     trade: BookmarksTradeStruct,
     target: TradeOpenTarget = "active"
   ) => {
+    if (target === "active" && trade.id) {
+      setActiveBookmarkId(trade.id)
+    }
     const scrollTop = scrollContainer?.scrollTop
     if (target === "active" && scrollContainer) {
       await saveBookmarkScroll(scrollContainer.scrollTop)
@@ -762,7 +777,7 @@
     const url = resolveTradeUrl(trade.location, "", true)
     await (
       target === "tab"
-        ? openUrlInNewTab(url, false, undefined, scrollTop)
+        ? openUrlInNewTab(url, false, trade.id, scrollTop)
         : target === "window"
           ? openUrlInNewWindow(url)
           : openUrlInActiveTab(url)
@@ -1080,6 +1095,9 @@
   let folderIconUrl = $derived(getBookmarkFolderIconUrl(folder.icon))
   let folderEditIconUrl = $derived(getBookmarkFolderIconUrl(folderEditIcon))
 
+  const isCurrentTrade = (trade: BookmarksTradeStruct) =>
+    !!$activeBookmarkId && trade.id === $activeBookmarkId
+
   $effect(() => {
     if (previewTrades) {
       trades = previewTrades
@@ -1356,6 +1374,7 @@
               {@const trade = entry.trade}
               {@const i = entry.displayIndex}
               {@const tradeCategoryId = categoryIdForTrade(trade)}
+              {@const isActiveTrade = isCurrentTrade(trade)}
               <li
                 draggable="true"
                 ondragstart={(e) => handleDragStart(e, i)}
@@ -1392,9 +1411,11 @@
                   class="trade-item"
                   class:is-completed={!!trade.completedAt}
                   class:is-archived={!!trade.archivedAt}
+                  class:is-current={isActiveTrade}
                   class:is-dragging={draggedIndex === i}
                   class:is-drag-over={dragOverIndex === i}
                   role="group"
+                  aria-current={isActiveTrade ? "page" : undefined}
                   aria-label={trade.title}
                   onpointerdown={handleTradeCardPointerDown}
                   onpointerup={(event) => handleTradeCardClick(event, trade)}>
@@ -2041,6 +2062,18 @@
 .trade-item.is-completed {
   background: rgba(30, 77, 30, 0.14);
   border-color: rgba(30, 77, 30, 0.28);
+}
+.trade-item.is-current {
+  border-color: rgba(163, 141, 109, 0.42);
+  background: rgba(163, 141, 109, 0.12);
+}
+.trade-item.is-current.is-completed {
+  border-color: rgba(163, 141, 109, 0.36);
+  background: linear-gradient(
+    90deg,
+    rgba(30, 77, 30, 0.14),
+    rgba(163, 141, 109, 0.12)
+  );
 }
 .trade-item.is-drag-over {
   border-color: rgba(163, 141, 109, 0.42);
