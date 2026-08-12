@@ -752,10 +752,9 @@
     trade: BookmarksTradeStruct,
     target: TradeOpenTarget = "active"
   ) => {
-    if (target === "active") {
-      if (scrollContainer) {
-        await saveBookmarkScroll(scrollContainer.scrollTop)
-      }
+    const scrollTop = scrollContainer?.scrollTop
+    if (target === "active" && scrollContainer) {
+      await saveBookmarkScroll(scrollContainer.scrollTop)
     }
     await tradeLocationService.stashPendingBookmarkTitles({
       [trade.location.slug]: trade.title
@@ -763,7 +762,7 @@
     const url = resolveTradeUrl(trade.location, "", true)
     await (
       target === "tab"
-        ? openUrlInNewTab(url)
+        ? openUrlInNewTab(url, false, undefined, scrollTop)
         : target === "window"
           ? openUrlInNewWindow(url)
           : openUrlInActiveTab(url)

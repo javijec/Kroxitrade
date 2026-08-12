@@ -2,9 +2,14 @@ import {
   hasValidExtensionContext,
   isExtensionContextInvalidatedError
 } from "../utilities/extension-context"
+import { saveBookmarkScrollForTab } from "./bookmark-scroll"
 
 const TRADE_URL_PATTERN =
   /^https:\/\/(?:(?:[^./]+\.)?pathofexile\.com|pathofexile\.tw|poe(?:2)?\.kakaogames\.com)\/trade(?:2)?(?:\/|$)/i
+
+export const tabsCreateMessage = {
+  create: "poeTradePlus.tabs.create"
+} as const
 
 const getActiveTab = async () => {
   if (!hasValidExtensionContext() || !chrome.tabs?.query) {
@@ -71,18 +76,62 @@ export const openUrlInActiveTab = async (url: string) => {
   }
 }
 
-export const openUrlInNewTab = async (url: string) => {
-  // Open inactive so repeated middle-clicks can queue searches without taking
-  // focus away from the bookmark panel or the current trade search.
+const requestTabCreate = (
+  url: string,
+  active: boolean,
+  bookmarkId?: string,
+  scrollTop?: number
+): Promise<boolean> =>
+  new Promise((resolve) => {
+    if (!hasValidExtensionContext() || !chrome.runtime?.sendMessage) {
+      resolve(false)
+      return
+    }
+
+    try {
+      chrome.runtime.sendMessage(
+        { type: tabsCreateMessage.create, url, active, bookmarkId, scrollTop },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            resolve(false)
+            return
+          }
+          resolve(!!response?.ok)
+        }
+      )
+    } catch (error) {
+      if (!isExtensionContextInvalidatedError(error)) {
+        console.warn("[Poe Trade Plus] Failed to request a new tab", error)
+      }
+      resolve(false)
+    }
+  })
+
+export const openUrlInNewTab = async (
+  url: string,
+  active = false,
+  bookmarkId?: string,
+  scrollTop?: number
+) => {
+  // Prefer chrome.tabs when available (popup / background). Content scripts
+  // lack tabs API access, so they ask the background to create the tab with
+  // the requested focus so middle-click can stay in the background.
   if (hasValidExtensionContext() && chrome.tabs?.create) {
     try {
-      await chrome.tabs.create({ url, active: false })
+      const tab = await chrome.tabs.create({ url, active })
+      if (typeof tab.id === "number" && typeof scrollTop === "number") {
+        await saveBookmarkScrollForTab(tab.id, scrollTop)
+      }
       return
     } catch (error) {
       if (!isExtensionContextInvalidatedError(error)) {
         console.warn("[Poe Trade Plus] Failed to open a new tab", error)
       }
     }
+  }
+
+  if (await requestTabCreate(url, active, bookmarkId, scrollTop)) {
+    return
   }
 
   if (typeof window !== "undefined") {

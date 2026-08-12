@@ -13,6 +13,7 @@ import {
   bookmarkScrollMessage,
   getBookmarkScrollRestoreKey
 } from "~/lib/services/bookmark-scroll"
+import { tabsCreateMessage } from "~/lib/services/active-trade-tab"
 
 const getStorageUsage = async () => {
   const measure = async (
@@ -212,10 +213,45 @@ export default defineBackground({
         return false
       }
 
+      if (request?.type === tabsCreateMessage.create) {
+        const url = request.url
+        const active = request.active === true
+        const scrollTop =
+          typeof request.scrollTop === "number" &&
+          Number.isFinite(request.scrollTop) &&
+          request.scrollTop >= 0
+            ? request.scrollTop
+            : null
+        if (typeof url !== "string" || !url) {
+          sendResponse({ ok: false })
+          return false
+        }
+
+        chrome.tabs
+          .create({ url, active })
+          .then(async (tab) => {
+            if (scrollTop !== null && typeof tab.id === "number") {
+              await storageService.setValue(getBookmarkScrollRestoreKey(tab.id), {
+                top: scrollTop,
+                savedAt: Date.now()
+              })
+            }
+            sendResponse({ ok: true })
+          })
+          .catch(() => sendResponse({ ok: false }))
+        return true
+      }
+
       if (request?.type === bookmarkScrollMessage.save) {
         const value = request.value
+        const targetTabId =
+          typeof request.tabId === "number" ? request.tabId : sender.tab?.id
+        const targetScrollKey =
+          typeof targetTabId === "number"
+            ? getBookmarkScrollRestoreKey(targetTabId)
+            : null
         if (
-          !bookmarkScrollKey ||
+          !targetScrollKey ||
           typeof value?.top !== "number" ||
           !Number.isFinite(value.top) ||
           value.top < 0 ||
@@ -226,7 +262,7 @@ export default defineBackground({
         }
 
         storageService
-          .setValue(bookmarkScrollKey, { top: value.top, savedAt: value.savedAt })
+          .setValue(targetScrollKey, { top: value.top, savedAt: value.savedAt })
           .then((ok) => sendResponse({ ok }))
           .catch(() => sendResponse({ ok: false }))
         return true
