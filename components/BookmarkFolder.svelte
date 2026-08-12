@@ -1296,7 +1296,9 @@
                   void handleCategoryDrop(event, entry.category!.id)
                 } : undefined}
                 ondragend={entry.category ? handleCategoryDragEnd : undefined}>
-                <div class="category-heading">
+                <div
+                  class="category-heading"
+                  onclick={() => toggleCategoryCollapse(entry.categoryId)}>
                   {#if entry.category}
                     <button
                       type="button"
@@ -1314,7 +1316,6 @@
                     class="category-toggle"
                     aria-expanded={!isCategoryCollapsed(entry.categoryId)}
                     aria-label={`${isCategoryCollapsed(entry.categoryId) ? translate($languageStore, "folder.expand") : translate($languageStore, "folder.collapse")} ${entry.title}`}
-                    onclick={() => toggleCategoryCollapse(entry.categoryId)}
                   >
                     {isCategoryCollapsed(entry.categoryId) ? "▸" : "▾"}
                   </button>
@@ -1322,7 +1323,7 @@
                   <span
                     class="category-heading__title category-heading__drag-area"
                     role="button"
-                    aria-label={entry.title}
+                    aria-label={`${isCategoryCollapsed(entry.categoryId) ? translate($languageStore, "folder.expand") : translate($languageStore, "folder.collapse")} ${entry.title}`}
                     tabindex={entry.category ? 0 : -1}
                     draggable={!!entry.category}
                     ondragstart={entry.category
@@ -1332,7 +1333,9 @@
                   <span class="category-heading__count">{entry.tradeCount}</span>
                   <span class="category-heading__rule" aria-hidden="true"></span>
                   {#if entry.category}
-                    <div class="category-heading__actions">
+                    <div
+                      class="category-heading__actions"
+                      onclick={(event) => event.stopPropagation()}>
                       <ActionsMenu
                         actions={[
                           ...(categoryIndex > 0 ? [{
@@ -1942,6 +1945,7 @@
   min-height: 28px;
   padding: 2px 4px;
   color: rgba(196, 177, 140, 0.82);
+  cursor: pointer;
   font-family: "FontinSmallcaps", serif;
   font-size: calc(11px * var(--bt-text-scale, 1));
   font-weight: 700;
