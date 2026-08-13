@@ -29,6 +29,7 @@ import About from "./pages/About.svelte";
   import { onDestroy, onMount, tick } from "svelte";
   
   const MINIMIZED_STORAGE_KEY = "layout-minimized";
+  const RESTORE_BUTTON_POSITION_STORAGE_KEY = "layout-restore-button-position";
   const WELCOME_SEEN_KEY = "layout-welcome-seen";
   const ONBOARDING_SEEN_KEY = "layout-onboarding-seen";
   const ONBOARDING_FOLDER_ID_KEY = "layout-onboarding-folder-id";
@@ -39,7 +40,12 @@ import About from "./pages/About.svelte";
   let isMinimized = $state(false);
   let mainContentEl: HTMLElement | null = $state(null);
   let isResizing = $state(false);
+  let isDraggingRestoreButton = $state(false);
   let liveSidebarWidth: number | null = null;
+  let restoreButtonPosition = $state(50);
+  let restoreButtonDragStartY = 0;
+  let restoreButtonDragStartPosition = 50;
+  let restoreButtonWasDragged = false;
   let loadedMinimizedStateKey: string | null = $state(null);
   let showOnboarding = $state(false);
   let showWelcome = $state(false);
@@ -68,6 +74,7 @@ import About from "./pages/About.svelte";
   const MIN_SIDEBAR_WIDTH = 300;
   const MAX_SIDEBAR_WIDTH = 560;
   const MINIMIZED_WIDTH = 0;
+  const RESTORE_BUTTON_HALF_HEIGHT = 30;
 
   const clampSidebarWidth = (value: number) =>
     Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, Math.round(value)));
@@ -190,6 +197,58 @@ import About from "./pages/About.svelte";
     document.body.style.cursor = 'col-resize';
   };
 
+  const clampRestoreButtonPosition = (position: number) =>
+    Math.max(
+      RESTORE_BUTTON_HALF_HEIGHT,
+      Math.min(window.innerHeight - RESTORE_BUTTON_HALF_HEIGHT, position)
+    );
+
+  const loadRestoreButtonPosition = (storageKey: string) => {
+    const storedPosition = Number(storageService.getLocalValue(storageKey));
+    restoreButtonPosition = Number.isFinite(storedPosition)
+      ? clampRestoreButtonPosition(storedPosition)
+      : window.innerHeight / 2;
+  };
+
+  const startRestoreButtonDrag = (event: MouseEvent) => {
+    if (event.button !== 0) return;
+
+    event.preventDefault();
+    isDraggingRestoreButton = true;
+    restoreButtonWasDragged = false;
+    restoreButtonDragStartY = event.clientY;
+    restoreButtonDragStartPosition = restoreButtonPosition;
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'grabbing';
+  };
+
+  const handleRestoreButtonDrag = (event: MouseEvent) => {
+    if (!isDraggingRestoreButton) return;
+
+    const distance = event.clientY - restoreButtonDragStartY;
+    if (Math.abs(distance) > 3) restoreButtonWasDragged = true;
+    restoreButtonPosition = clampRestoreButtonPosition(
+      restoreButtonDragStartPosition + distance
+    );
+  };
+
+  const stopRestoreButtonDrag = () => {
+    if (!isDraggingRestoreButton) return;
+
+    isDraggingRestoreButton = false;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+    storageService.setLocalValue(restoreButtonPositionStorageKey, String(restoreButtonPosition));
+  };
+
+  const restoreFromButton = () => {
+    if (restoreButtonWasDragged) {
+      restoreButtonWasDragged = false;
+      return;
+    }
+    toggleMinimize();
+  };
+
   onMount(async () => {
     await settings.load();
     tradeLocationService.startPolling();
@@ -222,6 +281,9 @@ import About from "./pages/About.svelte";
     window.addEventListener('mousemove', handleResizeMove);
     window.addEventListener('mouseup', stopResize);
     window.addEventListener('mouseleave', stopResize);
+    window.addEventListener('mousemove', handleRestoreButtonDrag);
+    window.addEventListener('mouseup', stopRestoreButtonDrag);
+    window.addEventListener('mouseleave', stopRestoreButtonDrag);
 
     return () => {
       unsubscribeLocation();
@@ -302,6 +364,9 @@ import About from "./pages/About.svelte";
     window.removeEventListener('mousemove', handleResizeMove);
     window.removeEventListener('mouseup', stopResize);
     window.removeEventListener('mouseleave', stopResize);
+    window.removeEventListener('mousemove', handleRestoreButtonDrag);
+    window.removeEventListener('mouseup', stopRestoreButtonDrag);
+    window.removeEventListener('mouseleave', stopRestoreButtonDrag);
   });
 
   $effect(() => {
@@ -321,9 +386,11 @@ import About from "./pages/About.svelte";
 
   const currentLocation = tradeLocationService.locationStore;
   let minimizedStorageKey = $derived(`${MINIMIZED_STORAGE_KEY}-${$currentLocation.version}`);
+  let restoreButtonPositionStorageKey = $derived(`${RESTORE_BUTTON_POSITION_STORAGE_KEY}-${$currentLocation.version}`);
   $effect(() => {
     if (minimizedStorageKey && loadedMinimizedStateKey !== minimizedStorageKey) {
       loadMinimizedState(minimizedStorageKey);
+      loadRestoreButtonPosition(restoreButtonPositionStorageKey);
     }
   });
   $effect(() => {
@@ -532,7 +599,10 @@ import About from "./pages/About.svelte";
   <button 
     class="floating-restore-btn" 
     class:side-right={$settings.sidebarSide === 'right'}
-    onclick={toggleMinimize} 
+    class:is-dragging={isDraggingRestoreButton}
+    style:top={`${restoreButtonPosition}px`}
+    onmousedown={startRestoreButtonDrag}
+    onclick={restoreFromButton}
     aria-label={translate($languageStore, "layout.restorePanel")}
   >
     <img src={logoUrl} alt="Logo" class="floater-logo" />
@@ -957,6 +1027,10 @@ main::-webkit-scrollbar-corner {
   background: rgb(17.75, 17.75, 17.75);
   border-color: #a38d6d;
   width: 48px;
+}
+.floating-restore-btn.is-dragging {
+  cursor: grabbing;
+  transition: none;
 }
 .floating-restore-btn:hover .chev-icon {
   color: #a38d6d;

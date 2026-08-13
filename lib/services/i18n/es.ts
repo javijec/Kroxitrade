@@ -1,6 +1,8 @@
 import type { TranslationValue } from "./types"
 
 export const spanishTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.swedishLanguageTitle": "Interfaz en sueco y ficha de tienda localizada",
+  "whatsNew.item.swedishLanguageDescription": "El sueco ya está disponible como idioma de la interfaz, y los metadatos de Chrome Web Store se incluyen para todos los idiomas compatibles con la extensión.",
   "whatsNew.item.syncRecoveryTitle": "Los datos sincronizados se recuperan de borrados accidentales",
   "whatsNew.item.syncRecoveryDescription": "La extensión conserva una copia local de recuperación de favoritos y ajustes sincronizados, y la restaura si Sync del navegador queda vacío inesperadamente.",
   "whatsNew.item.valdoTaiwanAvailabilityTitle": "El precio de Valdo se oculta en Trade de Taiwan",
@@ -261,6 +263,7 @@ export const spanishTranslations: Record<string, TranslationValue> = {
   "settings.textSizeExtraLarge": "Extra",
   "settings.languageEnglish": "Inglés",
   "settings.languageSpanish": "Español",
+  "settings.languageSwedish": "Sueco",
   "settings.onboardingTitle": "Tutorial",
   "settings.onboardingDescription":
     "Volvé a abrir la guía rápida para repasar las acciones y pestañas principales.",

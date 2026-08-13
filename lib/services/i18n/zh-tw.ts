@@ -3,6 +3,8 @@ import type { TranslationValue } from "./types"
 
 export const traditionalChineseTranslations: Record<string, TranslationValue> =
   {
+    "whatsNew.item.swedishLanguageTitle": "瑞典語介面與本地化商店頁面",
+    "whatsNew.item.swedishLanguageDescription": "現在可以使用瑞典語作為介面語言，且擴充功能支援的所有語言都包含 Chrome Web Store 中繼資料。",
     "whatsNew.item.syncRecoveryTitle": "同步資料可從意外刪除中復原",
     "whatsNew.item.syncRecoveryDescription": "擴充功能會保留已同步書籤和設定的本機復原副本，並在瀏覽器 Sync 意外清空時將其還原。",
     "whatsNew.item.valdoTaiwanAvailabilityTitle": "在台灣 Trade 隱藏瓦爾多定價",
@@ -221,6 +223,7 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
     "settings.textSizeExtraLarge": "特大",
     "settings.languageEnglish": "英文",
     "settings.languageSpanish": "西班牙文",
+    "settings.languageSwedish": "瑞典文",
     "settings.onboardingTitle": "教學",
     "settings.onboardingDescription":
       "重新開啟快速導覽以複習主要的操作與分頁。",

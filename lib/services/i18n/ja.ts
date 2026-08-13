@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const japaneseTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.swedishLanguageTitle": "スウェーデン語インターフェースとローカライズされたストア掲載",
+  "whatsNew.item.swedishLanguageDescription": "インターフェース言語としてスウェーデン語が利用可能になり、拡張機能が対応するすべての言語向けに Chrome Web Store のメタデータが含まれます。",
   "whatsNew.item.syncRecoveryTitle": "同期データを誤削除から復元",
   "whatsNew.item.syncRecoveryDescription": "拡張機能は同期済みブックマークと設定のローカル復元コピーを保持し、ブラウザの Sync が予期せず空になった場合に復元します。",
   "whatsNew.item.valdoTaiwanAvailabilityTitle": "台湾 Trade では Valdo 価格を非表示",
@@ -135,6 +137,7 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "settings.textSizeExtraLarge": "エクストラ",
   "settings.languageEnglish": "英語",
   "settings.languageSpanish": "スペイン語",
+  "settings.languageSwedish": "スウェーデン語",
   "settings.resultsTitle": "検索結果ツール",
   "settings.valdoRewardPricingTitle": "Valdo 報酬の価格",
   "settings.valdoRewardPricingDescription": "Path of Exile 1 の Valdo マップ結果に報酬価値と推定利益を表示します。",
