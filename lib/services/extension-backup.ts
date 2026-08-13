@@ -26,9 +26,14 @@ const STORAGE_PREFIXES = [
   "bookmark-folders-chunk--",
   "trade-history-poe"
 ]
-const LOCAL_STORAGE_PREFIX = "bt-"
+const LOCAL_STORAGE_PREFIXES = ["poe-trade-plus:", "bt-"]
 const LOCAL_STORAGE_KEYS = new Set(["bookmark-folder-collapsed-categories"])
-const LOCAL_STORAGE_EXCLUDED_PREFIXES = ["bt-bulk-sellers-", "bt-bulk-visited-"]
+const LOCAL_STORAGE_EXCLUDED_PREFIXES = [
+  "bt-bulk-sellers-",
+  "bt-bulk-visited-",
+  "poe-trade-plus:bulk-sellers-",
+  "poe-trade-plus:bulk-sellers-visited-"
+]
 
 interface StoragePayload {
   value: unknown
@@ -64,7 +69,7 @@ const isManagedStorageKey = (key: string) =>
 
 const isManagedLocalStorageKey = (key: string) =>
   LOCAL_STORAGE_KEYS.has(key) ||
-  (key.startsWith(LOCAL_STORAGE_PREFIX) &&
+  (LOCAL_STORAGE_PREFIXES.some((prefix) => key.startsWith(prefix)) &&
     !LOCAL_STORAGE_EXCLUDED_PREFIXES.some((prefix) => key.startsWith(prefix)))
 
 const getAppVersion = () => {

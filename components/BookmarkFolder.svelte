@@ -28,6 +28,7 @@
   import { languageStore, translate } from "../lib/services/i18n"
   import { searchPanelService } from "../lib/services/search-panel"
   import { settings } from "../lib/services/settings"
+  import { storageService } from "../lib/services/storage"
   import { tradeLocationService } from "../lib/services/trade-location"
   import type {
     BookmarksCategoryStruct,
@@ -202,7 +203,11 @@
   const readCollapsedCategoryIds = (folderId: string | null) => {
     if (!folderId) return []
     try {
-      const stored = window.localStorage.getItem(COLLAPSED_CATEGORIES_STORAGE_KEY)
+      const stored = storageService.getLocalValue(
+        COLLAPSED_CATEGORIES_STORAGE_KEY,
+        null,
+        [COLLAPSED_CATEGORIES_STORAGE_KEY]
+      )
       const allFolders = stored ? JSON.parse(stored) as Record<string, unknown> : {}
       const collapsed = allFolders[folderId]
       return Array.isArray(collapsed)
@@ -216,14 +221,18 @@
   const persistCollapsedCategoryIds = () => {
     if (!folder.id) return
     try {
-      const stored = window.localStorage.getItem(COLLAPSED_CATEGORIES_STORAGE_KEY)
+      const stored = storageService.getLocalValue(
+        COLLAPSED_CATEGORIES_STORAGE_KEY,
+        null,
+        [COLLAPSED_CATEGORIES_STORAGE_KEY]
+      )
       const allFolders = stored ? JSON.parse(stored) as Record<string, string[]> : {}
       if (collapsedCategoryIds.length > 0) {
         allFolders[folder.id] = collapsedCategoryIds
       } else {
         delete allFolders[folder.id]
       }
-      window.localStorage.setItem(
+      storageService.setLocalValue(
         COLLAPSED_CATEGORIES_STORAGE_KEY,
         JSON.stringify(allFolders)
       )

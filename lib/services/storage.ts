@@ -16,6 +16,7 @@ export type SyncWriteOptions = {
 
 const SYNC_VALUE_FORMAT = 1
 const COMPRESSED_SYNC_VALUE_FORMAT = 2
+const PAGE_LOCAL_STORAGE_NAMESPACE = "poe-trade-plus:"
 const SYNC_RECOVERY_SNAPSHOT_KEY = "poe-trade-plus-sync-recovery"
 const SYNC_RECOVERY_DELAY_MS = 750
 const MANAGED_SYNC_KEYS = new Set([
@@ -418,15 +419,40 @@ export class StorageService {
   }
 
   setLocalValue(key: string, value: string, league: string | null = null) {
-    window.localStorage.setItem(`bt-${this.formatKey(key, league)}`, value)
+    window.localStorage.setItem(
+      `${PAGE_LOCAL_STORAGE_NAMESPACE}${this.formatKey(key, league)}`,
+      value
+    )
   }
 
-  getLocalValue(key: string, league: string | null = null): string | null {
-    return window.localStorage.getItem(`bt-${this.formatKey(key, league)}`)
+  getLocalValue(
+    key: string,
+    league: string | null = null,
+    additionalLegacyKeys: string[] = []
+  ): string | null {
+    const formattedKey = this.formatKey(key, league)
+    const namespacedKey = `${PAGE_LOCAL_STORAGE_NAMESPACE}${formattedKey}`
+    const current = window.localStorage.getItem(namespacedKey)
+    if (current !== null) return current
+
+    // Page localStorage is shared by every extension running on the trade
+    // site. Copy our historic Better Trading key once, but never overwrite a
+    // namespaced value or delete the legacy key (it might belong to another
+    // extension using the same old convention).
+    const legacyKeys = [`bt-${formattedKey}`, ...additionalLegacyKeys]
+    for (const legacyKey of legacyKeys) {
+      const legacy = window.localStorage.getItem(legacyKey)
+      if (legacy === null) continue
+      window.localStorage.setItem(namespacedKey, legacy)
+      return legacy
+    }
+    return null
   }
 
   deleteLocalValue(key: string, league: string | null = null) {
-    window.localStorage.removeItem(`bt-${this.formatKey(key, league)}`)
+    window.localStorage.removeItem(
+      `${PAGE_LOCAL_STORAGE_NAMESPACE}${this.formatKey(key, league)}`
+    )
   }
 
   private async write(
