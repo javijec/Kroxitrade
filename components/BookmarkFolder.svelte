@@ -14,6 +14,7 @@
   import {
     activeBookmarkId,
     clearActiveBookmarkId,
+    saveActiveBookmark,
     setActiveBookmarkId
   } from "../lib/services/active-bookmark"
   import {
@@ -496,6 +497,7 @@
   const openTradeLive = async (trade: BookmarksTradeStruct) => {
     if (trade.id) {
       setActiveBookmarkId(trade.id)
+      await saveActiveBookmark(trade.id)
     }
     await openUrlInActiveTab(
       resolveTradeUrl(trade.location, "/live", true)
@@ -766,6 +768,7 @@
   ) => {
     if (target === "active" && trade.id) {
       setActiveBookmarkId(trade.id)
+      await saveActiveBookmark(trade.id)
     }
     const scrollTop = scrollContainer?.scrollTop
     if (target === "active" && scrollContainer) {
@@ -1296,9 +1299,7 @@
                   void handleCategoryDrop(event, entry.category!.id)
                 } : undefined}
                 ondragend={entry.category ? handleCategoryDragEnd : undefined}>
-                <div
-                  class="category-heading"
-                  onclick={() => toggleCategoryCollapse(entry.categoryId)}>
+                <div class="category-heading">
                   {#if entry.category}
                     <button
                       type="button"
@@ -1316,26 +1317,25 @@
                     class="category-toggle"
                     aria-expanded={!isCategoryCollapsed(entry.categoryId)}
                     aria-label={`${isCategoryCollapsed(entry.categoryId) ? translate($languageStore, "folder.expand") : translate($languageStore, "folder.collapse")} ${entry.title}`}
+                    onclick={() => toggleCategoryCollapse(entry.categoryId)}
                   >
                     {isCategoryCollapsed(entry.categoryId) ? "▸" : "▾"}
                   </button>
                   <span class="category-heading__rule" aria-hidden="true"></span>
-                  <span
+                  <button
+                    type="button"
                     class="category-heading__title category-heading__drag-area"
-                    role="button"
                     aria-label={`${isCategoryCollapsed(entry.categoryId) ? translate($languageStore, "folder.expand") : translate($languageStore, "folder.collapse")} ${entry.title}`}
-                    tabindex={entry.category ? 0 : -1}
                     draggable={!!entry.category}
+                    onclick={() => toggleCategoryCollapse(entry.categoryId)}
                     ondragstart={entry.category
                       ? (event) => handleCategoryDragStart(event, entry.category!)
                       : undefined}
-                    ondragend={entry.category ? handleCategoryDragEnd : undefined}>{entry.title}</span>
+                    ondragend={entry.category ? handleCategoryDragEnd : undefined}>{entry.title}</button>
                   <span class="category-heading__count">{entry.tradeCount}</span>
                   <span class="category-heading__rule" aria-hidden="true"></span>
                   {#if entry.category}
-                    <div
-                      class="category-heading__actions"
-                      onclick={(event) => event.stopPropagation()}>
+                    <div class="category-heading__actions">
                       <ActionsMenu
                         actions={[
                           ...(categoryIndex > 0 ? [{
@@ -1988,6 +1988,14 @@
 
 .category-heading__title {
   max-width: 62%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

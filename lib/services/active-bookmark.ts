@@ -81,6 +81,15 @@ export const clearActiveBookmarkId = () => {
   setActiveBookmarkId(null)
 }
 
+export const saveActiveBookmark = async (id: string) => {
+  if (!id) return
+
+  await sendMessage({
+    type: activeBookmarkMessage.save,
+    value: { id, savedAt: Date.now() } satisfies ActiveBookmarkRestore
+  })
+}
+
 export const saveActiveBookmarkForTab = async (tabId: number, id: string) => {
   if (!Number.isInteger(tabId) || tabId < 0 || !id) return
 
