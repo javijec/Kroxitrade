@@ -12,6 +12,12 @@
 
 
   import {
+    activeBookmarkId,
+    clearActiveBookmarkId,
+    saveActiveBookmark,
+    setActiveBookmarkId
+  } from "../lib/services/active-bookmark"
+  import {
     getActiveTradeTabTitle,
     openUrlInActiveTab,
     openUrlInNewTab,
@@ -489,6 +495,10 @@
   }
 
   const openTradeLive = async (trade: BookmarksTradeStruct) => {
+    if (trade.id) {
+      setActiveBookmarkId(trade.id)
+      await saveActiveBookmark(trade.id)
+    }
     await openUrlInActiveTab(
       resolveTradeUrl(trade.location, "/live", true)
     )
@@ -500,6 +510,10 @@
     trades = trades.filter((entry) => entry.id !== trade.id)
     hasLoadedTrades = true
     tradePendingDelete = null
+
+    if (trade.id === $activeBookmarkId) {
+      clearActiveBookmarkId()
+    }
 
     void bookmarksService.deleteTrade(trade.id, folder.id)
       .then((persisted) => {
@@ -752,10 +766,13 @@
     trade: BookmarksTradeStruct,
     target: TradeOpenTarget = "active"
   ) => {
-    if (target === "active") {
-      if (scrollContainer) {
-        await saveBookmarkScroll(scrollContainer.scrollTop)
-      }
+    if (target === "active" && trade.id) {
+      setActiveBookmarkId(trade.id)
+      await saveActiveBookmark(trade.id)
+    }
+    const scrollTop = scrollContainer?.scrollTop
+    if (target === "active" && scrollContainer) {
+      await saveBookmarkScroll(scrollContainer.scrollTop)
     }
     await tradeLocationService.stashPendingBookmarkTitles({
       [trade.location.slug]: trade.title
@@ -763,7 +780,7 @@
     const url = resolveTradeUrl(trade.location, "", true)
     await (
       target === "tab"
-        ? openUrlInNewTab(url)
+        ? openUrlInNewTab(url, false, trade.id, scrollTop)
         : target === "window"
           ? openUrlInNewWindow(url)
           : openUrlInActiveTab(url)
@@ -1081,6 +1098,9 @@
   let folderIconUrl = $derived(getBookmarkFolderIconUrl(folder.icon))
   let folderEditIconUrl = $derived(getBookmarkFolderIconUrl(folderEditIcon))
 
+  const isCurrentTrade = (trade: BookmarksTradeStruct) =>
+    !!$activeBookmarkId && trade.id === $activeBookmarkId
+
   $effect(() => {
     if (previewTrades) {
       trades = previewTrades
@@ -1302,16 +1322,16 @@
                     {isCategoryCollapsed(entry.categoryId) ? "▸" : "▾"}
                   </button>
                   <span class="category-heading__rule" aria-hidden="true"></span>
-                  <span
+                  <button
+                    type="button"
                     class="category-heading__title category-heading__drag-area"
-                    role="button"
-                    aria-label={entry.title}
-                    tabindex={entry.category ? 0 : -1}
+                    aria-label={`${isCategoryCollapsed(entry.categoryId) ? translate($languageStore, "folder.expand") : translate($languageStore, "folder.collapse")} ${entry.title}`}
                     draggable={!!entry.category}
+                    onclick={() => toggleCategoryCollapse(entry.categoryId)}
                     ondragstart={entry.category
                       ? (event) => handleCategoryDragStart(event, entry.category!)
                       : undefined}
-                    ondragend={entry.category ? handleCategoryDragEnd : undefined}>{entry.title}</span>
+                    ondragend={entry.category ? handleCategoryDragEnd : undefined}>{entry.title}</button>
                   <span class="category-heading__count">{entry.tradeCount}</span>
                   <span class="category-heading__rule" aria-hidden="true"></span>
                   {#if entry.category}
@@ -1357,6 +1377,7 @@
               {@const trade = entry.trade}
               {@const i = entry.displayIndex}
               {@const tradeCategoryId = categoryIdForTrade(trade)}
+              {@const isActiveTrade = isCurrentTrade(trade)}
               <li
                 draggable="true"
                 ondragstart={(e) => handleDragStart(e, i)}
@@ -1393,9 +1414,11 @@
                   class="trade-item"
                   class:is-completed={!!trade.completedAt}
                   class:is-archived={!!trade.archivedAt}
+                  class:is-current={isActiveTrade}
                   class:is-dragging={draggedIndex === i}
                   class:is-drag-over={dragOverIndex === i}
                   role="group"
+                  aria-current={isActiveTrade ? "page" : undefined}
                   aria-label={trade.title}
                   onpointerdown={handleTradeCardPointerDown}
                   onpointerup={(event) => handleTradeCardClick(event, trade)}>
@@ -1922,6 +1945,7 @@
   min-height: 28px;
   padding: 2px 4px;
   color: rgba(196, 177, 140, 0.82);
+  cursor: pointer;
   font-family: "FontinSmallcaps", serif;
   font-size: calc(11px * var(--bt-text-scale, 1));
   font-weight: 700;
@@ -1964,6 +1988,14 @@
 
 .category-heading__title {
   max-width: 62%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2042,6 +2074,18 @@
 .trade-item.is-completed {
   background: rgba(30, 77, 30, 0.14);
   border-color: rgba(30, 77, 30, 0.28);
+}
+.trade-item.is-current {
+  border-color: rgba(163, 141, 109, 0.42);
+  background: rgba(163, 141, 109, 0.12);
+}
+.trade-item.is-current.is-completed {
+  border-color: rgba(163, 141, 109, 0.36);
+  background: linear-gradient(
+    90deg,
+    rgba(30, 77, 30, 0.14),
+    rgba(163, 141, 109, 0.12)
+  );
 }
 .trade-item.is-drag-over {
   border-color: rgba(163, 141, 109, 0.42);
