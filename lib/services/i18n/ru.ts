@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const russianTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.swedishLanguageTitle": "Шведский интерфейс и локализованная страница магазина",
+  "whatsNew.item.swedishLanguageDescription": "Шведский теперь доступен как язык интерфейса, а метаданные Chrome Web Store добавлены для всех языков, поддерживаемых расширением.",
   "whatsNew.item.syncRecoveryTitle": "Синхронизированные данные восстанавливаются после случайного удаления",
   "whatsNew.item.syncRecoveryDescription": "Расширение сохраняет локальную копию синхронизированных закладок и настроек и восстанавливает её, если Sync браузера неожиданно очищается.",
   "whatsNew.item.valdoTaiwanAvailabilityTitle": "Цены Вальдо скрыты на Taiwan Trade",
@@ -130,6 +132,7 @@ export const russianTranslations: Record<string, TranslationValue> = {
   "settings.textSizeExtraLarge": "Экстра",
   "settings.languageEnglish": "Английский",
   "settings.languageSpanish": "Испанский",
+  "settings.languageSwedish": "Шведский",
   "settings.resultsTitle": "Инструменты результатов",
   "settings.valdoRewardPricingTitle": "Цены наград Вальдо",
   "settings.valdoRewardPricingDescription": "Показывает стоимость награды и примерную прибыль на картах Вальдо в Path of Exile 1.",

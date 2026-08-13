@@ -459,10 +459,26 @@ const version1126Fixes: WhatsNewItem[] = [
   }
 ];
 
+const version1127Features: WhatsNewItem[] = [
+  {
+    titleKey: "whatsNew.item.swedishLanguageTitle",
+    descriptionKey: "whatsNew.item.swedishLanguageDescription"
+  }
+];
+
 export const latestWhatsNew: WhatsNewEntry = {
-  version: "1.1.26",
-  date: "2026-08-11",
+  version: "1.1.27",
+  date: "2026-08-13",
   sections: [
+    {
+      title: "1.1.27",
+      groups: [
+        {
+          titleKey: "whatsNew.section.features",
+          items: version1127Features
+        }
+      ]
+    },
     {
       title: "1.1.26",
       groups: [

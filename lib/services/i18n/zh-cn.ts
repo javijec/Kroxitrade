@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const simplifiedChineseTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.swedishLanguageTitle": "瑞典语界面和本地化商店页面",
+  "whatsNew.item.swedishLanguageDescription": "现在可以使用瑞典语作为界面语言，并且扩展程序支持的所有语言均包含 Chrome Web Store 元数据。",
   "whatsNew.item.syncRecoveryTitle": "同步数据可从意外删除中恢复",
   "whatsNew.item.syncRecoveryDescription": "扩展会保留已同步书签和设置的本地恢复副本，并在浏览器 Sync 意外清空时将其还原。",
   "whatsNew.item.valdoTaiwanAvailabilityTitle": "台湾 Trade 隐藏瓦尔多定价",
@@ -216,6 +218,7 @@ export const simplifiedChineseTranslations: Record<string, TranslationValue> = {
   "settings.textSizeExtraLarge": "特大",
   "settings.languageEnglish": "英文",
   "settings.languageSpanish": "西班牙文",
+  "settings.languageSwedish": "瑞典语",
   "settings.onboardingTitle": "教学",
   "settings.onboardingDescription": "重新打开快速导览以复习主要的操作与分页。",
   "settings.reopenTutorial": "打开教学",

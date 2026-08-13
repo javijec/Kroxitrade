@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const koreanTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.swedishLanguageTitle": "스웨덴어 인터페이스 및 현지화된 스토어 등록",
+  "whatsNew.item.swedishLanguageDescription": "이제 스웨덴어를 인터페이스 언어로 사용할 수 있으며, 확장 프로그램이 지원하는 모든 언어에 Chrome Web Store 메타데이터가 포함됩니다.",
   "whatsNew.item.syncRecoveryTitle": "실수로 삭제한 동기화 데이터를 복구",
   "whatsNew.item.syncRecoveryDescription": "확장 프로그램은 동기화된 북마크와 설정의 로컬 복구 사본을 유지하며 브라우저 Sync가 예기치 않게 비워지면 복원합니다.",
   "whatsNew.item.valdoTaiwanAvailabilityTitle": "대만 Trade에서 Valdo 가격 숨김",
@@ -135,6 +137,7 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "settings.textSizeExtraLarge": "엑스트라",
   "settings.languageEnglish": "영어",
   "settings.languageSpanish": "스페인어",
+  "settings.languageSwedish": "스웨덴어",
   "settings.resultsTitle": "결과 도구",
   "settings.valdoRewardPricingTitle": "Valdo 보상 가격",
   "settings.valdoRewardPricingDescription": "Path of Exile 1 Valdo 지도 결과에 보상 가치와 예상 수익을 표시합니다.",

@@ -1,6 +1,8 @@
 import type { TranslationValue } from "./types"
 
 export const englishTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.swedishLanguageTitle": "Swedish interface and localized store listing",
+  "whatsNew.item.swedishLanguageDescription": "Swedish is now available as an interface language, and Chrome Web Store metadata is included for every language supported by the extension.",
   "whatsNew.item.syncRecoveryTitle": "Sync data recovers from accidental deletion",
   "whatsNew.item.syncRecoveryDescription": "The extension keeps a local recovery copy of synced bookmarks and settings, and restores it if browser Sync is unexpectedly emptied.",
   "whatsNew.item.valdoTaiwanAvailabilityTitle": "Valdo pricing is hidden on Taiwan Trade",
@@ -257,6 +259,7 @@ export const englishTranslations: Record<string, TranslationValue> = {
   "settings.textSizeExtraLarge": "Extra",
   "settings.languageEnglish": "English",
   "settings.languageSpanish": "Spanish",
+  "settings.languageSwedish": "Swedish",
   "settings.onboardingTitle": "Tutorial",
   "settings.onboardingDescription":
     "Open the quick onboarding again to review the main actions and tabs.",

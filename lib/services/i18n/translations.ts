@@ -6,6 +6,7 @@ import { japaneseTranslations } from "./ja"
 import { koreanTranslations } from "./ko"
 import { portugueseTranslations } from "./pt"
 import { russianTranslations } from "./ru"
+import { swedishTranslations } from "./sv"
 import { thaiTranslations } from "./th"
 import type { TranslationValue } from "./types"
 import { simplifiedChineseTranslations } from "./zh-cn"
@@ -23,6 +24,7 @@ export const extendedTranslations: Record<
   | "es"
   | "pt"
   | "ru"
+  | "sv"
   | "th"
   | "de"
   | "fr"
@@ -35,6 +37,7 @@ export const extendedTranslations: Record<
   ...translations,
   pt: { ...englishFallback, ...portugueseTranslations },
   ru: { ...englishFallback, ...russianTranslations },
+  sv: { ...englishFallback, ...swedishTranslations },
   th: { ...englishFallback, ...thaiTranslations },
   de: { ...englishFallback, ...germanTranslations },
   fr: { ...englishFallback, ...frenchTranslations },

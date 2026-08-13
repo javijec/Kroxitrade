@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const portugueseTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.swedishLanguageTitle": "Interface em sueco e página da loja localizada",
+  "whatsNew.item.swedishLanguageDescription": "O sueco agora está disponível como idioma da interface, e os metadados da Chrome Web Store estão incluídos para todos os idiomas compatíveis com a extensão.",
   "whatsNew.item.syncRecoveryTitle": "Dados sincronizados se recuperam de exclusões acidentais",
   "whatsNew.item.syncRecoveryDescription": "A extensão mantém uma cópia local de recuperação dos favoritos e configurações sincronizados e a restaura se o Sync do navegador for esvaziado inesperadamente.",
   "whatsNew.item.valdoTaiwanAvailabilityTitle": "Preço de Valdo fica oculto no Trade de Taiwan",
@@ -133,6 +135,7 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "settings.textSizeExtraLarge": "Extra",
   "settings.languageEnglish": "Inglês",
   "settings.languageSpanish": "Espanhol",
+  "settings.languageSwedish": "Sueco",
   "settings.resultsTitle": "Ferramentas de resultados",
   "settings.valdoRewardPricingTitle": "Preço de recompensas de Valdo",
   "settings.valdoRewardPricingDescription": "Mostra o valor da recompensa e o lucro estimado nos mapas Valdo de Path of Exile 1.",

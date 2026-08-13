@@ -36,9 +36,9 @@ export default defineConfig({
     }
   },
   manifest: ({ browser }) => ({
-    name: "Poe Trade Plus",
-    description:
-      "Poe Trade Plus enhances the Path of Exile trade site with bookmarks, history and result tools.",
+    default_locale: "en",
+    name: "__MSG_appName__",
+    description: "__MSG_appDesc__",
     permissions: ["storage", "tabs", "alarms"],
     host_permissions: [
       ...tradeHostPermissions,
@@ -47,7 +47,7 @@ export default defineConfig({
     ],
     icons: iconMap,
     action: {
-      default_title: "Poe Trade Plus",
+      default_title: "__MSG_actionTitle__",
       default_icon: iconMap
     },
     browser_specific_settings:

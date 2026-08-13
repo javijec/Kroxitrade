@@ -23,6 +23,7 @@
     { code: "es", label: "Español" },
     { code: "pt", label: "Português" },
     { code: "ru", label: "Русский" },
+    { code: "sv", label: "Svenska" },
     { code: "th", label: "ไทย" },
     { code: "de", label: "Deutsch" },
     { code: "fr", label: "Français" },

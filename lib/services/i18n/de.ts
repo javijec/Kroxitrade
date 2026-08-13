@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const germanTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.swedishLanguageTitle": "Schwedische Oberfläche und lokalisierter Store-Eintrag",
+  "whatsNew.item.swedishLanguageDescription": "Schwedisch ist jetzt als Oberflächensprache verfügbar, und Chrome-Web-Store-Metadaten sind für jede von der Erweiterung unterstützte Sprache enthalten.",
   "whatsNew.item.syncRecoveryTitle": "Synchronisierte Daten werden nach versehentlichem Löschen wiederhergestellt",
   "whatsNew.item.syncRecoveryDescription": "Die Erweiterung behält eine lokale Wiederherstellungskopie synchronisierter Lesezeichen und Einstellungen und stellt sie wieder her, wenn der Browser-Sync unerwartet geleert wird.",
   "whatsNew.item.valdoTaiwanAvailabilityTitle": "Valdo-Preise sind im Taiwan Trade ausgeblendet",
@@ -130,6 +132,7 @@ export const germanTranslations: Record<string, TranslationValue> = {
   "settings.textSizeExtraLarge": "Extra",
   "settings.languageEnglish": "Englisch",
   "settings.languageSpanish": "Spanisch",
+  "settings.languageSwedish": "Schwedisch",
   "settings.resultsTitle": "Ergebniswerkzeuge",
   "settings.valdoRewardPricingTitle": "Valdo-Belohnungspreise",
   "settings.valdoRewardPricingDescription": "Zeigt den Belohnungswert und den geschätzten Gewinn bei Valdo-Karten in Path of Exile 1.",

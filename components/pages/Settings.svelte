@@ -36,6 +36,7 @@
   import flagKR from "../../assets/KR.png?inline";
   import flagRU from "../../assets/RU.png?inline";
   import flagTH from "../../assets/TH.png?inline";
+  const flagSE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 20'%3E%3Cpath fill='%23006aa7' d='M0 0h30v20H0z'/%3E%3Cpath fill='%23fecc00' d='M8 0h4v20H8zM0 8h30v4H0z'/%3E%3C/svg%3E";
   const flagTW = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 20'%3E%3Cpath fill='%23fe0000' d='M0 0h30v20H0z'/%3E%3Cpath fill='%23000095' d='M0 0h15v10H0z'/%3E%3Ccircle cx='7.5' cy='5' r='2.5' fill='white'/%3E%3C/svg%3E";
   const flagCN = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 20'%3E%3Cpath fill='%23de2910' d='M0 0h30v20H0z'/%3E%3Cpath fill='%23ffde00' d='m5 2 .6 1.8 1.9.1-1.5 1.1.5 1.8L5 5.7 3.5 6.8 4 5 2.5 3.9l1.9-.1z'/%3E%3C/svg%3E";
   import editIcon from "lucide-static/icons/pencil.svg?raw";
@@ -138,6 +139,7 @@
     { code: "es", label: "Español", flag: flagES, emoji: "🇪🇸" },
     { code: "pt", label: "Português", flag: flagBR, emoji: "🇧🇷" },
     { code: "ru", label: "Русский", flag: flagRU, emoji: "🇷🇺" },
+    { code: "sv", label: "Svenska", flag: flagSE, emoji: "🇸🇪" },
     { code: "th", label: "ไทย", flag: flagTH, emoji: "🇹🇭" },
     { code: "de", label: "Deutsch", flag: flagDE, emoji: "🇩🇪" },
     { code: "fr", label: "Français", flag: flagFR, emoji: "🇫🇷" },
@@ -160,17 +162,18 @@
     window.location.pathname.startsWith("/trade2/") ? "poe2" : "poe1";
 
   const localizedLanguageNames: Record<AppLanguage, Record<AppLanguage, string>> = {
-    en: { en: "English", es: "Spanish", pt: "Portuguese", ru: "Russian", th: "Thai", de: "German", fr: "French", ja: "Japanese", ko: "Korean", "zh-tw": "Traditional Chinese", "zh-cn": "Simplified Chinese" },
-    es: { en: "Inglés", es: "Español", pt: "Portugués", ru: "Ruso", th: "Tailandés", de: "Alemán", fr: "Francés", ja: "Japonés", ko: "Coreano", "zh-tw": "Chino tradicional", "zh-cn": "Chino simplificado" },
-    pt: { en: "Inglês", es: "Espanhol", pt: "Português", ru: "Russo", th: "Tailandês", de: "Alemão", fr: "Francês", ja: "Japonês", ko: "Coreano", "zh-tw": "Chinês tradicional", "zh-cn": "Chinês simplificado" },
-    ru: { en: "Английский", es: "Испанский", pt: "Португальский", ru: "Русский", th: "Тайский", de: "Немецкий", fr: "Французский", ja: "Японский", ko: "Корейский", "zh-tw": "Традиционный китайский", "zh-cn": "Упрощённый китайский" },
-    th: { en: "อังกฤษ", es: "สเปน", pt: "โปรตุเกส", ru: "รัสเซีย", th: "ไทย", de: "เยอรมัน", fr: "ฝรั่งเศส", ja: "ญี่ปุ่น", ko: "เกาหลี", "zh-tw": "จีนตัวเต็ม", "zh-cn": "จีนตัวย่อ" },
-    de: { en: "Englisch", es: "Spanisch", pt: "Portugiesisch", ru: "Russisch", th: "Thailändisch", de: "Deutsch", fr: "Französisch", ja: "Japanisch", ko: "Koreanisch", "zh-tw": "Traditionelles Chinesisch", "zh-cn": "Vereinfachtes Chinesisch" },
-    fr: { en: "Anglais", es: "Espagnol", pt: "Portugais", ru: "Russe", th: "Thaï", de: "Allemand", fr: "Français", ja: "Japonais", ko: "Coréen", "zh-tw": "Chinois traditionnel", "zh-cn": "Chinois simplifié" },
-    ja: { en: "英語", es: "スペイン語", pt: "ポルトガル語", ru: "ロシア語", th: "タイ語", de: "ドイツ語", fr: "フランス語", ja: "日本語", ko: "韓国語", "zh-tw": "繁体字中国語", "zh-cn": "簡体字中国語" },
-    ko: { en: "영어", es: "스페인어", pt: "포르투갈어", ru: "러시아어", th: "태국어", de: "독일어", fr: "프랑스어", ja: "일본어", ko: "한국어", "zh-tw": "번체 중국어", "zh-cn": "간체 중국어" },
-    "zh-tw": { en: "英文", es: "西班牙文", pt: "葡萄牙文", ru: "俄文", th: "泰文", de: "德文", fr: "法文", ja: "日文", ko: "韓文", "zh-tw": "繁體中文", "zh-cn": "简体中文" },
-    "zh-cn": { en: "英语", es: "西班牙语", pt: "葡萄牙语", ru: "俄语", th: "泰语", de: "德语", fr: "法语", ja: "日语", ko: "韩语", "zh-tw": "繁體中文", "zh-cn": "简体中文" }
+    en: { en: "English", es: "Spanish", pt: "Portuguese", ru: "Russian", sv: "Swedish", th: "Thai", de: "German", fr: "French", ja: "Japanese", ko: "Korean", "zh-tw": "Traditional Chinese", "zh-cn": "Simplified Chinese" },
+    es: { en: "Inglés", es: "Español", pt: "Portugués", ru: "Ruso", sv: "Sueco", th: "Tailandés", de: "Alemán", fr: "Francés", ja: "Japonés", ko: "Coreano", "zh-tw": "Chino tradicional", "zh-cn": "Chino simplificado" },
+    pt: { en: "Inglês", es: "Espanhol", pt: "Português", ru: "Russo", sv: "Sueco", th: "Tailandês", de: "Alemão", fr: "Francês", ja: "Japonês", ko: "Coreano", "zh-tw": "Chinês tradicional", "zh-cn": "Chinês simplificado" },
+    ru: { en: "Английский", es: "Испанский", pt: "Португальский", ru: "Русский", sv: "Шведский", th: "Тайский", de: "Немецкий", fr: "Французский", ja: "Японский", ko: "Корейский", "zh-tw": "Традиционный китайский", "zh-cn": "Упрощённый китайский" },
+    sv: { en: "Engelska", es: "Spanska", pt: "Portugisiska", ru: "Ryska", sv: "Svenska", th: "Thailändska", de: "Tyska", fr: "Franska", ja: "Japanska", ko: "Koreanska", "zh-tw": "Traditionell kinesiska", "zh-cn": "Förenklad kinesiska" },
+    th: { en: "อังกฤษ", es: "สเปน", pt: "โปรตุเกส", ru: "รัสเซีย", sv: "สวีเดน", th: "ไทย", de: "เยอรมัน", fr: "ฝรั่งเศส", ja: "ญี่ปุ่น", ko: "เกาหลี", "zh-tw": "จีนตัวเต็ม", "zh-cn": "จีนตัวย่อ" },
+    de: { en: "Englisch", es: "Spanisch", pt: "Portugiesisch", ru: "Russisch", sv: "Schwedisch", th: "Thailändisch", de: "Deutsch", fr: "Französisch", ja: "Japanisch", ko: "Koreanisch", "zh-tw": "Traditionelles Chinesisch", "zh-cn": "Vereinfachtes Chinesisch" },
+    fr: { en: "Anglais", es: "Espagnol", pt: "Portugais", ru: "Russe", sv: "Suédois", th: "Thaï", de: "Allemand", fr: "Français", ja: "Japonais", ko: "Coréen", "zh-tw": "Chinois traditionnel", "zh-cn": "Chinois simplifié" },
+    ja: { en: "英語", es: "スペイン語", pt: "ポルトガル語", ru: "ロシア語", sv: "スウェーデン語", th: "タイ語", de: "ドイツ語", fr: "フランス語", ja: "日本語", ko: "韓国語", "zh-tw": "繁体字中国語", "zh-cn": "簡体字中国語" },
+    ko: { en: "영어", es: "스페인어", pt: "포르투갈어", ru: "러시아어", sv: "스웨덴어", th: "태국어", de: "독일어", fr: "프랑스어", ja: "일본어", ko: "한국어", "zh-tw": "번체 중국어", "zh-cn": "간체 중국어" },
+    "zh-tw": { en: "英文", es: "西班牙文", pt: "葡萄牙文", ru: "俄文", sv: "瑞典文", th: "泰文", de: "德文", fr: "法文", ja: "日文", ko: "韓文", "zh-tw": "繁體中文", "zh-cn": "简体中文" },
+    "zh-cn": { en: "英语", es: "西班牙语", pt: "葡萄牙语", ru: "俄语", sv: "瑞典语", th: "泰语", de: "德语", fr: "法语", ja: "日语", ko: "韩语", "zh-tw": "繁體中文", "zh-cn": "简体中文" }
   };
 
   let isLanguageMenuOpen = $state(false);

@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const thaiTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.swedishLanguageTitle": "อินเทอร์เฟซภาษาสวีเดนและหน้าร้านที่แปลแล้ว",
+  "whatsNew.item.swedishLanguageDescription": "ขณะนี้มีภาษาสวีเดนให้เลือกใช้ในอินเทอร์เฟซ และมีข้อมูลเมตาของ Chrome Web Store สำหรับทุกภาษาที่ส่วนขยายรองรับ",
   "whatsNew.item.syncRecoveryTitle": "ข้อมูลที่ซิงก์กู้คืนได้จากการลบโดยไม่ตั้งใจ",
   "whatsNew.item.syncRecoveryDescription": "ส่วนขยายเก็บสำเนากู้คืนในเครื่องของบุ๊กมาร์กและการตั้งค่าที่ซิงก์ไว้ และจะกู้คืนเมื่อ Sync ของเบราว์เซอร์ว่างลงโดยไม่คาดคิด",
   "whatsNew.item.valdoTaiwanAvailabilityTitle": "ซ่อนราคา Valdo บน Taiwan Trade",
@@ -130,6 +132,7 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "settings.textSizeExtraLarge": "พิเศษ",
   "settings.languageEnglish": "อังกฤษ",
   "settings.languageSpanish": "สเปน",
+  "settings.languageSwedish": "สวีเดน",
   "settings.resultsTitle": "เครื่องมือผลลัพธ์",
   "settings.valdoRewardPricingTitle": "ราคารางวัล Valdo",
   "settings.valdoRewardPricingDescription": "แสดงมูลค่ารางวัลและกำไรโดยประมาณในผลลัพธ์แผนที่ Valdo ของ Path of Exile 1",
