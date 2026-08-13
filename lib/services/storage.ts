@@ -436,14 +436,14 @@ export class StorageService {
     if (current !== null) return current
 
     // Page localStorage is shared by every extension running on the trade
-    // site. Copy our historic Better Trading key once, but never overwrite a
-    // namespaced value or delete the legacy key (it might belong to another
-    // extension using the same old convention).
+    // site. Move our historic Better Trading key once, without overwriting an
+    // existing namespaced value.
     const legacyKeys = [`bt-${formattedKey}`, ...additionalLegacyKeys]
     for (const legacyKey of legacyKeys) {
       const legacy = window.localStorage.getItem(legacyKey)
       if (legacy === null) continue
       window.localStorage.setItem(namespacedKey, legacy)
+      window.localStorage.removeItem(legacyKey)
       return legacy
     }
     return null
