@@ -13,6 +13,12 @@ import {
   bookmarkScrollMessage,
   getBookmarkScrollRestoreKey
 } from "~/lib/services/bookmark-scroll"
+import {
+  ACTIVE_BOOKMARK_RESTORE_MAX_AGE_MS,
+  activeBookmarkMessage,
+  getActiveBookmarkTabKey
+} from "~/lib/services/active-bookmark"
+import { tabsCreateMessage } from "~/lib/services/active-trade-tab"
 
 const getStorageUsage = async () => {
   const measure = async (
@@ -212,10 +218,108 @@ export default defineBackground({
         return false
       }
 
-      if (request?.type === bookmarkScrollMessage.save) {
+      if (request?.type === tabsCreateMessage.create) {
+        const url = request.url
+        const active = request.active === true
+        const bookmarkId =
+          typeof request.bookmarkId === "string" ? request.bookmarkId : ""
+        const scrollTop =
+          typeof request.scrollTop === "number" &&
+          Number.isFinite(request.scrollTop) &&
+          request.scrollTop >= 0
+            ? request.scrollTop
+            : null
+        if (typeof url !== "string" || !url) {
+          sendResponse({ ok: false })
+          return false
+        }
+
+        chrome.tabs
+          .create({ url, active })
+          .then(async (tab) => {
+            if (typeof tab.id === "number") {
+              if (bookmarkId) {
+                await storageService.setValue(getActiveBookmarkTabKey(tab.id), {
+                  id: bookmarkId,
+                  savedAt: Date.now()
+                })
+              }
+              if (scrollTop !== null) {
+                await storageService.setValue(getBookmarkScrollRestoreKey(tab.id), {
+                  top: scrollTop,
+                  savedAt: Date.now()
+                })
+              }
+            }
+            sendResponse({ ok: true })
+          })
+          .catch(() => sendResponse({ ok: false }))
+        return true
+      }
+
+      if (request?.type === activeBookmarkMessage.save) {
+        const activeTabId =
+          typeof request.tabId === "number" ? request.tabId : sender.tab?.id
         const value = request.value
         if (
-          !bookmarkScrollKey ||
+          typeof activeTabId !== "number" ||
+          typeof value?.id !== "string" ||
+          !value.id ||
+          typeof value.savedAt !== "number"
+        ) {
+          sendResponse({ ok: false })
+          return false
+        }
+
+        storageService
+          .setValue(getActiveBookmarkTabKey(activeTabId), {
+            id: value.id,
+            savedAt: value.savedAt
+          })
+          .then((ok) => sendResponse({ ok }))
+          .catch(() => sendResponse({ ok: false }))
+        return true
+      }
+
+      if (request?.type === activeBookmarkMessage.consume) {
+        const activeBookmarkKey =
+          typeof tabId === "number" ? getActiveBookmarkTabKey(tabId) : null
+        if (!activeBookmarkKey) {
+          sendResponse({ id: null })
+          return false
+        }
+
+        storageService
+          .getValue<{ id: string; savedAt: number }>(activeBookmarkKey)
+          .then(async (saved) => {
+            if (
+              !saved ||
+              typeof saved.id !== "string" ||
+              !saved.id ||
+              typeof saved.savedAt !== "number" ||
+              Date.now() - saved.savedAt > ACTIVE_BOOKMARK_RESTORE_MAX_AGE_MS
+            ) {
+              if (saved) await storageService.deleteValue(activeBookmarkKey)
+              sendResponse({ id: null })
+              return
+            }
+            await storageService.deleteValue(activeBookmarkKey)
+            sendResponse({ id: saved.id })
+          })
+          .catch(() => sendResponse({ id: null }))
+        return true
+      }
+
+      if (request?.type === bookmarkScrollMessage.save) {
+        const value = request.value
+        const targetTabId =
+          typeof request.tabId === "number" ? request.tabId : sender.tab?.id
+        const targetScrollKey =
+          typeof targetTabId === "number"
+            ? getBookmarkScrollRestoreKey(targetTabId)
+            : null
+        if (
+          !targetScrollKey ||
           typeof value?.top !== "number" ||
           !Number.isFinite(value.top) ||
           value.top < 0 ||
@@ -226,7 +330,7 @@ export default defineBackground({
         }
 
         storageService
-          .setValue(bookmarkScrollKey, { top: value.top, savedAt: value.savedAt })
+          .setValue(targetScrollKey, { top: value.top, savedAt: value.savedAt })
           .then((ok) => sendResponse({ ok }))
           .catch(() => sendResponse({ ok: false }))
         return true

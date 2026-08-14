@@ -73,6 +73,7 @@
   let toolbarRepairFrame = 0;
   let toolbarRepairTimeouts: number[] = [];
   let toolbarRepairAttempts = 0;
+  let isAtBookmarkTop = $state(true);
 
 
   const normalizeExpandedFolderIds = (value: unknown): string[] => {
@@ -327,6 +328,10 @@
     active: archiveRestoreIcon
   };
 
+  const syncBookmarkTop = () => {
+    isAtBookmarkTop = !scrollContainer || scrollContainer.scrollTop <= 0;
+  };
+
   const restoreBookmarkScroll = async () => {
     if (!scrollContainer) return true;
 
@@ -334,6 +339,7 @@
     if (top === null) return true;
 
     scrollContainer.scrollTop = top;
+    syncBookmarkTop();
     const canReachSavedPosition =
       scrollContainer.scrollHeight - scrollContainer.clientHeight >= top;
     if (canReachSavedPosition) await clearBookmarkScroll();
@@ -353,6 +359,10 @@
   };
 
   const isToolbarVisible = () => {
+    if (!isAtBookmarkTop) {
+      return true;
+    }
+
     if (!toolbarStickyEl || !toolbarStickyEl.isConnected) {
       return false;
     }
@@ -366,7 +376,7 @@
       toolbarRepairFrame = 0;
       await tick();
 
-      if (isToolbarVisible()) {
+      if (!isAtBookmarkTop || isToolbarVisible()) {
         toolbarRepairAttempts = 0;
         return;
       }
@@ -478,11 +488,33 @@
       observer.disconnect();
     };
   });
+
+  $effect(() => {
+    const el = scrollContainer;
+    if (!el) {
+      isAtBookmarkTop = true;
+      return;
+    }
+
+    const onScroll = () => {
+      isAtBookmarkTop = el.scrollTop <= 0;
+    };
+
+    onScroll();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  });
 </script>
 
 <div class="bookmarks-page" data-tutorial="bookmarks-panel">
   {#key toolbarRenderKey}
-    <div class="toolbar-sticky" data-tutorial="bookmarks-toolbar" bind:this={toolbarStickyEl}>
+    <div
+      class="toolbar-sticky"
+      class:is-hidden={!isAtBookmarkTop}
+      data-tutorial="bookmarks-toolbar"
+      bind:this={toolbarStickyEl}
+      aria-hidden={!isAtBookmarkTop}
+    >
       <section class="toolbar-panel">
         <div class="toolbar-row">
           <div class="toolbar-actions toolbar-actions--primary">
@@ -628,14 +660,15 @@
 }
 
 .toolbar-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 3;
   flex: 0 0 auto;
   min-width: 0;
   isolation: isolate;
   transform: translateZ(0);
   backface-visibility: hidden;
+}
+
+.toolbar-sticky.is-hidden {
+  display: none;
 }
 
 .toolbar-panel {
