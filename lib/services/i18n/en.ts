@@ -1,6 +1,14 @@
 import type { TranslationValue } from "./types"
 
 export const englishTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.activeBookmarkHighlightTitle": "Highlight the bookmark you have open",
+  "whatsNew.item.activeBookmarkHighlightDescription": "The saved search currently open in the active tab is now highlighted in the bookmark list, making it easy to see which search you are viewing.",
+  "whatsNew.item.bookmarkScrollPreserveTitle": "Bookmark list keeps its place when opening in a new tab",
+  "whatsNew.item.bookmarkScrollPreserveDescription": "Opening a saved search in a new background tab preserves the bookmark list scroll position, so you can queue several searches without losing your place.",
+  "whatsNew.item.categoryTitleToggleTitle": "Category titles toggle collapse and expand",
+  "whatsNew.item.categoryTitleToggleDescription": "Clicking a category title now collapses or expands that category, matching the arrow button behavior.",
+  "whatsNew.item.toolbarHideEarlierTitle": "Bookmark toolbar hides earlier",
+  "whatsNew.item.toolbarHideEarlierDescription": "The bookmark toolbar now hides as soon as you scroll down the list and returns when you scroll back to the top.",
   "whatsNew.item.swedishLanguageTitle": "Swedish interface and localized store listing",
   "whatsNew.item.swedishLanguageDescription": "Swedish is now available as an interface language, and Chrome Web Store metadata is included for every language supported by the extension.",
   "whatsNew.item.syncRecoveryTitle": "Sync data recovers from accidental deletion",

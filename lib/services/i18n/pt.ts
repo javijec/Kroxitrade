@@ -2,6 +2,14 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const portugueseTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.activeBookmarkHighlightTitle": "Destaque o marcador que você tem aberto",
+  "whatsNew.item.activeBookmarkHighlightDescription": "A pesquisa salva aberta na aba ativa agora é destacada na lista de marcadores, facilitando ver qual pesquisa você está vendo.",
+  "whatsNew.item.bookmarkScrollPreserveTitle": "A lista de marcadores mantém sua posição ao abrir em uma nova aba",
+  "whatsNew.item.bookmarkScrollPreserveDescription": "Abrir uma pesquisa salva em uma nova aba em segundo plano preserva a posição de rolagem da lista de marcadores, permitindo enfileirar várias pesquisas sem perder seu lugar.",
+  "whatsNew.item.categoryTitleToggleTitle": "Títulos de categoria alternam recolher e expandir",
+  "whatsNew.item.categoryTitleToggleDescription": "Clicar no título de uma categoria agora recolhe ou expande essa categoria, igual ao botão de seta.",
+  "whatsNew.item.toolbarHideEarlierTitle": "A barra de marcadores se esconde antes",
+  "whatsNew.item.toolbarHideEarlierDescription": "A barra de ferramentas de marcadores agora se esconde assim que você rola para baixo na lista e volta quando você rola até o topo.",
   "whatsNew.item.swedishLanguageTitle": "Interface em sueco e página da loja localizada",
   "whatsNew.item.swedishLanguageDescription": "O sueco agora está disponível como idioma da interface, e os metadados da Chrome Web Store estão incluídos para todos os idiomas compatíveis com a extensão.",
   "whatsNew.item.syncRecoveryTitle": "Dados sincronizados se recuperam de exclusões acidentais",

@@ -2,6 +2,14 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const koreanTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.activeBookmarkHighlightTitle": "열려 있는 북마크 강조 표시",
+  "whatsNew.item.activeBookmarkHighlightDescription": "활성 탭에서 연 저장된 검색이 이제 북마크 목록에 강조 표시되어 어떤 검색을 보고 있는지 쉽게 확인할 수 있습니다.",
+  "whatsNew.item.bookmarkScrollPreserveTitle": "새 탭에서 열어도 북마크 목록의 위치 유지",
+  "whatsNew.item.bookmarkScrollPreserveDescription": "저장된 검색을 새 백그라운드 탭에서 열어도 북마크 목록의 스크롤 위치가 유지되므로 위치를 잃지 않고 여러 검색을 큐에 넣을 수 있습니다.",
+  "whatsNew.item.categoryTitleToggleTitle": "카테고리 제목으로 접기/펼치기 전환",
+  "whatsNew.item.categoryTitleToggleDescription": "이제 카테고리 제목을 클릭하면 화살표 버튼처럼 해당 카테고리를 접거나 펼칠 수 있습니다.",
+  "whatsNew.item.toolbarHideEarlierTitle": "북마크 도구 모음이 더 일찍 숨겨짐",
+  "whatsNew.item.toolbarHideEarlierDescription": "이제 목록을 아래로 스크롤하면 북마크 도구 모음이 바로 숨겨지고 맨 위로 돌아오면 다시 표시됩니다.",
   "whatsNew.item.swedishLanguageTitle": "스웨덴어 인터페이스 및 현지화된 스토어 등록",
   "whatsNew.item.swedishLanguageDescription": "이제 스웨덴어를 인터페이스 언어로 사용할 수 있으며, 확장 프로그램이 지원하는 모든 언어에 Chrome Web Store 메타데이터가 포함됩니다.",
   "whatsNew.item.syncRecoveryTitle": "실수로 삭제한 동기화 데이터를 복구",

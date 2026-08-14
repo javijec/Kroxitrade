@@ -73,14 +73,14 @@ function getInitialLanguage(): AppLanguage {
 
   const version = inferTradeVersion()
   const sessionKey = `${LANGUAGE_SESSION_KEY}-poe${version}`
-  const localKey = `bt-language-poe${version}`
+  const localKey = `language-poe${version}`
   const stored =
     window.sessionStorage.getItem(sessionKey) ??
-    window.localStorage.getItem(localKey) ??
+    storageService.getLocalValue(localKey) ??
     // One-time UI fallback for installations created before settings were
     // separated by game. Sync migration remains the authoritative source.
     window.sessionStorage.getItem(LANGUAGE_SESSION_KEY) ??
-    window.localStorage.getItem("bt-language")
+    storageService.getLocalValue("language")
   return stored === "en" ||
     stored === "es" ||
     stored === "pt" ||
@@ -90,6 +90,7 @@ function getInitialLanguage(): AppLanguage {
     stored === "fr" ||
     stored === "ja" ||
     stored === "ko" ||
+    stored === "sv" ||
     stored === "zh-cn" ||
     stored === "zh-tw"
     ? stored
@@ -150,11 +151,11 @@ function highlightedModBackgroundColor(color: string, opacity: number): string {
 }
 
 const legacyExperimentalStorageKey = (key: string, version: TradeSiteVersion) =>
-  `bt-${key}-poe${version}`
+  `${key}-poe${version}`
 
 function readLegacyExperimentalSettings(version: TradeSiteVersion) {
   if (typeof window === "undefined") return {}
-  const read = (key: string) => window.localStorage.getItem(legacyExperimentalStorageKey(key, version))
+  const read = (key: string) => storageService.getLocalValue(legacyExperimentalStorageKey(key, version))
   return {
     showResultActions: read("experimental-result-actions-visible") === "true",
     showPoe2CopyButton: read("experimental-poe2-copy-visible") !== "false",
@@ -270,17 +271,17 @@ function publish() {
   currentSettings = copyVersionSettings(activeVersionSettings)
   setLanguage(currentSettings.language)
   if (typeof window !== "undefined") {
-    const quickFiltersStorageKey = `bt-quick-filters-visible-poe${activeVersion}`
-    window.localStorage.setItem(
+    const quickFiltersStorageKey = `quick-filters-visible-poe${activeVersion}`
+    storageService.setLocalValue(
       quickFiltersStorageKey,
       String(currentSettings.showQuickFilters)
     )
-    window.localStorage.setItem(
-      `bt-quick-filters-placement-poe${activeVersion}`,
+    storageService.setLocalValue(
+      `quick-filters-placement-poe${activeVersion}`,
       currentSettings.quickFiltersPlacement
     )
-    window.localStorage.setItem(
-      `bt-language-poe${activeVersion}`,
+    storageService.setLocalValue(
+      `language-poe${activeVersion}`,
       currentSettings.language
     )
     document.documentElement.style.setProperty(
@@ -444,8 +445,8 @@ async function saveVersionForReload(next: VersionSettings) {
   activeVersionSettings = merged
   versionCache.set(activeVersion, merged)
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(
-      `bt-language-poe${activeVersion}`,
+    storageService.setLocalValue(
+      `language-poe${activeVersion}`,
       merged.language
     )
     window.sessionStorage.setItem(

@@ -19,6 +19,7 @@ import About from "./pages/About.svelte";
   import logoUrl from "~assets/logo.webp?inline";
   import { flashMessages } from "../lib/services/flash";
   import { bookmarksService } from "../lib/services/bookmarks";
+  import { hydrateActiveBookmarkFromTab } from "../lib/services/active-bookmark";
   import { languageStore, translate } from "../lib/services/i18n";
   import { DEFAULT_SIDEBAR_WIDTH, settings } from "../lib/services/settings";
   import { experimentalSettings } from "../lib/services/experimental";
@@ -251,6 +252,7 @@ import About from "./pages/About.svelte";
 
   onMount(async () => {
     await settings.load();
+    await hydrateActiveBookmarkFromTab();
     tradeLocationService.startPolling();
     const unsubscribeLocation = tradeLocationService.locationStore.subscribe((location) => {
       currentTradeVersion = location.version;

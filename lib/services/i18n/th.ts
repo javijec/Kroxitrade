@@ -2,6 +2,14 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const thaiTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.activeBookmarkHighlightTitle": "ไฮไลต์บุ๊กมาร์กที่คุณเปิดอยู่",
+  "whatsNew.item.activeBookmarkHighlightDescription": "การค้นหาที่บันทึกไว้ซึ่งเปิดอยู่ในแท็บปัจจุบันจะถูกไฮไลต์ในรายการบุ๊กมาร์ก ทำให้เห็นได้ง่ายว่าคุณกำลังดูการค้นหาใดอยู่",
+  "whatsNew.item.bookmarkScrollPreserveTitle": "รายการบุ๊กมาร์กคงตำแหน่งไว้เมื่อเปิดในแท็บใหม่",
+  "whatsNew.item.bookmarkScrollPreserveDescription": "การเปิดการค้นหาที่บันทึกไว้ในแท็บพื้นหลังใหม่จะคงตำแหน่งเลื่อนของรายการบุ๊กมาร์กไว้ ทำให้คุณจัดคิวหลายการค้นหาได้โดยไม่เสียตำแหน่ง",
+  "whatsNew.item.categoryTitleToggleTitle": "ชื่อหมวดหมู่สลับย่อและขยาย",
+  "whatsNew.item.categoryTitleToggleDescription": "การคลิกที่ชื่อหมวดหมู่ตอนนี้จะย่อหรือขยายหมวดหมู่นั้น เช่นเดียวกับปุ่มลูกศร",
+  "whatsNew.item.toolbarHideEarlierTitle": "แถบเครื่องมือบุ๊กมาร์กซ่อนเร็วขึ้น",
+  "whatsNew.item.toolbarHideEarlierDescription": "แถบเครื่องมือบุ๊กมาร์กจะซ่อนทันทีที่คุณเลื่อนรายการลง และกลับมาเมื่อคุณเลื่อนกลับขึ้นไปด้านบน",
   "whatsNew.item.swedishLanguageTitle": "อินเทอร์เฟซภาษาสวีเดนและหน้าร้านที่แปลแล้ว",
   "whatsNew.item.swedishLanguageDescription": "ขณะนี้มีภาษาสวีเดนให้เลือกใช้ในอินเทอร์เฟซ และมีข้อมูลเมตาของ Chrome Web Store สำหรับทุกภาษาที่ส่วนขยายรองรับ",
   "whatsNew.item.syncRecoveryTitle": "ข้อมูลที่ซิงก์กู้คืนได้จากการลบโดยไม่ตั้งใจ",

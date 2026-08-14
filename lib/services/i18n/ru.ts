@@ -2,6 +2,14 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const russianTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.activeBookmarkHighlightTitle": "Выделение открытой закладки",
+  "whatsNew.item.activeBookmarkHighlightDescription": "Сохранённый поиск, открытый в активной вкладке, теперь выделяется в списке закладок, чтобы было легко видеть, какой поиск вы просматриваете.",
+  "whatsNew.item.bookmarkScrollPreserveTitle": "Список закладок сохраняет позицию при открытии в новой вкладке",
+  "whatsNew.item.bookmarkScrollPreserveDescription": "Открытие сохранённого поиска в новой фоновой вкладке сохраняет позицию прокрутки списка закладок, так что можно поставить в очередь несколько поисков, не теряя своё место.",
+  "whatsNew.item.categoryTitleToggleTitle": "Заголовки категорий переключают свёртывание и развёртывание",
+  "whatsNew.item.categoryTitleToggleDescription": "Теперь щелчок по заголовку категории сворачивает или разворачивает её, как кнопка со стрелкой.",
+  "whatsNew.item.toolbarHideEarlierTitle": "Панель закладок скрывается раньше",
+  "whatsNew.item.toolbarHideEarlierDescription": "Панель инструментов закладок теперь скрывается, как только вы прокручиваете список вниз, и возвращается, когда прокручиваете к началу.",
   "whatsNew.item.swedishLanguageTitle": "Шведский интерфейс и локализованная страница магазина",
   "whatsNew.item.swedishLanguageDescription": "Шведский теперь доступен как язык интерфейса, а метаданные Chrome Web Store добавлены для всех языков, поддерживаемых расширением.",
   "whatsNew.item.syncRecoveryTitle": "Синхронизированные данные восстанавливаются после случайного удаления",

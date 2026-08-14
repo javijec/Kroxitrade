@@ -466,10 +466,45 @@ const version1127Features: WhatsNewItem[] = [
   }
 ];
 
+const version1128Features: WhatsNewItem[] = [
+  {
+    titleKey: "whatsNew.item.activeBookmarkHighlightTitle",
+    descriptionKey: "whatsNew.item.activeBookmarkHighlightDescription"
+  },
+  {
+    titleKey: "whatsNew.item.bookmarkScrollPreserveTitle",
+    descriptionKey: "whatsNew.item.bookmarkScrollPreserveDescription"
+  },
+  {
+    titleKey: "whatsNew.item.categoryTitleToggleTitle",
+    descriptionKey: "whatsNew.item.categoryTitleToggleDescription"
+  }
+];
+
+const version1128Polish: WhatsNewItem[] = [
+  {
+    titleKey: "whatsNew.item.toolbarHideEarlierTitle",
+    descriptionKey: "whatsNew.item.toolbarHideEarlierDescription"
+  }
+];
+
 export const latestWhatsNew: WhatsNewEntry = {
-  version: "1.1.27",
-  date: "2026-08-13",
+  version: "1.1.28",
+  date: "2026-08-14",
   sections: [
+    {
+      title: "1.1.28",
+      groups: [
+        {
+          titleKey: "whatsNew.section.features",
+          items: version1128Features
+        },
+        {
+          titleKey: "whatsNew.section.polish",
+          items: version1128Polish
+        }
+      ]
+    },
     {
       title: "1.1.27",
       groups: [

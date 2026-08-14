@@ -52,6 +52,18 @@ export const saveBookmarkScroll = async (top: number) => {
   })
 }
 
+export const saveBookmarkScrollForTab = async (tabId: number, top: number) => {
+  if (!Number.isInteger(tabId) || tabId < 0 || !Number.isFinite(top) || top < 0) {
+    return
+  }
+
+  await sendMessage({
+    type: bookmarkScrollMessage.save,
+    tabId,
+    value: { top, savedAt: Date.now() } satisfies BookmarkScrollRestore
+  })
+}
+
 export const consumeBookmarkScroll = async (): Promise<number | null> => {
   const response = await sendMessage<{ top?: unknown }>({
     type: bookmarkScrollMessage.consume

@@ -2,6 +2,14 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const simplifiedChineseTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.activeBookmarkHighlightTitle": "突出显示当前打开的书签",
+  "whatsNew.item.activeBookmarkHighlightDescription": "在当前标签页中打开的已保存搜索现在会高亮显示在书签列表中，让你轻松看出正在查看哪个搜索。",
+  "whatsNew.item.bookmarkScrollPreserveTitle": "在新标签页打开时保持书签列表位置",
+  "whatsNew.item.bookmarkScrollPreserveDescription": "在新后台标签页中打开已保存搜索时，书签列表的滚动位置会保持不变，让你可以排队多个搜索而不会丢失当前位置。",
+  "whatsNew.item.categoryTitleToggleTitle": "点击分类标题可折叠或展开",
+  "whatsNew.item.categoryTitleToggleDescription": "点击分类标题现在可以折叠或展开该分类，与箭头按钮的行为一致。",
+  "whatsNew.item.toolbarHideEarlierTitle": "书签工具栏更早隐藏",
+  "whatsNew.item.toolbarHideEarlierDescription": "书签工具栏现在会在你向下滚动列表时立即隐藏，滚动回顶部时重新显示。",
   "whatsNew.item.swedishLanguageTitle": "瑞典语界面和本地化商店页面",
   "whatsNew.item.swedishLanguageDescription": "现在可以使用瑞典语作为界面语言，并且扩展程序支持的所有语言均包含 Chrome Web Store 元数据。",
   "whatsNew.item.syncRecoveryTitle": "同步数据可从意外删除中恢复",

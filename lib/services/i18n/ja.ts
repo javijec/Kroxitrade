@@ -2,6 +2,14 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const japaneseTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.activeBookmarkHighlightTitle": "開いているブックマークを強調表示",
+  "whatsNew.item.activeBookmarkHighlightDescription": "アクティブなタブで開いている保存済み検索がブックマーク一覧で強調表示されるため、どの検索を表示しているかがひと目でわかります。",
+  "whatsNew.item.bookmarkScrollPreserveTitle": "新しいタブで開いてもブックマーク一覧の位置を維持",
+  "whatsNew.item.bookmarkScrollPreserveDescription": "保存済み検索を新しいバックグラウンドタブで開いてもブックマーク一覧のスクロール位置が維持されるため、複数の検索をキューに追加しても場所を見失いません。",
+  "whatsNew.item.categoryTitleToggleTitle": "カテゴリタイトルで折りたたみと展開を切り替え",
+  "whatsNew.item.categoryTitleToggleDescription": "カテゴリのタイトルをクリックすると、矢印ボタンと同じようにカテゴリを折りたたんだり展開したりできるようになりました。",
+  "whatsNew.item.toolbarHideEarlierTitle": "ブックマークツールバーが早めに非表示に",
+  "whatsNew.item.toolbarHideEarlierDescription": "ブックマークツールバーは、一覧を下にスクロールするとすぐに非表示になり、一番上まで戻ると再表示されます。",
   "whatsNew.item.swedishLanguageTitle": "スウェーデン語インターフェースとローカライズされたストア掲載",
   "whatsNew.item.swedishLanguageDescription": "インターフェース言語としてスウェーデン語が利用可能になり、拡張機能が対応するすべての言語向けに Chrome Web Store のメタデータが含まれます。",
   "whatsNew.item.syncRecoveryTitle": "同期データを誤削除から復元",
