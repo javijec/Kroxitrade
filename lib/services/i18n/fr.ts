@@ -2,6 +2,14 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const frenchTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.activeBookmarkHighlightTitle": "Mettre en évidence le signet que vous avez ouvert",
+  "whatsNew.item.activeBookmarkHighlightDescription": "La recherche enregistrée ouverte dans l’onglet actif est maintenant mise en évidence dans la liste des signets, pour voir facilement quelle recherche vous consultez.",
+  "whatsNew.item.bookmarkScrollPreserveTitle": "La liste de signets garde sa position lors d’une ouverture dans un nouvel onglet",
+  "whatsNew.item.bookmarkScrollPreserveDescription": "Ouvrir une recherche enregistrée dans un nouvel onglet d’arrière-plan conserve la position de défilement de la liste de signets, afin de mettre plusieurs recherches en file sans perdre votre place.",
+  "whatsNew.item.categoryTitleToggleTitle": "Les titres de catégorie basculent entre réduire et développer",
+  "whatsNew.item.categoryTitleToggleDescription": "Cliquer sur le titre d’une catégorie la réduit ou la développe maintenant, comme le bouton flèche.",
+  "whatsNew.item.toolbarHideEarlierTitle": "La barre de signets se masque plus tôt",
+  "whatsNew.item.toolbarHideEarlierDescription": "La barre d’outils des signets se masque désormais dès que vous faites défiler la liste vers le bas et revient lorsque vous remontez en haut.",
   "whatsNew.item.swedishLanguageTitle": "Interface en suédois et fiche de boutique localisée",
   "whatsNew.item.swedishLanguageDescription": "Le suédois est désormais disponible comme langue d’interface, et les métadonnées Chrome Web Store sont incluses pour toutes les langues prises en charge par l’extension.",
   "whatsNew.item.syncRecoveryTitle": "Les données synchronisées se récupèrent après une suppression accidentelle",

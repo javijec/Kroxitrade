@@ -24,6 +24,9 @@ ALWAYS prefer MCP graph tools over grep/glob/file-search for code discovery.
 
 # Extension Rules
 
+## Package Manager
+- Always use `pnpm` for package management and script execution. Do not use `npm` or `npm.cmd`.
+
 ## Subagent Collaboration
 - Use subagents for independent, bounded work that can proceed in parallel, such as investigating separate areas, implementing isolated components, or performing an independent review/test pass.
 - Keep small, tightly coupled changes with the primary agent; do not delegate merely to add process overhead.

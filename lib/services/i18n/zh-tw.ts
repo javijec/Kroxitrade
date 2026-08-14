@@ -3,6 +3,14 @@ import type { TranslationValue } from "./types"
 
 export const traditionalChineseTranslations: Record<string, TranslationValue> =
   {
+    "whatsNew.item.activeBookmarkHighlightTitle": "突顯目前開啟的書籤",
+    "whatsNew.item.activeBookmarkHighlightDescription": "目前在目前分頁開啟的已儲存搜尋，現在會在書籤清單中突顯顯示，方便你看出正在查看哪個搜尋。",
+    "whatsNew.item.bookmarkScrollPreserveTitle": "在新分頁開啟時保持書籤清單位置",
+    "whatsNew.item.bookmarkScrollPreserveDescription": "在新的背景分頁開啟已儲存搜尋時，書籤清單的捲動位置會保持不變，讓你可以排隊多個搜尋而不會失去目前位置。",
+    "whatsNew.item.categoryTitleToggleTitle": "點擊分類標題可摺疊或展開",
+    "whatsNew.item.categoryTitleToggleDescription": "點擊分類標題現在可以摺疊或展開該分類，與箭頭按鈕的行為一致。",
+    "whatsNew.item.toolbarHideEarlierTitle": "書籤工具列更早隱藏",
+    "whatsNew.item.toolbarHideEarlierDescription": "書籤工具列現在會在向下捲動清單時立即隱藏，捲回頂部時重新顯示。",
     "whatsNew.item.swedishLanguageTitle": "瑞典語介面與本地化商店頁面",
     "whatsNew.item.swedishLanguageDescription": "現在可以使用瑞典語作為介面語言，且擴充功能支援的所有語言都包含 Chrome Web Store 中繼資料。",
     "whatsNew.item.syncRecoveryTitle": "同步資料可從意外刪除中復原",

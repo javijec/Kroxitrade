@@ -2,6 +2,14 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const germanTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.activeBookmarkHighlightTitle": "Das geöffnete Lesezeichen hervorheben",
+  "whatsNew.item.activeBookmarkHighlightDescription": "Die im aktiven Tab geöffnete gespeicherte Suche wird jetzt in der Lesezeichenliste hervorgehoben, sodass leicht zu sehen ist, welche Suche du gerade ansiehst.",
+  "whatsNew.item.bookmarkScrollPreserveTitle": "Die Lesezeichenliste behält ihre Position beim Öffnen in einem neuen Tab",
+  "whatsNew.item.bookmarkScrollPreserveDescription": "Beim Öffnen einer gespeicherten Suche in einem neuen Hintergrund-Tab bleibt die Scrollposition der Lesezeichenliste erhalten, sodass du mehrere Suchen in die Warteschlange stellen kannst, ohne deinen Platz zu verlieren.",
+  "whatsNew.item.categoryTitleToggleTitle": "Kategorietitel schalten Einklappen und Aufklappen",
+  "whatsNew.item.categoryTitleToggleDescription": "Ein Klick auf den Titel einer Kategorie klappt sie jetzt zu oder auf, genau wie der Pfeil-Button.",
+  "whatsNew.item.toolbarHideEarlierTitle": "Die Lesezeichen-Symbolleiste wird früher ausgeblendet",
+  "whatsNew.item.toolbarHideEarlierDescription": "Die Lesezeichen-Symbolleiste wird jetzt ausgeblendet, sobald du in der Liste nach unten scrollst, und erscheint wieder, wenn du nach oben scrollst.",
   "whatsNew.item.swedishLanguageTitle": "Schwedische Oberfläche und lokalisierter Store-Eintrag",
   "whatsNew.item.swedishLanguageDescription": "Schwedisch ist jetzt als Oberflächensprache verfügbar, und Chrome-Web-Store-Metadaten sind für jede von der Erweiterung unterstützte Sprache enthalten.",
   "whatsNew.item.syncRecoveryTitle": "Synchronisierte Daten werden nach versehentlichem Löschen wiederhergestellt",
