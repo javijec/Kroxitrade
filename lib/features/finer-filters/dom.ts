@@ -17,7 +17,10 @@ import {
   mutatedModContainer
 } from "~/lib/site-adapter/selectors/poe1"
 
-import { ItemSearchGroupsVueItems } from "./vue-internals"
+import {
+  getStatFilterGroups,
+  type PoeVueFilterGroup
+} from "~/lib/site-adapter/trade-filters"
 
 export const getRowId = (mod: HTMLElement) => {
   const row = mod.closest(resultRowId) as HTMLElement | null
@@ -144,7 +147,7 @@ export const attachButtons = (mod: HTMLElement) => {
   }
 }
 
-export const decorateMod = (mod: HTMLElement, ISGs: any[]) => {
+export const decorateMod = (mod: HTMLElement, ISGs: PoeVueFilterGroup[]) => {
   const modHash = mod.dataset.finerHashOverride || getModHashFromDom(mod)
   if (!modHash) return
 
@@ -152,8 +155,8 @@ export const decorateMod = (mod: HTMLElement, ISGs: any[]) => {
   const rowId = getRowId(mod)
   if (rowId) mod.dataset.rowid = rowId
 
-  const isInFilters = ISGs.some(
-    (isg: any) => isg.filters && isg.filters.some((f: any) => f.id === modHash)
+  const isInFilters = ISGs.some((isg) =>
+    isg.filters.some((f) => f.id === modHash)
   )
   if (isInFilters) {
     mod.classList.add("finer-filtered")
@@ -169,7 +172,7 @@ export const decorateMod = (mod: HTMLElement, ISGs: any[]) => {
 }
 
 export const scanVisibleMods = (root: ParentNode = document) => {
-  const ISGs = ItemSearchGroupsVueItems()
+  const ISGs = getStatFilterGroups()
   normalizeMutatedModHashes(root)
   Array.from(root.querySelectorAll(mods) as NodeListOf<HTMLElement>).forEach(
     (mod) => {

@@ -10,6 +10,10 @@ import {
 } from "~/lib/site-adapter/selectors/common"
 import { mutatedModContainer } from "~/lib/site-adapter/selectors/poe1"
 import { on, onEnter } from "~/lib/site-adapter/trade-dom"
+import {
+  getStatFilterGroups,
+  hasTradeVueApp
+} from "~/lib/site-adapter/trade-filters"
 
 import {
   decorateMod,
@@ -18,7 +22,6 @@ import {
   scanVisibleMods
 } from "./dom"
 import { addOrRemoveFilter, applyFinerFiltersAction } from "./filters"
-import { ItemSearchGroupsVueItems } from "./vue-internals"
 
 export const startFinerFilters = (): (() => void) => {
   const stops: Array<() => void> = []
@@ -29,14 +32,14 @@ export const startFinerFilters = (): (() => void) => {
       if (row.classList.contains("finer-processed")) return
 
       // Check if the vue app exists
-      if (!(window as any).app) {
+      if (!hasTradeVueApp()) {
         console.warn(
           "[Krox-MainWorld] Vue 'window.app' not found. Is this PoE 2 Trade?"
         )
       }
 
       const rowMods = Array.from(row.querySelectorAll(mods)) as HTMLElement[]
-      const ISGs = ItemSearchGroupsVueItems()
+      const ISGs = getStatFilterGroups()
 
       normalizeMutatedModHashes(row)
       rowMods.forEach((mod) => decorateMod(mod, ISGs))
@@ -58,7 +61,7 @@ export const startFinerFilters = (): (() => void) => {
           if (node.matches?.(mods)) {
             const content = node.closest(mutatedModContainer)
             if (content) normalizeMutatedModHashes(content)
-            decorateMod(node, ItemSearchGroupsVueItems())
+            decorateMod(node, getStatFilterGroups())
           }
           scanVisibleMods(node)
         }
