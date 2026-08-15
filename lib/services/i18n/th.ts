@@ -10,6 +10,8 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.categoryTitleToggleDescription": "การคลิกที่ชื่อหมวดหมู่ตอนนี้จะย่อหรือขยายหมวดหมู่นั้น เช่นเดียวกับปุ่มลูกศร",
   "whatsNew.item.toolbarHideEarlierTitle": "แถบเครื่องมือบุ๊กมาร์กซ่อนเร็วขึ้น",
   "whatsNew.item.toolbarHideEarlierDescription": "แถบเครื่องมือบุ๊กมาร์กจะซ่อนทันทีที่คุณเลื่อนรายการลง และกลับมาเมื่อคุณเลื่อนกลับขึ้นไปด้านบน",
+  "whatsNew.item.lastSyncTimestampTitle": "เวลาซิงค์ล่าสุดในสำรองและกู้คืน",
+  "whatsNew.item.lastSyncTimestampDescription": "ส่วนสำรองและกู้คืนจะแสดงวันที่และเวลาของการซิงค์ล่าสุด เพื่อให้คุณยืนยันได้อย่างรวดเร็วว่าข้อมูลเป็นปัจจุบัน",
   "whatsNew.item.swedishLanguageTitle": "อินเทอร์เฟซภาษาสวีเดนและหน้าร้านที่แปลแล้ว",
   "whatsNew.item.swedishLanguageDescription": "ขณะนี้มีภาษาสวีเดนให้เลือกใช้ในอินเทอร์เฟซ และมีข้อมูลเมตาของ Chrome Web Store สำหรับทุกภาษาที่ส่วนขยายรองรับ",
   "whatsNew.item.syncRecoveryTitle": "ข้อมูลที่ซิงก์กู้คืนได้จากการลบโดยไม่ตั้งใจ",

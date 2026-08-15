@@ -11,6 +11,8 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
     "whatsNew.item.categoryTitleToggleDescription": "點擊分類標題現在可以摺疊或展開該分類，與箭頭按鈕的行為一致。",
     "whatsNew.item.toolbarHideEarlierTitle": "書籤工具列更早隱藏",
     "whatsNew.item.toolbarHideEarlierDescription": "書籤工具列現在會在向下捲動清單時立即隱藏，捲回頂部時重新顯示。",
+  "whatsNew.item.lastSyncTimestampTitle": "備份與還原中顯示最近同步時間",
+  "whatsNew.item.lastSyncTimestampDescription": "備份與還原區域現在會顯示最近一次同步的日期與時間，方便你快速確認資料是否為最新。",
     "whatsNew.item.swedishLanguageTitle": "瑞典語介面與本地化商店頁面",
     "whatsNew.item.swedishLanguageDescription": "現在可以使用瑞典語作為介面語言，且擴充功能支援的所有語言都包含 Chrome Web Store 中繼資料。",
     "whatsNew.item.syncRecoveryTitle": "同步資料可從意外刪除中復原",

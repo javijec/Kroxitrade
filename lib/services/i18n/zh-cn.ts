@@ -10,6 +10,8 @@ export const simplifiedChineseTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.categoryTitleToggleDescription": "点击分类标题现在可以折叠或展开该分类，与箭头按钮的行为一致。",
   "whatsNew.item.toolbarHideEarlierTitle": "书签工具栏更早隐藏",
   "whatsNew.item.toolbarHideEarlierDescription": "书签工具栏现在会在你向下滚动列表时立即隐藏，滚动回顶部时重新显示。",
+  "whatsNew.item.lastSyncTimestampTitle": "备份与还原中显示最近同步时间",
+  "whatsNew.item.lastSyncTimestampDescription": "备份与还原区域现在会显示最近一次同步的日期和时间，方便你快速确认数据是否最新。",
   "whatsNew.item.swedishLanguageTitle": "瑞典语界面和本地化商店页面",
   "whatsNew.item.swedishLanguageDescription": "现在可以使用瑞典语作为界面语言，并且扩展程序支持的所有语言均包含 Chrome Web Store 元数据。",
   "whatsNew.item.syncRecoveryTitle": "同步数据可从意外删除中恢复",

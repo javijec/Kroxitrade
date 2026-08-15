@@ -9,6 +9,9 @@ export const englishTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.categoryTitleToggleDescription": "Clicking a category title now collapses or expands that category, matching the arrow button behavior.",
   "whatsNew.item.toolbarHideEarlierTitle": "Bookmark toolbar hides earlier",
   "whatsNew.item.toolbarHideEarlierDescription": "The bookmark toolbar now hides as soon as you scroll down the list and returns when you scroll back to the top.",
+  "whatsNew.item.lastSyncTimestampTitle": "Last sync timestamp in Backup & Restore",
+  "whatsNew.item.lastSyncTimestampDescription":
+    "The Backup & Restore section now shows the date and time of your most recent sync, so you can confirm your data is up to date at a glance.",
   "whatsNew.item.swedishLanguageTitle": "Swedish interface and localized store listing",
   "whatsNew.item.swedishLanguageDescription": "Swedish is now available as an interface language, and Chrome Web Store metadata is included for every language supported by the extension.",
   "whatsNew.item.syncRecoveryTitle": "Sync data recovers from accidental deletion",

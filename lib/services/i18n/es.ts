@@ -9,6 +9,8 @@ export const spanishTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.categoryTitleToggleDescription": "Hacer clic en el título de una categoría ahora contrae o expande esa categoría, igual que el botón de flecha.",
   "whatsNew.item.toolbarHideEarlierTitle": "La barra de marcadores se oculta antes",
   "whatsNew.item.toolbarHideEarlierDescription": "La barra de herramientas de marcadores ahora se oculta en cuanto bajas en la lista y vuelve al subir arriba del todo.",
+  "whatsNew.item.lastSyncTimestampTitle": "Última sincronización visible en Respaldo y restauración",
+  "whatsNew.item.lastSyncTimestampDescription": "La sección de Respaldo y restauración ahora muestra la fecha y hora de tu última sincronización, para que puedas confirmar de un vistazo que tus datos están al día.",
   "whatsNew.item.swedishLanguageTitle": "Interfaz en sueco y ficha de tienda localizada",
   "whatsNew.item.swedishLanguageDescription": "El sueco ya está disponible como idioma de la interfaz, y los metadatos de Chrome Web Store se incluyen para todos los idiomas compatibles con la extensión.",
   "whatsNew.item.syncRecoveryTitle": "Los datos sincronizados se recuperan de borrados accidentales",

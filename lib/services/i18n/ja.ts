@@ -10,6 +10,8 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.categoryTitleToggleDescription": "カテゴリのタイトルをクリックすると、矢印ボタンと同じようにカテゴリを折りたたんだり展開したりできるようになりました。",
   "whatsNew.item.toolbarHideEarlierTitle": "ブックマークツールバーが早めに非表示に",
   "whatsNew.item.toolbarHideEarlierDescription": "ブックマークツールバーは、一覧を下にスクロールするとすぐに非表示になり、一番上まで戻ると再表示されます。",
+  "whatsNew.item.lastSyncTimestampTitle": "バックアップと復元に最終同期日時を表示",
+  "whatsNew.item.lastSyncTimestampDescription": "バックアップと復元のセクションに最終同期の日時が表示されるようになり、データが最新かどうかを一目で確認できます。",
   "whatsNew.item.swedishLanguageTitle": "スウェーデン語インターフェースとローカライズされたストア掲載",
   "whatsNew.item.swedishLanguageDescription": "インターフェース言語としてスウェーデン語が利用可能になり、拡張機能が対応するすべての言語向けに Chrome Web Store のメタデータが含まれます。",
   "whatsNew.item.syncRecoveryTitle": "同期データを誤削除から復元",

@@ -10,6 +10,8 @@ export const russianTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.categoryTitleToggleDescription": "Теперь щелчок по заголовку категории сворачивает или разворачивает её, как кнопка со стрелкой.",
   "whatsNew.item.toolbarHideEarlierTitle": "Панель закладок скрывается раньше",
   "whatsNew.item.toolbarHideEarlierDescription": "Панель инструментов закладок теперь скрывается, как только вы прокручиваете список вниз, и возвращается, когда прокручиваете к началу.",
+  "whatsNew.item.lastSyncTimestampTitle": "Время последней синхронизации в резервном копировании",
+  "whatsNew.item.lastSyncTimestampDescription": "Раздел резервного копирования теперь показывает дату и время вашей последней синхронизации, чтобы вы могли сразу убедиться, что данные актуальны.",
   "whatsNew.item.swedishLanguageTitle": "Шведский интерфейс и локализованная страница магазина",
   "whatsNew.item.swedishLanguageDescription": "Шведский теперь доступен как язык интерфейса, а метаданные Chrome Web Store добавлены для всех языков, поддерживаемых расширением.",
   "whatsNew.item.syncRecoveryTitle": "Синхронизированные данные восстанавливаются после случайного удаления",
