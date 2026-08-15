@@ -10,6 +10,6 @@ export default defineContentScript({
 
   main() {
     patchNavigationHistory()
-    startFilterPanel()
+    void startFilterPanel()
   }
 })

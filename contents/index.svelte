@@ -1,6 +1,5 @@
 <script lang="ts">
   import Layout from "~components/Layout.svelte"
-  import { bulkSellersService } from "~lib/services/bulk-sellers"
   import { pageTitleService } from "~lib/services/page-title"
   import { itemResultsService } from "~lib/features/item-results"
   import { settings } from "~lib/services/settings"
@@ -15,6 +14,22 @@
     large: "1.18",
     extraLarge: "1.34"
   } as const
+
+  let bulkSellersEnabled = false
+  let bulkSellersStop: (() => void) | null = null
+
+  async function ensureBulkSellers(enabled: boolean) {
+    bulkSellersEnabled = enabled
+    if (enabled && !bulkSellersStop) {
+      const { bulkSellersService } = await import("~lib/services/bulk-sellers")
+      if (!bulkSellersEnabled) return
+      bulkSellersService.initialize()
+      bulkSellersStop = () => bulkSellersService.teardown()
+    } else if (!enabled && bulkSellersStop) {
+      bulkSellersStop()
+      bulkSellersStop = null
+    }
+  }
 
   function applyTextSize(textSize: keyof typeof TEXT_SIZE_SCALE) {
     document.documentElement.style.setProperty("--bt-text-scale", TEXT_SIZE_SCALE[textSize])
@@ -33,19 +48,11 @@
 
     pageTitleService.initialize()
     void itemResultsService.initialize()
-    if (settings.getCurrent().showBulkSellers) {
-      bulkSellersService.initialize()
-    }
+    void ensureBulkSellers(settings.getCurrent().showBulkSellers)
 
     const unsubscribeSettings = settings.subscribe((value) => {
       applyTextSize(value.textSize)
-
-      if (value.showBulkSellers) {
-        bulkSellersService.initialize()
-        return
-      }
-
-      bulkSellersService.teardown()
+      void ensureBulkSellers(value.showBulkSellers)
     })
 
     const handleMessage = (request: { query?: string; itemId?: string }) => {
@@ -77,10 +84,12 @@
     }
 
     return () => {
+      bulkSellersEnabled = false
+      bulkSellersStop?.()
+      bulkSellersStop = null
       unsubscribeSettings()
       itemResultsService.teardown()
       pageTitleService.teardown()
-      bulkSellersService.teardown()
       if (hasValidExtensionContext()) {
         try {
           chrome.runtime.onMessage.removeListener(handleMessage)
