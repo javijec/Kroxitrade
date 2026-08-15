@@ -2,29 +2,27 @@ import {
   poeNinjaService,
   type PoeNinjaCurrencyData,
   type PoeNinjaUniqueDivinePrices
-} from "./poe-ninja";
-import { translate } from "./i18n";
-import { tradeLocationService } from "./trade-location";
-import { settings } from "./settings";
-import { slugify } from "../utilities/slugify";
-import { normalizeValdoRewardName } from "../utilities/normalize-valdo-reward-name";
-import { emitPageDebug } from "../utilities/page-debug";
-import { getCurrencyIconUrl } from "../data/currency-icons";
-import {
-  MAGEBLOOD_LEGACY_TEXTS,
-  type MagebloodLegacyLocale
-} from "../data/mageblood-legacy-texts";
-import coeButtonImage from "../../assets/coe-button.webp?inline";
-import { copyItemForPob } from "../utilities/copy-item-for-pob";
+} from "../../services/poe-ninja";
+import { translate } from "../../services/i18n";
+import { tradeLocationService } from "../../services/trade-location";
+import { settings } from "../../services/settings";
+import { slugify } from "../../utilities/slugify";
+import { normalizeValdoRewardName } from "../../utilities/normalize-valdo-reward-name";
+import { emitPageDebug } from "../../utilities/page-debug";
+import { getCurrencyIconUrl } from "../../data/currency-icons";
+import { MAGEBLOOD_LEGACY_TEXTS } from "../../data/mageblood-legacy-texts";
+import coeButtonImage from "../../../assets/coe-button.webp?inline";
+import { copyItemForPob } from "../../utilities/copy-item-for-pob";
 import {
   buildCraftOfExileText,
   copyTextSynchronously,
   hasUnsupportedCraftOfExileMod
-} from "../utilities/copy-item-for-craft-of-exile";
-import { flashMessages } from "./flash";
-import { experimentalSettings } from "./experimental";
-import { pinnedItemsService } from "./pinned-items";
-import { isNativeChineseTradeSite } from "../config/trade-hosts";
+} from "../../utilities/copy-item-for-craft-of-exile";
+import { flashMessages } from "../../services/flash";
+import { experimentalSettings } from "../../services/experimental";
+import { pinnedItemsService } from "../../services/pinned-items";
+import { isNativeChineseTradeSite } from "../../config/trade-hosts";
+import { tradeDomObserver } from "../../core/trade-dom-observer";
 import {
   itemIcon,
   itemLevelField,
@@ -33,8 +31,27 @@ import {
   modValueSpan,
   resultsContainer,
   socket
-} from "../site-adapter/selectors/common";
-import { copyButton } from "../site-adapter/selectors/poe2";
+} from "../../site-adapter/selectors/common";
+import { copyButton } from "../../site-adapter/selectors/poe2";
+import {
+  MAGEBLOOD_DUPLICATE_FIELD,
+  MAGEBLOOD_DUPLICATE_PATTERN,
+  MAGEBLOOD_EXPLANATIONS_CLASS,
+  MAGEBLOOD_LEGACY_CLASS,
+  MAGEBLOOD_LEGACY_EFFECTS,
+  MAGEBLOOD_LEGACY_FIELD_PATTERN,
+  MAGEBLOOD_LEGACY_PATTERN,
+  MAGEBLOOD_LEGACY_VARIANTS,
+  type MagebloodLegacy,
+  formatMagebloodLegacyLine,
+  getMagebloodLegacyBaseLabel,
+  getMagebloodLegacyEffectLabel,
+  getMagebloodLegacyLocale,
+  normalizeMagebloodLegacyKey,
+  titleCaseLegacyName
+} from "./mageblood-legacy";
+import { CHAOS_SLUG, extractPriceInfo, referenceSlugs, resolveCurrencySlug } from "./price-info";
+import { extractValdoRewardName } from "./valdo-reward";
 import pinIcon from "lucide-static/icons/pin.svg?raw";
 import pinOffIcon from "lucide-static/icons/pin-off.svg?raw";
 
@@ -53,160 +70,6 @@ const ILVL_THRESHOLDS = [
   { maxSockets: 5, ilvl: 49 },
 ];
 
-interface LegacyEffect {
-  stats: Array<[number, string]>;
-}
-
-interface MagebloodLegacy {
-  mod: HTMLElement;
-  key: string;
-  title: string;
-}
-
-const MAGEBLOOD_LEGACY_EFFECTS: Record<string, LegacyEffect> = {
-  amethyst: { stats: [[45, "% to Chaos Resistance"]] },
-  basalt: { stats: [[150, "% increased Armour"]] },
-  bismuth: { stats: [[45, "% to all Elemental Resistances"]] },
-  diamond: { stats: [[75, "% increased Critical Hit Chance"]] },
-  gold: { stats: [[45, "% increased Rarity of Items found"]] },
-  granite: { stats: [[2000, " to Armour"]] },
-  jade: { stats: [[2000, " to Evasion Rating"]] },
-  quicksilver: { stats: [[30, "% increased Movement Speed"]] },
-  ruby: { stats: [[60, "% to Fire Resistance"], [5, "% to Maximum Fire Resistance"]] },
-  sapphire: { stats: [[60, "% to Cold Resistance"], [5, "% to Maximum Cold Resistance"]] },
-  silver: { stats: [[30, "% increased Skill Speed"]] },
-  stibnite: { stats: [[150, "% increased Evasion Rating"]] },
-  sulphur: { stats: [[60, "% increased Damage"]] },
-  topaz: { stats: [[60, "% to Lightning Resistance"], [5, "% to Maximum Lightning Resistance"]] }
-};
-
-const MAGEBLOOD_LEGACY_VARIANTS: Record<string, string> = {
-  "1": "amethyst",
-  "2": "basalt",
-  "3": "bismuth",
-  "4": "diamond",
-  "5": "gold",
-  "6": "granite",
-  "7": "jade",
-  "8": "quicksilver",
-  "9": "ruby",
-  "10": "sapphire",
-  "11": "silver",
-  "12": "stibnite",
-  "13": "sulphur",
-  "14": "topaz"
-};
-
-const MAGEBLOOD_LEGACY_ALIASES: Record<string, string> = {
-  amatista: "amethyst",
-  basalto: "basalt",
-  bismuto: "bismuth",
-  diamante: "diamond",
-  oro: "gold",
-  granito: "granite",
-  jade: "jade",
-  celeridad: "quicksilver",
-  rubi: "ruby",
-  rubí: "ruby",
-  zafiro: "sapphire",
-  plata: "silver",
-  antimonio: "stibnite",
-  azufre: "sulphur",
-  topacio: "topaz",
-  mercurio: "quicksilver",
-  estibina: "stibnite",
-  ametista: "amethyst",
-  ouro: "gold",
-  safira: "sapphire",
-  prata: "silver",
-  enxofre: "sulphur"
-};
-
-export const extractValdoRewardName = (row: HTMLElement): string | null => {
-  const itemRoot = row.querySelector<HTMLElement>(".itemBoxContent, .itemPopupContainer, .middle");
-  const rewardValue = itemRoot
-    ?.querySelector<HTMLElement>('.item-property .lc[type="76"] > span:last-child')
-    ?.textContent
-    ?.trim();
-  if (rewardValue) return rewardValue;
-
-  const itemText = (
-    itemRoot?.innerText ||
-    row.innerText ||
-    itemRoot?.textContent ||
-    row.textContent ||
-    ""
-  ).replace(/\r/g, "");
-  if (!/\bValdo(?:'s)? Map\b|\bLost Remnant\b/i.test(itemText)) return null;
-
-  const match = itemText.match(/^\s*Reward\s*[:：]\s*(.+?)\s*$/im);
-  return match?.[1]?.trim() || null;
-};
-
-const MAGEBLOOD_LEGACY_FIELD_PATTERN = /stat\.explicit\.stat_264262054\|(\d+)/;
-const MAGEBLOOD_DUPLICATE_FIELD = "stat.explicit.stat_3874491706";
-const MAGEBLOOD_LEGACY_PATTERN = /^(?:Legacy of|Legado de|มรดกแห่ง) (.+)$/i;
-const MAGEBLOOD_DUPLICATE_PATTERN =
-  /(?:Mage(?:'|\u2019)?s Legacies have (\d+)% increased effect per duplicate|legados de mago.*efecto aumentado un (\d+)%.*legado de mago duplicado)/i;
-const MAGEBLOOD_LEGACY_CLASS = "bt-mb-legacy";
-const MAGEBLOOD_EXPLANATIONS_CLASS = "bt-mb-explanations";
-
-const normalizeMagebloodLegacyKey = (name: string) => {
-  const normalized = name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-  return MAGEBLOOD_LEGACY_ALIASES[normalized] || normalized;
-};
-
-const titleCaseLegacyName = (name: string) =>
-  name.charAt(0).toUpperCase() + name.slice(1);
-
-const getMagebloodLegacyLocale = (): MagebloodLegacyLocale => {
-  const host = window.location.hostname.toLowerCase();
-  if (host === "poe.kakaogames.com" || host === "poe2.kakaogames.com") return "ko";
-  if (host === "pathofexile.tw") return "zh-tw";
-  const subdomain = host.split(".")[0];
-  if (subdomain === "br") return "pt";
-  if (subdomain === "jp") return "jp";
-  if (["es", "pt", "ru", "th", "de", "fr"].includes(subdomain)) {
-    return subdomain as MagebloodLegacyLocale;
-  }
-  return "en";
-};
-
-const getMagebloodLegacyBaseLabel = (locale: MagebloodLegacyLocale) =>
-  ({
-    en: "base",
-    es: "base",
-    pt: "base",
-    ru: "база",
-    th: "ฐาน",
-    de: "Basis",
-    fr: "base",
-    jp: "基礎",
-    ko: "기본",
-    "zh-tw": "基礎"
-  })[locale];
-
-const getMagebloodLegacyEffectLabel = (locale: MagebloodLegacyLocale) =>
-  ({
-    en: "effect",
-    es: "de efecto",
-    pt: "de efeito",
-    ru: "эффекта",
-    th: "ผล",
-    de: "Effekt",
-    fr: "d'effet",
-    jp: "効果",
-    ko: "효과",
-    "zh-tw": "效果"
-  })[locale];
-
-const formatMagebloodLegacyLine = (template: string, value: number) =>
-  template.replace("{value}", `${value}`);
-
 const isEnglishTradeHost = () => {
   const host = window.location.hostname.toLowerCase();
   return host === "www.pathofexile.com" || host === "pathofexile.com";
@@ -218,27 +81,6 @@ export class ItemResultsService {
   private currencyData: PoeNinjaCurrencyData | null = null;
   private valdoUniqueDivinePrices: PoeNinjaUniqueDivinePrices | null = null;
   private valdoPriceRequest: Promise<void> | null = null;
-  private readonly CHAOS_SLUG = "chaos-orb";
-  private readonly referenceSlugs = {
-    "1": ["divine-orb", "chaos-orb"],
-    "2": ["exalted-orb", "divine-orb", "chaos-orb", "orb-of-annulment"]
-  } as const;
-  private readonly currencySlugAliases: Record<string, string> = {
-    chaos: "chaos-orb",
-    divine: "divine-orb",
-    exalted: "exalted-orb",
-    exalt: "exalted-orb",
-    regal: "regal-orb",
-    vaal: "vaal-orb",
-    alchemy: "orb-of-alchemy",
-    annul: "orb-of-annulment",
-    annullment: "orb-of-annulment",
-    transmute: "orb-of-transmutation",
-    transmutation: "orb-of-transmutation",
-    augment: "orb-of-augmentation",
-    augmentation: "orb-of-augmentation",
-    chance: "orb-of-chance"
-  };
   private showEquivalentPricing = false;
   private showValdoRewardPricing = false;
   private showMagebloodLegacyDescriptions = false;
@@ -538,7 +380,7 @@ export class ItemResultsService {
   }
 
   private injectEquivalentPricing(row: HTMLElement) {
-    const priceInfo = this.extractPriceInfo(row);
+    const priceInfo = extractPriceInfo(row);
     if (!priceInfo) {
       return;
     }
@@ -561,7 +403,7 @@ export class ItemResultsService {
       return;
     }
 
-    const slug = this.resolveCurrencySlug(currencyText);
+    const slug = resolveCurrencySlug(currencyText);
     const pricedCurrency = this.currencyData[slug];
     if (!pricedCurrency) {
       this.removeEquivalentPricing(row);
@@ -576,7 +418,7 @@ export class ItemResultsService {
 
     const version = tradeLocationService.current.version;
     const valueInPrimary = amount * pricedCurrency.value;
-    const parts = this.referenceSlugs[version]
+    const parts = referenceSlugs[version]
       .filter((referenceSlug) => referenceSlug !== slug)
       .flatMap((referenceSlug) => {
         const reference = this.currencyData?.[referenceSlug];
@@ -603,67 +445,6 @@ export class ItemResultsService {
       parts
     });
     this.renderEquivalentPricing(priceContainer, parts);
-  }
-
-  private extractPriceInfo(row: HTMLElement) {
-    const container = row.querySelector<HTMLElement>('[data-field="price"], .details .price, .itemHeader .lprice, .price');
-    if (!container) {
-      return null;
-    }
-
-    const normalizedLabel = this.extractNormalizedPriceLabel(container);
-    const amountMatch = normalizedLabel.match(/[0-9]+(?:\.[0-9]+)?/);
-    const amount = amountMatch ? parseFloat(amountMatch[0]) : Number.NaN;
-    const iconAlt = this.extractCurrencyAlt(container);
-
-    let currencyText = iconAlt || "";
-    if (!currencyText && amountMatch) {
-      currencyText = normalizedLabel
-        .slice(amountMatch.index! + amountMatch[0].length)
-        .replace(/^x\s*/i, "")
-        .trim();
-    }
-
-    if (!currencyText) {
-      const rawCurrencyText = row.querySelector<HTMLElement>(
-        '[data-field="price"] .currency-text span, .currency-text span, .currency-text'
-      )?.textContent;
-      currencyText = rawCurrencyText?.trim() || "";
-    }
-
-    return {
-      container,
-      amount,
-      currencyText
-    };
-  }
-
-  private extractNormalizedPriceLabel(container: HTMLElement) {
-    return (container.textContent || "")
-      .replace(/\s+/g, " ")
-      .replace(/^price\s*/i, "")
-      .replace(/^asking price\s*/i, "")
-      .replace(/asking price/gi, "")
-      .replace(/\s*fee.*$/i, "")
-      .replace(/^note\s*/i, "")
-      .trim();
-  }
-
-  private extractCurrencyAlt(container: HTMLElement) {
-    const icons = Array.from(container.querySelectorAll<HTMLImageElement>("img[alt]"));
-    for (const icon of icons) {
-      const alt = icon.alt?.trim();
-      if (!alt) continue;
-      if (/currency/i.test(alt)) continue;
-      return alt;
-    }
-
-    return "";
-  }
-
-  private resolveCurrencySlug(currencyText: string) {
-    const baseSlug = slugify(currencyText);
-    return this.currencySlugAliases[baseSlug] || baseSlug;
   }
 
   private renderEquivalentPricing(
@@ -696,7 +477,7 @@ export class ItemResultsService {
     const icon = document.createElement("img");
     icon.className = "bt-equivalent-icon currency-icon";
     icon.alt = slug;
-    icon.src = iconUrl || getCurrencyIconUrl(slug === this.CHAOS_SLUG ? "chaos" : "divine");
+    icon.src = iconUrl || getCurrencyIconUrl(slug === CHAOS_SLUG ? "chaos" : "divine");
     fragment.appendChild(icon);
 
     return fragment;
@@ -720,7 +501,7 @@ export class ItemResultsService {
     }
 
     const rewardName = extractValdoRewardName(row);
-    const priceInfo = this.extractPriceInfo(row);
+    const priceInfo = extractPriceInfo(row);
     if (!rewardName || !priceInfo || !this.valdoUniqueDivinePrices || !this.currencyData) {
       this.removeValdoRewardPricing(row);
       return;
@@ -728,7 +509,7 @@ export class ItemResultsService {
 
     const rewardValue = this.valdoUniqueDivinePrices[slugify(normalizeValdoRewardName(rewardName))];
     const divineValue = this.currencyData["divine-orb"]?.value;
-    const priceCurrency = this.currencyData[this.resolveCurrencySlug(priceInfo.currencyText)]?.value;
+    const priceCurrency = this.currencyData[resolveCurrencySlug(priceInfo.currencyText)]?.value;
     if (rewardValue === undefined || !divineValue || !priceCurrency || !Number.isFinite(priceInfo.amount)) {
       this.removeValdoRewardPricing(row);
       return;
@@ -776,37 +557,16 @@ export class ItemResultsService {
     element.setAttribute("aria-hidden", String(isHidden));
   }
 
-  private observerTimer: ReturnType<typeof setTimeout> | null = null;
-  private observerRetries = 0;
-  private readonly OBSERVER_MAX_RETRIES = 10;
-  private readonly OBSERVER_RETRY_DELAY = 2000;
+  private unsubscribeObserver: (() => void) | null = null;
 
   private startObserving() {
-    const observer = new MutationObserver((mutations) => {
-      if (this.observerTimer) clearTimeout(this.observerTimer);
-      this.observerTimer = setTimeout(() => this.enhanceResults(), 100);
+    this.unsubscribeObserver?.();
+    this.unsubscribeObserver = tradeDomObserver.subscribe({
+      id: "item-results",
+      selector: resultsContainer,
+      debounceMs: 100,
+      handler: () => this.enhanceResults()
     });
-
-    const target = document.querySelector(resultsContainer);
-    if (target) {
-      this.observerRetries = 0;
-      observer.observe(target, { childList: true, subtree: true });
-      this.enhanceResults();
-    } else if (this.observerRetries < this.OBSERVER_MAX_RETRIES) {
-      // Fallback: observe body but keep trying to find the specific container.
-      // Cap retries so we don't poll forever if the page never renders results.
-      this.observerRetries++;
-      observer.observe(document.body, { childList: true, subtree: true });
-      setTimeout(() => {
-        observer.disconnect();
-        this.startObserving();
-      }, this.OBSERVER_RETRY_DELAY);
-    } else {
-      emitPageDebug("observer-give-up", {
-        retries: this.observerRetries,
-        reason: "max-retries-reached"
-      });
-    }
   }
 
   private schedulePostSearchRefresh() {

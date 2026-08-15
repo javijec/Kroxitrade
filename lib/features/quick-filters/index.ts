@@ -2,6 +2,7 @@
 // handles its buttons (global stat presets + buyout currency presets).
 
 import { tradeContext } from "~/lib/core/trade-context"
+import { tradeDomObserver } from "~/lib/core/trade-dom-observer"
 import { storageService } from "~/lib/services/storage"
 import {
   expandedFilterGroup,
@@ -124,13 +125,9 @@ const injectSearchPanelQuickFilters = () => {
 }
 
 export const initQuickFilters = () => {
-  injectSearchPanelQuickFilters()
-  const quickFiltersObserver = new MutationObserver(() => {
-    injectSearchPanelQuickFilters()
-  })
-  quickFiltersObserver.observe(document.body, {
-    childList: true,
-    subtree: true
+  tradeDomObserver.subscribe({
+    id: "quick-filters",
+    handler: () => injectSearchPanelQuickFilters()
   })
   window.addEventListener("storage", (event) => {
     if (

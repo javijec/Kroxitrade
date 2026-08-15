@@ -10,7 +10,7 @@
     wikiButtonSetting
   } from "../../lib/services/experimental";
   import { flashMessages } from "../../lib/services/flash";
-  import { itemResultsService } from "../../lib/services/item-results";
+  import { itemResultsService } from "../../lib/features/item-results";
   import {
     chineseTradeMessage,
     chineseTradePageStorageFor,

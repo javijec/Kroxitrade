@@ -2,7 +2,7 @@
   import Layout from "~components/Layout.svelte"
   import { bulkSellersService } from "~lib/services/bulk-sellers"
   import { pageTitleService } from "~lib/services/page-title"
-  import { itemResultsService } from "~lib/services/item-results"
+  import { itemResultsService } from "~lib/features/item-results"
   import { settings } from "~lib/services/settings"
   import { hasValidExtensionContext, isExtensionContextInvalidatedError } from "~lib/utilities/extension-context"
   import { escapeCssAttributeValue } from "~lib/utilities/css"

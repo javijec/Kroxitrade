@@ -8,6 +8,7 @@ import {
 } from "~/lib/site-adapter/selectors/common"
 import { mutatedModContainer } from "~/lib/site-adapter/selectors/poe1"
 import { on, onEnter } from "~/lib/site-adapter/trade-dom"
+import { tradeDomObserver } from "~/lib/core/trade-dom-observer"
 import { isFinerFiltersActionMessage } from "~/lib/utilities/finer-filters-bridge"
 
 import {
@@ -41,21 +42,23 @@ export const initFinerFilters = () => {
   })
 
   // step 2: make buttons visible on item mods
-  scanVisibleMods()
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      mutation.addedNodes.forEach((node) => {
-        if (!(node instanceof HTMLElement)) return
+  tradeDomObserver.subscribe({
+    id: "finer-filters",
+    handler: (nodes) => {
+      if (nodes.length === 0) {
+        scanVisibleMods()
+        return
+      }
+      for (const node of nodes) {
         if (node.matches?.(mods)) {
           const content = node.closest(mutatedModContainer)
           if (content) normalizeMutatedModHashes(content)
           decorateMod(node, ItemSearchGroupsVueItems())
         }
         scanVisibleMods(node)
-      })
+      }
     }
   })
-  observer.observe(document.body, { childList: true, subtree: true })
 
   on("click", layoutButton, () => {
     refreshButtonsForLayout()

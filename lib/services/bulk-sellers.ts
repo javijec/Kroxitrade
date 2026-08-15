@@ -7,6 +7,7 @@ import {
   directBuyButton,
   searchButton
 } from "../site-adapter/selectors/common";
+import { tradeDomObserver } from "../core/trade-dom-observer";
 import type { BulkSellerGroup, BulkSellerItem } from "../types/bulk-sellers";
 
 const HIGHLIGHT_CLASS = "bt-bulk-seller-glow";
@@ -14,8 +15,7 @@ const HIGHLIGHT_CLASS = "bt-bulk-seller-glow";
 export class BulkSellersService {
   private readonly groupsStore = writable<BulkSellerGroup[]>([]);
   public subscribe = this.groupsStore.subscribe;
-  private observer: MutationObserver | null = null;
-  private observerTimer: ReturnType<typeof setTimeout> | null = null;
+  private unsubscribeObserver: (() => void) | null = null;
   private initialized = false;
   private readonly postSearchRefreshDelays = [80, 220, 500, 900];
   private searchRefreshTimers: number[] = [];
@@ -33,20 +33,15 @@ export class BulkSellersService {
 
     this.initialized = true;
     this.startObserving();
-    this.refresh();
     document.addEventListener("click", this.handleDocumentClick, true);
   }
 
   teardown() {
     this.initialized = false;
-    if (this.observerTimer) {
-      clearTimeout(this.observerTimer);
-      this.observerTimer = null;
-    }
     this.searchRefreshTimers.forEach((timer) => window.clearTimeout(timer));
     this.searchRefreshTimers = [];
-    this.observer?.disconnect();
-    this.observer = null;
+    this.unsubscribeObserver?.();
+    this.unsubscribeObserver = null;
     this.rowCache.clear();
     document.removeEventListener("click", this.handleDocumentClick, true);
     this.groupsStore.set([]);
@@ -79,13 +74,12 @@ export class BulkSellersService {
   }
 
   private startObserving() {
-    this.observer?.disconnect();
-    this.observer = new MutationObserver(() => {
-      if (this.observerTimer) clearTimeout(this.observerTimer);
-      this.observerTimer = setTimeout(() => this.refresh(), 120);
+    this.unsubscribeObserver?.();
+    this.unsubscribeObserver = tradeDomObserver.subscribe({
+      id: "bulk-sellers",
+      debounceMs: 120,
+      handler: () => this.refresh()
     });
-
-    this.observer.observe(document.body, { childList: true, subtree: true });
   }
 
   private schedulePostSearchRefresh() {
