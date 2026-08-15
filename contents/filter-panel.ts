@@ -35,7 +35,14 @@ export const startFilterPanel = async (): Promise<() => void> => {
     }
   }
 
-  await settings.load()
+  try {
+    await settings.load()
+  } catch (error) {
+    // Never leave the panel stuck half-started: a failed load must allow a
+    // retry on the next call.
+    started = false
+    throw error
+  }
 
   // Finer Filters is always on; the other features follow their settings.
   void ensure("finer-filters", true, loadFinerFilters)

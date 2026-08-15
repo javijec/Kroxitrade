@@ -38,9 +38,7 @@ export const createFinerFilters = (): FeatureLifecycle =>
 
         // Check if the vue app exists
         if (!hasTradeVueApp()) {
-          console.warn(
-            "[Krox-MainWorld] Vue 'window.app' not found. Is this PoE 2 Trade?"
-          )
+          console.warn("[Poe Trade Plus] Trade site filter API was not found.")
         }
 
         const rowMods = Array.from(row.querySelectorAll(mods)) as HTMLElement[]
