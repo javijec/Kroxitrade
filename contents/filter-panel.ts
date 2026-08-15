@@ -1,41 +1,44 @@
+import type { FeatureLifecycle } from "~/lib/core/feature-lifecycle"
 import { settings } from "~/lib/services/settings"
 
 const loadFinerFilters = () =>
-  import("~/lib/features/finer-filters").then((m) => m.startFinerFilters)
+  import("~/lib/features/finer-filters").then((m) => m.createFinerFilters())
 const loadQuickFilters = () =>
-  import("~/lib/features/quick-filters").then((m) => m.startQuickFilters)
+  import("~/lib/features/quick-filters").then((m) => m.createQuickFilters())
 const loadAutoFuzzy = () =>
-  import("~/lib/features/auto-fuzzy").then((m) => m.startAutoFuzzy)
+  import("~/lib/features/auto-fuzzy").then((m) => m.createAutoFuzzy())
+
+let started = false
 
 export const startFilterPanel = async (): Promise<() => void> => {
-  if ((window as any).__KROX_STARTED__) {
-    return () => {}
-  }
-  ;(window as any).__KROX_STARTED__ = true
+  if (started) return () => {}
+  started = true
 
   let stopped = false
-  const stopByKey = new Map<string, () => void>()
-  const state = new Map<string, boolean>()
+  const features = new Map<string, FeatureLifecycle>()
+  const enabledByKey = new Map<string, boolean>()
 
   const ensure = async (
     key: string,
     enabled: boolean,
-    load: () => Promise<() => () => void>
+    load: () => Promise<FeatureLifecycle>
   ) => {
-    state.set(key, enabled)
-    if (enabled && !stopByKey.has(key)) {
-      const start = await load()
-      if (stopped || !state.get(key) || stopByKey.has(key)) return
-      stopByKey.set(key, start())
-    } else if (!enabled && stopByKey.has(key)) {
-      stopByKey.get(key)?.()
-      stopByKey.delete(key)
+    enabledByKey.set(key, enabled)
+    if (enabled && !features.has(key)) {
+      const feature = await load()
+      if (stopped || !enabledByKey.get(key) || features.has(key)) return
+      features.set(key, feature)
+      feature.start()
+    } else if (!enabled && features.has(key)) {
+      features.get(key)?.stop()
+      features.delete(key)
     }
   }
 
   await settings.load()
 
-  const stopFinerFilters = (await loadFinerFilters())()
+  // Finer Filters is always on; the other features follow their settings.
+  void ensure("finer-filters", true, loadFinerFilters)
   void ensure(
     "quick-filters",
     settings.getCurrent().showQuickFilters,
@@ -53,10 +56,11 @@ export const startFilterPanel = async (): Promise<() => void> => {
   })
 
   return () => {
+    if (stopped) return
     stopped = true
     unsubscribe()
-    stopByKey.forEach((stop) => stop())
-    stopByKey.clear()
-    stopFinerFilters()
+    features.forEach((feature) => feature.stop())
+    features.clear()
+    started = false
   }
 }

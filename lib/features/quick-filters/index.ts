@@ -2,6 +2,10 @@
 // handles its buttons (global stat presets + buyout currency presets).
 
 import { extensionBus } from "~/lib/core/extension-bus"
+import {
+  createFeatureLifecycle,
+  type FeatureLifecycle
+} from "~/lib/core/feature-lifecycle"
 import { tradeContext } from "~/lib/core/trade-context"
 import { tradeDomObserver } from "~/lib/core/trade-dom-observer"
 import { storageService } from "~/lib/services/storage"
@@ -125,61 +129,62 @@ const injectSearchPanelQuickFilters = () => {
   pane.insertBefore(panel, firstExpandedGroup || pane.firstChild)
 }
 
-export const startQuickFilters = (): (() => void) => {
-  const stops: Array<() => void> = []
+export const createQuickFilters = (): FeatureLifecycle =>
+  createFeatureLifecycle("quick-filters", () => {
+    const stops: Array<() => void> = []
 
-  stops.push(
-    tradeDomObserver.subscribe({
-      id: "quick-filters",
-      handler: () => injectSearchPanelQuickFilters()
-    })
-  )
-
-  const handleStorage = (event: StorageEvent) => {
-    if (
-      event.key?.startsWith("poe-trade-plus:quick-filters-visible-poe") ||
-      event.key?.startsWith("poe-trade-plus:quick-filters-placement-poe")
-    ) {
-      injectSearchPanelQuickFilters()
-    }
-  }
-  window.addEventListener("storage", handleStorage)
-  stops.push(() => window.removeEventListener("storage", handleStorage))
-
-  stops.push(
-    extensionBus.on("quick-filters:change", () => {
-      injectSearchPanelQuickFilters()
-    })
-  )
-
-  stops.push(
-    on("click", ".krox-filter-preset__btn", (e: any, el: HTMLElement) => {
-      e.preventDefault()
-      e.stopPropagation()
-
-      if (el.dataset.action === "krox-currency-preset") {
-        const preset = BUYOUT_CURRENCY_PRESETS.find(
-          ({ currency }) => currency === el.dataset.currency
-        )
-        setBuyoutCurrencyPreset(preset?.currency || "Chaos Orb")
-        return
-      }
-
-      if (el.dataset.action === "krox-clear-buyout-price") {
-        clearBuyoutPrice()
-        return
-      }
-
-      applyFinerFiltersAction({
-        action:
-          el.dataset.action === "krox-global-minus"
-            ? "global-minus"
-            : "global-plus",
-        types: el.dataset.types || "",
-        prefix: el.dataset.prefix || "pseudo.pseudo_"
+    stops.push(
+      tradeDomObserver.subscribe({
+        id: "quick-filters",
+        handler: () => injectSearchPanelQuickFilters()
       })
-    })
-  )
+    )
 
-  return () => stops.forEach((stop) => stop())
-}
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        event.key?.startsWith("poe-trade-plus:quick-filters-visible-poe") ||
+        event.key?.startsWith("poe-trade-plus:quick-filters-placement-poe")
+      ) {
+        injectSearchPanelQuickFilters()
+      }
+    }
+    window.addEventListener("storage", handleStorage)
+    stops.push(() => window.removeEventListener("storage", handleStorage))
+
+    stops.push(
+      extensionBus.on("quick-filters:change", () => {
+        injectSearchPanelQuickFilters()
+      })
+    )
+
+    stops.push(
+      on("click", ".krox-filter-preset__btn", (e: any, el: HTMLElement) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        if (el.dataset.action === "krox-currency-preset") {
+          const preset = BUYOUT_CURRENCY_PRESETS.find(
+            ({ currency }) => currency === el.dataset.currency
+          )
+          setBuyoutCurrencyPreset(preset?.currency || "Chaos Orb")
+          return
+        }
+
+        if (el.dataset.action === "krox-clear-buyout-price") {
+          clearBuyoutPrice()
+          return
+        }
+
+        applyFinerFiltersAction({
+          action:
+            el.dataset.action === "krox-global-minus"
+              ? "global-minus"
+              : "global-plus",
+          types: el.dataset.types || "",
+          prefix: el.dataset.prefix || "pseudo.pseudo_"
+        })
+      })
+    )
+
+    return () => stops.forEach((stop) => stop())
+  })

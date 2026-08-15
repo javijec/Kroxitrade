@@ -2,6 +2,10 @@
 // the stat filters in sync.
 
 import { extensionBus } from "~/lib/core/extension-bus"
+import {
+  createFeatureLifecycle,
+  type FeatureLifecycle
+} from "~/lib/core/feature-lifecycle"
 import { tradeDomObserver } from "~/lib/core/trade-dom-observer"
 import {
   finerResultRows,
@@ -23,77 +27,78 @@ import {
 } from "./dom"
 import { addOrRemoveFilter, applyFinerFiltersAction } from "./filters"
 
-export const startFinerFilters = (): (() => void) => {
-  const stops: Array<() => void> = []
+export const createFinerFilters = (): FeatureLifecycle =>
+  createFeatureLifecycle("finer-filters", () => {
+    const stops: Array<() => void> = []
 
-  // step 1: hover a result row -> check filters
-  stops.push(
-    onEnter(finerResultRows, (e: any, row: HTMLElement) => {
-      if (row.classList.contains("finer-processed")) return
+    // step 1: hover a result row -> check filters
+    stops.push(
+      onEnter(finerResultRows, (e: any, row: HTMLElement) => {
+        if (row.classList.contains("finer-processed")) return
 
-      // Check if the vue app exists
-      if (!hasTradeVueApp()) {
-        console.warn(
-          "[Krox-MainWorld] Vue 'window.app' not found. Is this PoE 2 Trade?"
-        )
-      }
-
-      const rowMods = Array.from(row.querySelectorAll(mods)) as HTMLElement[]
-      const ISGs = getStatFilterGroups()
-
-      normalizeMutatedModHashes(row)
-      rowMods.forEach((mod) => decorateMod(mod, ISGs))
-
-      row.classList.add("finer-processed")
-    })
-  )
-
-  // step 2: make buttons visible on item mods
-  stops.push(
-    tradeDomObserver.subscribe({
-      id: "finer-filters",
-      handler: (nodes) => {
-        if (nodes.length === 0) {
-          scanVisibleMods()
-          return
+        // Check if the vue app exists
+        if (!hasTradeVueApp()) {
+          console.warn(
+            "[Krox-MainWorld] Vue 'window.app' not found. Is this PoE 2 Trade?"
+          )
         }
-        for (const node of nodes) {
-          if (node.matches?.(mods)) {
-            const content = node.closest(mutatedModContainer)
-            if (content) normalizeMutatedModHashes(content)
-            decorateMod(node, getStatFilterGroups())
+
+        const rowMods = Array.from(row.querySelectorAll(mods)) as HTMLElement[]
+        const ISGs = getStatFilterGroups()
+
+        normalizeMutatedModHashes(row)
+        rowMods.forEach((mod) => decorateMod(mod, ISGs))
+
+        row.classList.add("finer-processed")
+      })
+    )
+
+    // step 2: make buttons visible on item mods
+    stops.push(
+      tradeDomObserver.subscribe({
+        id: "finer-filters",
+        handler: (nodes) => {
+          if (nodes.length === 0) {
+            scanVisibleMods()
+            return
           }
-          scanVisibleMods(node)
+          for (const node of nodes) {
+            if (node.matches?.(mods)) {
+              const content = node.closest(mutatedModContainer)
+              if (content) normalizeMutatedModHashes(content)
+              decorateMod(node, getStatFilterGroups())
+            }
+            scanVisibleMods(node)
+          }
         }
-      }
-    })
-  )
+      })
+    )
 
-  stops.push(
-    on("click", layoutButton, () => {
-      refreshButtonsForLayout()
-      setTimeout(refreshButtonsForLayout, 220)
-    })
-  )
+    stops.push(
+      on("click", layoutButton, () => {
+        refreshButtonsForLayout()
+        setTimeout(refreshButtonsForLayout, 220)
+      })
+    )
 
-  // step 3: click ± inside the buttons
-  stops.push(
-    on("click", '[data-action="add-filter"]', (e: any, el: HTMLElement) => {
-      addOrRemoveFilter(e, true, el)
-    })
-  )
-  stops.push(
-    on("click", '[data-action="rmv-filter"]', (e: any, el: HTMLElement) => {
-      addOrRemoveFilter(e, false, el)
-    })
-  )
+    // step 3: click ± inside the buttons
+    stops.push(
+      on("click", '[data-action="add-filter"]', (e: any, el: HTMLElement) => {
+        addOrRemoveFilter(e, true, el)
+      })
+    )
+    stops.push(
+      on("click", '[data-action="rmv-filter"]', (e: any, el: HTMLElement) => {
+        addOrRemoveFilter(e, false, el)
+      })
+    )
 
-  // listener for actions dispatched from the Svelte sidebar
-  stops.push(
-    extensionBus.on("finer-filters:action", (detail) => {
-      applyFinerFiltersAction(detail)
-    })
-  )
+    // listener for actions dispatched from the Svelte sidebar
+    stops.push(
+      extensionBus.on("finer-filters:action", (detail) => {
+        applyFinerFiltersAction(detail)
+      })
+    )
 
-  return () => stops.forEach((stop) => stop())
-}
+    return () => stops.forEach((stop) => stop())
+  })
