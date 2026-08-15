@@ -6,6 +6,7 @@ import type {
   TradeLocationStruct,
   TradeSiteVersion
 } from "../types/trade-location"
+import { subscribeNavigation } from "../core/trade-navigation"
 import {
   hasValidExtensionContext,
   isExtensionContextInvalidatedError
@@ -53,10 +54,9 @@ export class TradeLocationService {
       new: ExactTradeLocationStruct
     }) => void
   >()
-  private pollingTimer: ReturnType<typeof setInterval> | null = null
+  private unsubscribeNavigation: (() => void) | null = null
   private activeTabTrackingStarted = false
   private focusHandler: (() => void) | null = null
-  private blurHandler: (() => void) | null = null
   private activeTabUpdatedHandler:
     | ((
         tabId: number,
@@ -84,7 +84,7 @@ export class TradeLocationService {
     return this.parseCurrentPath()
   }
 
-  startPolling(interval: number = 1000) {
+  start() {
     if (this.isExtensionUi()) {
       if (this.activeTabTrackingStarted) {
         return
@@ -94,36 +94,25 @@ export class TradeLocationService {
       return
     }
 
-    if (this.pollingTimer) return // Don't start twice
+    if (this.unsubscribeNavigation) return // Don't start twice
 
-    this.pollingTimer = setInterval(() => {
+    // The Trade SPA only changes the URL through the history API. React to
+    // pushState/replaceState (dispatched as a DOM CustomEvent from the MAIN
+    // world) and to popstate instead of polling the location every second.
+    this.unsubscribeNavigation = subscribeNavigation(() => {
       this.syncCurrentLocation()
-    }, interval)
-
-    // Also listen for focus/blur to pause/resume
-    if (!this.focusHandler) {
-      this.focusHandler = () => this.resumePolling(interval)
-      window.addEventListener("focus", this.focusHandler)
-    }
-
-    if (!this.blurHandler) {
-      this.blurHandler = () => this.pausePolling()
-      window.addEventListener("blur", this.blurHandler)
-    }
+    })
   }
 
-  stopPolling() {
-    this.pausePolling()
-    this.removeWindowListeners()
+  stop() {
+    this.unsubscribeNavigation?.()
+    this.unsubscribeNavigation = null
+    if (this.focusHandler) {
+      window.removeEventListener("focus", this.focusHandler)
+      this.focusHandler = null
+    }
     this.removeActiveTabListeners()
     this.activeTabTrackingStarted = false
-  }
-
-  private resumePolling(interval: number) {
-    if (this.pollingTimer) return
-    this.pollingTimer = setInterval(() => {
-      this.syncCurrentLocation()
-    }, interval)
   }
 
   private async startActiveTabTracking() {
@@ -184,25 +173,6 @@ export class TradeLocationService {
       const old = this.lastLocation ?? current
       this.lastLocation = current
       this.notify(old, current)
-    }
-  }
-
-  private pausePolling() {
-    if (this.pollingTimer) {
-      clearInterval(this.pollingTimer)
-      this.pollingTimer = null
-    }
-  }
-
-  private removeWindowListeners() {
-    if (this.focusHandler) {
-      window.removeEventListener("focus", this.focusHandler)
-      this.focusHandler = null
-    }
-
-    if (this.blurHandler) {
-      window.removeEventListener("blur", this.blurHandler)
-      this.blurHandler = null
     }
   }
 
