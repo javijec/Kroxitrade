@@ -5,7 +5,6 @@ import { modsForAction } from "~/lib/site-adapter/selectors/common"
 import { modMap } from "./stat-map"
 import {
   createFilter,
-  findVueResultItem,
   getGlobalApp,
   ItemResultPanelVueItem,
   ItemSearchGroupsVueItems
@@ -59,7 +58,6 @@ export const addOrRemoveFilter = (e: any, isAnd: boolean, btn: HTMLElement) => {
   const rowId = btns?.dataset?.rowid || modEl?.dataset?.rowid
   if (!rowId) return
 
-  const VueElem = findVueResultItem(rowId) || {}
   const statHash = btns?.dataset?.hash || modEl?.dataset?.hash
   const newFilter = createFilter(statHash || "")
   const group = ItemSearchGroupsVueItems(filterType)?.find(

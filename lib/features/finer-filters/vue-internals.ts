@@ -9,10 +9,6 @@ const findVueItem = (tags: string[]) =>
     getGlobalApp()
   )
 export const ItemResultPanelVueItem = () => findVueItem(["item-results-panel"])
-export const findVueResultItem = (_itemId: string) =>
-  findVueItem(["item-results-panel", "resultset"])?.$children?.find?.(
-    (e: any) => e.itemId === _itemId
-  )
 export const ItemSearchGroupsVueItems = (_type?: string) => {
   const panel = findVueItem(["item-search-panel", "item-filter-panel"])
   return (
