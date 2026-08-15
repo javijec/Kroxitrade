@@ -25,10 +25,7 @@ export const DEFAULT_HIGHLIGHTED_MOD_COLOR = "#28a745"
 export type BookmarkLayout = "classic" | "compact" | "ultra"
 
 const DEFAULT_CLASSIC_BOOKMARK_TRADE_ACTIONS: BookmarkTradeActionId[] = [
-  "edit",
-  "openNewTab",
-  "toggle",
-  "delete"
+  "replace"
 ]
 
 export interface VersionSettings {
@@ -107,22 +104,22 @@ const DEFAULT_VERSION_SETTINGS: VersionSettings = {
   translateTradeSite: false,
   showEquivalentPricing: false,
   showValdoRewardPricing: false,
-  showMagebloodLegacyDescriptions: true,
+  showMagebloodLegacyDescriptions: false,
   highlightedModColor: DEFAULT_HIGHLIGHTED_MOD_COLOR,
   showResultActions: false,
-  showPoe2CopyButton: true,
+  showPoe2CopyButton: false,
   showCraftOfExileButton: false,
   includeDesecratedMods: false,
   showWikiButton: false,
   showBulkSellers: false,
   showPinnedItems: false,
-  showHistory: true,
+  showHistory: false,
   showFinerFilters: true,
-  showQuickFilters: true,
+  showQuickFilters: false,
   quickFiltersPlacement: "page",
   autoFuzzySearch: true,
-  compactActionsMenu: false,
-  ultraCompactBookmarks: false,
+  compactActionsMenu: true,
+  ultraCompactBookmarks: true,
   classicBookmarkTradeActions: DEFAULT_CLASSIC_BOOKMARK_TRADE_ACTIONS,
   compactBookmarkTradeActions: [],
   ultraCompactBookmarkTradeActions: [],
@@ -218,7 +215,7 @@ function normalizeVersionSettings(
     ...defined,
     highlightedModColor: normalizeHighlightedModColor(defined.highlightedModColor),
     showResultActions: defined.showResultActions === true,
-    showPoe2CopyButton: defined.showPoe2CopyButton !== false,
+    showPoe2CopyButton: defined.showPoe2CopyButton === true,
     showCraftOfExileButton: defined.showCraftOfExileButton === true,
     includeDesecratedMods: defined.includeDesecratedMods === true,
     showWikiButton: defined.showWikiButton === true,
