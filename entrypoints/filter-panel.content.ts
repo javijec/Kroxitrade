@@ -1,6 +1,6 @@
 import "~/lib/styles/enhancements.css"
 
-import { initFilterPanel } from "~/contents/filter-panel"
+import { startFilterPanel } from "~/contents/filter-panel"
 import { tradeHosts } from "~/lib/config/trade-hosts"
 import { patchNavigationHistory } from "~/lib/core/trade-navigation"
 
@@ -10,6 +10,6 @@ export default defineContentScript({
 
   main() {
     patchNavigationHistory()
-    initFilterPanel()
+    startFilterPanel()
   }
 })

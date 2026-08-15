@@ -1,6 +1,7 @@
 import { writable } from "svelte/store"
 
 import { tradeContext } from "../core/trade-context"
+import { extensionBus } from "../core/extension-bus"
 import type { TradeSiteVersion } from "../types/trade-location"
 import { setLanguage, type AppLanguage } from "./i18n"
 import { storageService, type StorageArea } from "./storage"
@@ -293,16 +294,7 @@ function publish() {
       `${LANGUAGE_SESSION_KEY}-poe${activeVersion}`,
       currentSettings.language
     )
-    window.dispatchEvent(
-      new CustomEvent("poe-trade-plus:quick-filters-change", {
-        detail: {
-          key: quickFiltersStorageKey,
-          value: currentSettings.showQuickFilters,
-          placement: currentSettings.quickFiltersPlacement,
-          language: currentSettings.language
-        }
-      })
-    )
+    extensionBus.send("quick-filters:change")
   }
   set(currentSettings)
 }

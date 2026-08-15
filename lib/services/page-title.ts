@@ -34,6 +34,19 @@ export class PageTitleService {
     void this.recalculateTitle();
   }
 
+  teardown() {
+    this.observer?.disconnect();
+    this.observer = null;
+    if (this.throttleTimer) {
+      clearTimeout(this.throttleTimer);
+      this.throttleTimer = null;
+    }
+    this.unsubscribeBookmarks?.();
+    this.unsubscribeBookmarks = null;
+    this.unsubscribeLocation?.();
+    this.unsubscribeLocation = null;
+  }
+
   private throttledTitleMutation() {
     if (this.throttleTimer) return;
     this.throttleTimer = setTimeout(() => {

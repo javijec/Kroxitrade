@@ -78,6 +78,8 @@
 
     return () => {
       unsubscribeSettings()
+      itemResultsService.teardown()
+      pageTitleService.teardown()
       bulkSellersService.teardown()
       if (hasValidExtensionContext()) {
         try {

@@ -22,6 +22,7 @@ import { flashMessages } from "../../services/flash";
 import { experimentalSettings } from "../../services/experimental";
 import { pinnedItemsService } from "../../services/pinned-items";
 import { isNativeChineseTradeSite } from "../../config/trade-hosts";
+import { extensionBus } from "../../core/extension-bus";
 import { tradeDomObserver } from "../../core/trade-dom-observer";
 import {
   itemIcon,
@@ -223,14 +224,25 @@ export class ItemResultsService {
     this.startObserving();
     document.removeEventListener("click", this.handleDocumentClick, true);
     document.addEventListener("click", this.handleDocumentClick, true);
-    document.removeEventListener(
-      "poe-trade-plus:experimental-change",
+    this.unsubscribeExperimental?.();
+    this.unsubscribeExperimental = extensionBus.on(
+      "item-results:experimental-change",
       this.handleExperimentalChange
     );
-    document.addEventListener(
-      "poe-trade-plus:experimental-change",
-      this.handleExperimentalChange
-    );
+  }
+
+  teardown() {
+    this.unsubscribeSettings?.();
+    this.unsubscribeSettings = null;
+    this.unsubscribeLocation?.();
+    this.unsubscribeLocation = null;
+    this.unsubscribeExperimental?.();
+    this.unsubscribeExperimental = null;
+    this.unsubscribeObserver?.();
+    this.unsubscribeObserver = null;
+    this.searchRefreshTimers.forEach((timer) => window.clearTimeout(timer));
+    this.searchRefreshTimers = [];
+    document.removeEventListener("click", this.handleDocumentClick, true);
   }
 
   private showCopyFeedback(toastMessage: string) {
@@ -558,6 +570,7 @@ export class ItemResultsService {
   }
 
   private unsubscribeObserver: (() => void) | null = null;
+  private unsubscribeExperimental: (() => void) | null = null;
 
   private startObserving() {
     this.unsubscribeObserver?.();

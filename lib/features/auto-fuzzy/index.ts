@@ -20,7 +20,7 @@ const findTradeSearchInput = (
   return input instanceof HTMLInputElement ? input : null
 }
 
-export const initAutoFuzzy = () => {
+export const startAutoFuzzy = (): (() => void) => {
   const prefixingInputs = new WeakSet<HTMLInputElement>()
 
   const ensureRegexPrefix = (input: HTMLInputElement, inputType?: string) => {
@@ -56,15 +56,14 @@ export const initAutoFuzzy = () => {
     }
   }
 
-  document.addEventListener(
-    "input",
-    (e: Event) => {
-      const input = findTradeSearchInput(e.target)
-      if (!input) return
-      const inputEvent = e as InputEvent
-      if (inputEvent.isComposing) return
-      ensureRegexPrefix(input, inputEvent.inputType)
-    },
-    true
-  )
+  const handleInput = (e: Event) => {
+    const input = findTradeSearchInput(e.target)
+    if (!input) return
+    const inputEvent = e as InputEvent
+    if (inputEvent.isComposing) return
+    ensureRegexPrefix(input, inputEvent.inputType)
+  }
+
+  document.addEventListener("input", handleInput, true)
+  return () => document.removeEventListener("input", handleInput, true)
 }

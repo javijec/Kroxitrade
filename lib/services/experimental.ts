@@ -1,5 +1,6 @@
 import { writable } from "svelte/store";
 import type { TradeSiteVersion } from "../types/trade-location";
+import { extensionBus } from "../core/extension-bus";
 import { poe2CopyButton } from "../site-adapter/selectors/poe2";
 import { settings } from "./settings";
 
@@ -53,7 +54,7 @@ function applyCoeVisibility(value: boolean) {
   isCoeVisible = value;
   setCoe(isCoeVisible);
   document.body?.classList.toggle(COE_BODY_CLASS, isCoeVisible);
-  document.dispatchEvent(new CustomEvent("poe-trade-plus:experimental-change"));
+  extensionBus.send("item-results:experimental-change");
 }
 
 function applyCoeDesecratedModsEnabled(value: boolean) {
@@ -65,7 +66,7 @@ function applyWikiVisibility(value: boolean) {
   isWikiVisible = value;
   setWiki(isWikiVisible);
   document.body?.classList.toggle(WIKI_BODY_CLASS, isWikiVisible);
-  document.dispatchEvent(new CustomEvent("poe-trade-plus:experimental-change"));
+  extensionBus.send("item-results:experimental-change");
 }
 
 function applyCurrentSettings() {

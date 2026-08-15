@@ -1,15 +1,14 @@
-import { initAutoFuzzy } from "~/lib/features/auto-fuzzy"
-import { initFinerFilters } from "~/lib/features/finer-filters"
-import { initQuickFilters } from "~/lib/features/quick-filters"
+import { startAutoFuzzy } from "~/lib/features/auto-fuzzy"
+import { startFinerFilters } from "~/lib/features/finer-filters"
+import { startQuickFilters } from "~/lib/features/quick-filters"
 
-export const initFilterPanel = () => {
+export const startFilterPanel = (): (() => void) => {
   if ((window as any).__KROX_STARTED__) {
-    return
+    return () => {}
   }
 
   ;(window as any).__KROX_STARTED__ = true
 
-  initFinerFilters()
-  initQuickFilters()
-  initAutoFuzzy()
+  const stops = [startFinerFilters(), startQuickFilters(), startAutoFuzzy()]
+  return () => stops.forEach((stop) => stop())
 }
