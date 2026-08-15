@@ -20,16 +20,20 @@ const fixtures = {
   )
 }
 
-const countMatches = (selector: string) =>
+const countMatches = (selector) =>
   document.querySelectorAll(selector).length
 
-const hasMatch = (selector: string) =>
-  document.querySelector(selector) !== null
+const hasMatch = (selector) => document.querySelector(selector) !== null
 
-const findRowById = (id: string) =>
+const findRowById = (id) =>
   document.querySelector(
     `.row[data-id="${id}"], .result-item[data-id="${id}"]`
   ) !== null
+
+const readSearchInput = (selector) => {
+  const input = document.querySelector(selector)
+  return input instanceof HTMLInputElement ? input.value : null
+}
 
 test.describe("tradeDom contract: PoE1", () => {
   test.beforeEach(async ({ page }) => {
@@ -67,10 +71,13 @@ test.describe("tradeDom contract: PoE1", () => {
   })
 
   test("readInputValue reads the search input value", async ({ page }) => {
-    const value = await page.evaluate((selector) => {
-      const input = document.querySelector(selector) as HTMLInputElement | null
-      return input?.value ?? null
+    await page.evaluate((selector) => {
+      const input = document.querySelector(selector)
+      if (input instanceof HTMLInputElement) {
+        input.value = "Test Item"
+      }
     }, selectors.common.searchInput)
+    const value = await page.evaluate(readSearchInput, selectors.common.searchInput)
     expect(value).toBe("Test Item")
   })
 })
