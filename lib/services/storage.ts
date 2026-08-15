@@ -199,6 +199,29 @@ const decodeSyncValue = async (value: unknown): Promise<unknown> => {
   return isEncodedSyncValue(value) ? expandSyncValue(value[1]) : value
 }
 
+const encodedBytes = (value: unknown) =>
+  new TextEncoder().encode(JSON.stringify(value)).length
+
+/**
+ * Measures the bytes Chrome charges for a batch of Sync writes using the same
+ * compact/compress encoding setValues applies. Quota guards must compare real
+ * storage usage, not the much larger uncompressed representation.
+ */
+export const estimateSyncStorageBytes = async (
+  values: Record<string, unknown>
+): Promise<number> => {
+  const entries = await Promise.all(
+    Object.entries(values).map(async ([key, value]) => {
+      const encoded = await encodeSyncValue(value)
+      return (
+        encodedBytes(key.toLowerCase()) +
+        encodedBytes({ expiresAt: null, value: encoded })
+      )
+    })
+  )
+  return entries.reduce((total, bytes) => total + bytes, 0)
+}
+
 export class StorageService {
   private static instance: StorageService
   private syncRecoveryTimer: ReturnType<typeof setTimeout> | null = null
@@ -221,12 +244,14 @@ export class StorageService {
       !chrome.storage?.sync ||
       !chrome.storage?.local ||
       !chrome.storage?.onChanged
-    ) return
+    )
+      return
 
     this.syncRecoveryInitialized = true
     void this.snapshotManagedSyncData()
     chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName !== "sync" || !Object.keys(changes).some(isManagedSyncKey)) return
+      if (areaName !== "sync" || !Object.keys(changes).some(isManagedSyncKey))
+        return
 
       if (this.syncRecoveryTimer) clearTimeout(this.syncRecoveryTimer)
       this.syncRecoveryTimer = setTimeout(() => {
@@ -237,20 +262,34 @@ export class StorageService {
   }
 
   private async snapshotManagedSyncData() {
-    if (!hasValidExtensionContext() || !chrome.storage?.sync || !chrome.storage?.local) return
+    if (
+      !hasValidExtensionContext() ||
+      !chrome.storage?.sync ||
+      !chrome.storage?.local
+    )
+      return
 
     try {
       const data = getManagedSyncValues(await chrome.storage.sync.get(null))
       if (Object.keys(data).length === 0) return
-      const snapshot: SyncRecoverySnapshot = { capturedAt: new Date().toISOString(), data }
+      const snapshot: SyncRecoverySnapshot = {
+        capturedAt: new Date().toISOString(),
+        data
+      }
       await chrome.storage.local.set({ [SYNC_RECOVERY_SNAPSHOT_KEY]: snapshot })
     } catch (error) {
-      if (!isExtensionContextInvalidatedError(error)) console.warn("Sync recovery snapshot failed", error)
+      if (!isExtensionContextInvalidatedError(error))
+        console.warn("Sync recovery snapshot failed", error)
     }
   }
 
   private async recoverOrSnapshotManagedSyncData() {
-    if (!hasValidExtensionContext() || !chrome.storage?.sync || !chrome.storage?.local) return
+    if (
+      !hasValidExtensionContext() ||
+      !chrome.storage?.sync ||
+      !chrome.storage?.local
+    )
+      return
 
     try {
       const current = getManagedSyncValues(await chrome.storage.sync.get(null))
@@ -260,13 +299,17 @@ export class StorageService {
       }
 
       const stored = await chrome.storage.local.get(SYNC_RECOVERY_SNAPSHOT_KEY)
-      const snapshot = stored[SYNC_RECOVERY_SNAPSHOT_KEY] as SyncRecoverySnapshot | undefined
+      const snapshot = stored[SYNC_RECOVERY_SNAPSHOT_KEY] as
+        SyncRecoverySnapshot | undefined
       if (!snapshot?.data || Object.keys(snapshot.data).length === 0) return
 
       await chrome.storage.sync.set(snapshot.data)
-      console.warn("[Poe Trade Plus] Restored an empty Sync store from the local recovery copy")
+      console.warn(
+        "[Poe Trade Plus] Restored an empty Sync store from the local recovery copy"
+      )
     } catch (error) {
-      if (!isExtensionContextInvalidatedError(error)) console.warn("Sync recovery failed", error)
+      if (!isExtensionContextInvalidatedError(error))
+        console.warn("Sync recovery failed", error)
     }
   }
 
@@ -277,10 +320,15 @@ export class StorageService {
     area: StorageArea = "local",
     options?: SyncWriteOptions
   ): Promise<boolean> {
-    return this.write(this.formatKey(key, league), {
-      expiresAt: null,
-      value
-    }, area, options)
+    return this.write(
+      this.formatKey(key, league),
+      {
+        expiresAt: null,
+        value
+      },
+      area,
+      options
+    )
   }
 
   /**
@@ -313,15 +361,18 @@ export class StorageService {
           void this.snapshotManagedSyncData()
         })
         if (options?.awaitSync !== false) await queued
-        else void queued.catch((error) => {
-          if (!isExtensionContextInvalidatedError(error)) console.warn("Deferred Sync write failed", error)
-        })
+        else
+          void queued.catch((error) => {
+            if (!isExtensionContextInvalidatedError(error))
+              console.warn("Deferred Sync write failed", error)
+          })
       } else {
         await storageArea.set(payload)
       }
       return true
     } catch (error) {
-      if (!isExtensionContextInvalidatedError(error)) console.warn("Storage batch write failed", error)
+      if (!isExtensionContextInvalidatedError(error))
+        console.warn("Storage batch write failed", error)
       return false
     }
   }
@@ -537,7 +588,10 @@ export class StorageService {
     return queued
   }
 
-  private enqueueSyncMutation(key: string, value?: StoragePayload): Promise<void> {
+  private enqueueSyncMutation(
+    key: string,
+    value?: StoragePayload
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       this.pendingSyncMutations.push({ key, value, resolve, reject })
       if (this.syncBatchTimer !== null) clearTimeout(this.syncBatchTimer)
