@@ -4,6 +4,7 @@ import {
   clearBuyoutPrice,
   setBuyoutCurrencyPreset
 } from "~/lib/utilities/buyout-currency"
+import { tradeContext } from "~/lib/core/trade-context"
 import { translate, type AppLanguage } from "~/lib/services/i18n"
 import { storageService } from "~/lib/services/storage"
 
@@ -504,10 +505,11 @@ export const initFilterPanel = () => {
       return
     }
 
-    const storageKey = window.location.pathname.startsWith("/trade2/")
+    const isPoe2 = tradeContext.get().game === "poe2"
+    const storageKey = isPoe2
       ? "quick-filters-visible-poe2"
       : "quick-filters-visible-poe1"
-    const placementKey = window.location.pathname.startsWith("/trade2/")
+    const placementKey = isPoe2
       ? "quick-filters-placement-poe2"
       : "quick-filters-placement-poe1"
 

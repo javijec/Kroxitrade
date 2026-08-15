@@ -1,5 +1,6 @@
 import { writable } from "svelte/store"
 
+import { tradeContext } from "../core/trade-context"
 import type { TradeSiteVersion } from "../types/trade-location"
 import { setLanguage, type AppLanguage } from "./i18n"
 import { storageService, type StorageArea } from "./storage"
@@ -190,7 +191,7 @@ const { subscribe, set } = writable<AppSettings>(currentSettings)
 
 function inferTradeVersion(): TradeSiteVersion {
   if (typeof window === "undefined") return "1"
-  return window.location.pathname.startsWith("/trade2/") ? "2" : "1"
+  return tradeContext.get().game === "poe2" ? "2" : "1"
 }
 
 function copyVersionSettings(version: VersionSettings): AppSettings {

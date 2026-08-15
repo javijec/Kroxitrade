@@ -1,3 +1,5 @@
+import { tradeContext } from "../core/trade-context"
+
 export type BuyoutCurrency =
   | "Chaos Orb"
   | "Exalted Orb"
@@ -211,7 +213,7 @@ export const setBuyoutCurrencyPreset = (currency: BuyoutCurrency) => {
 
 export const clearBuyoutPrice = () => {
   setBuyoutCurrencyPreset(
-    window.location.pathname.startsWith("/trade2")
+    tradeContext.get().game === "poe2"
       ? "Exalted Orb Equivalent"
       : "Chaos Orb Equivalent"
   )

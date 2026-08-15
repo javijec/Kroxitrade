@@ -1,4 +1,5 @@
 import { tradeHosts } from "~/lib/config/trade-hosts"
+import { tradeContext } from "~/lib/core/trade-context"
 
 /**
  * Fuzzy Chinese search for English-only filter dropdowns.
@@ -65,7 +66,7 @@ export default defineContentScript({
 
     const buildNameMap = () => {
       const snapshot = localStorage.getItem(
-        location.pathname.startsWith("/trade2/")
+        tradeContext.get().game === "poe2"
           ? "lscache-trade2items"
           : "lscache-tradeitems"
       )
