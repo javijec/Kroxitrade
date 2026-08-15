@@ -418,16 +418,16 @@ export class StorageService {
   }
 
   private getStorageArea(area: StorageArea): chrome.storage.StorageArea | null {
+    if (!chrome.storage?.[area]) {
+      // No API access in this context (e.g. MAIN-world content scripts).
+      // Silent on purpose: callers already handle `null` as "no value".
+      return null
+    }
     if (!hasValidExtensionContext()) {
       if (!this.warnedStorageLoss) {
         this.warnedStorageLoss = true
         console.warn("Storage not available: extension context invalidated")
       }
-      return null
-    }
-    if (!chrome.storage?.[area]) {
-      // No API access in this context (e.g. content scripts). Silence here on
-      // purpose: callers already handle `null` as "no value".
       return null
     }
     return chrome.storage[area]
