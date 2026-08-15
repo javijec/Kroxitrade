@@ -145,7 +145,10 @@ export const attachButtons = (mod: HTMLElement) => {
   }
 }
 
+const decoratedMods = new WeakSet<HTMLElement>()
+
 export const decorateMod = (mod: HTMLElement, groups: TradeFilterGroup[]) => {
+  if (decoratedMods.has(mod)) return
   const modHash = mod.dataset.finerHashOverride || getModHashFromDom(mod)
   if (!modHash) return
 
@@ -167,6 +170,7 @@ export const decorateMod = (mod: HTMLElement, groups: TradeFilterGroup[]) => {
   }
 
   attachButtons(mod)
+  decoratedMods.add(mod)
 }
 
 export const scanVisibleMods = (root: ParentNode = document) => {

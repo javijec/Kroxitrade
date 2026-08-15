@@ -9,6 +9,7 @@ import { createFeatureLifecycle, type FeatureLifecycle } from "../core/feature-l
 import { tradeDomObserver } from "../core/trade-dom-observer"
 import { tradeDom } from "../site-adapter/trade-dom"
 import {
+  bulkSellerRows,
   directBuyButton,
   itemDetails,
   itemPrice,
@@ -270,6 +271,7 @@ export const createBulkSellers = (): BulkSellersFeature => {
 
     unsubscribeObserver = tradeDomObserver.subscribe({
       id: "bulk-sellers",
+      selector: bulkSellerRows,
       debounceMs: 120,
       handler: () => refresh()
     })
