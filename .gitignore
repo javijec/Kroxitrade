@@ -45,9 +45,10 @@ dist/
 keys.json
 
 # typescript
-.tsbuildinfo
+*.tsbuildinfo
 
 # local scratch / docs artifacts
 tmp_video_frames/
 # Local AI runtime state
 .atl/
+kroxitrade-mejoras-arquitectura.md
