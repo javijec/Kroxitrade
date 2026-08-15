@@ -224,6 +224,7 @@ export const estimateSyncStorageBytes = async (
 
 export class StorageService {
   private static instance: StorageService
+  private warnedStorageLoss = false
   private syncRecoveryTimer: ReturnType<typeof setTimeout> | null = null
   private syncRecoveryInitialized = false
   private syncOperationQueue: Promise<void> = Promise.resolve()
@@ -417,8 +418,16 @@ export class StorageService {
   }
 
   private getStorageArea(area: StorageArea): chrome.storage.StorageArea | null {
-    if (!hasValidExtensionContext() || !chrome.storage?.[area]) {
-      console.warn("Storage not available")
+    if (!hasValidExtensionContext()) {
+      if (!this.warnedStorageLoss) {
+        this.warnedStorageLoss = true
+        console.warn("Storage not available: extension context invalidated")
+      }
+      return null
+    }
+    if (!chrome.storage?.[area]) {
+      // No API access in this context (e.g. content scripts). Silence here on
+      // purpose: callers already handle `null` as "no value".
       return null
     }
     return chrome.storage[area]
