@@ -1,3 +1,13 @@
+import { tradeContext } from "../core/trade-context"
+import {
+  buyoutPriceInputs,
+  filterTitle,
+  multiselect,
+  multiselectInput,
+  multiselectOption
+} from "../site-adapter/selectors/common"
+import { tradeDom } from "../site-adapter/trade-dom"
+
 export type BuyoutCurrency =
   | "Chaos Orb"
   | "Exalted Orb"
@@ -113,17 +123,15 @@ const normalizeLabel = (value: string | null | undefined) =>
 // currency multiselect and its two price inputs. This survives the translated
 // title text and is independent of the trade-site language.
 const findBuyoutFilterStructural = () => {
-  const filters = Array.from(
-    document.querySelectorAll<HTMLElement>(".filter.filter-property")
-  )
+  const filters = tradeDom.getFilterProperties()
 
   return (
     filters.find((filter) => {
       const hasCurrencyMultiselect = !!filter.querySelector(
-        ".multiselect input.multiselect__input"
+        `${multiselect} ${multiselectInput}`
       )
       const priceInputs = filter.querySelectorAll<HTMLInputElement>(
-        "input.minmax, input[placeholder]"
+        buyoutPriceInputs
       )
       return hasCurrencyMultiselect && priceInputs.length >= 2
     }) || null
@@ -131,12 +139,10 @@ const findBuyoutFilterStructural = () => {
 }
 
 const findBuyoutFilter = () => {
-  const filters = Array.from(
-    document.querySelectorAll<HTMLElement>(".filter.filter-property")
-  )
+  const filters = tradeDom.getFilterProperties()
 
   const byTitle = filters.find((filter) => {
-    const title = normalizeLabel(filter.querySelector(".filter-title")?.textContent)
+    const title = normalizeLabel(filter.querySelector(filterTitle)?.textContent)
     return buyoutFilterTitles.includes(title)
   })
 
@@ -148,7 +154,7 @@ const getLocalizedCurrencyLabel = (
   currency: BuyoutCurrency
 ) => {
   const title = normalizeLabel(
-    buyoutFilter.querySelector(".filter-title")?.textContent
+    buyoutFilter.querySelector(filterTitle)?.textContent
   )
   // The translated site's multiselect options use the native Chinese labels
   // (e.g. 混沌石 / 崇高石 / 神聖石), so preserve the title-to-label mapping
@@ -159,11 +165,11 @@ const getLocalizedCurrencyLabel = (
 
 export const setBuyoutCurrencyPreset = (currency: BuyoutCurrency) => {
   const buyoutFilter = findBuyoutFilter()
-  const multiselect = buyoutFilter?.querySelector<HTMLElement>(".multiselect")
+  const multiselectEl = buyoutFilter?.querySelector<HTMLElement>(multiselect)
   const input =
-    multiselect?.querySelector<HTMLInputElement>("input.multiselect__input")
+    multiselectEl?.querySelector<HTMLInputElement>(multiselectInput)
 
-  if (!buyoutFilter || !multiselect || !input) return
+  if (!buyoutFilter || !multiselectEl || !input) return
 
   // Inspect all locale variants instead of deriving a single one from the
   // translated title. The displayed list can be English, Chinese or bilingual.
@@ -178,7 +184,7 @@ export const setBuyoutCurrencyPreset = (currency: BuyoutCurrency) => {
 
   const selectOption = () => {
     const option = Array.from(
-      multiselect.querySelectorAll<HTMLElement>(".multiselect__option")
+      multiselectEl.querySelectorAll<HTMLElement>(multiselectOption)
     )
     if (option.length === 0) return false
 
@@ -211,7 +217,7 @@ export const setBuyoutCurrencyPreset = (currency: BuyoutCurrency) => {
 
 export const clearBuyoutPrice = () => {
   setBuyoutCurrencyPreset(
-    window.location.pathname.startsWith("/trade2")
+    tradeContext.get().game === "poe2"
       ? "Exalted Orb Equivalent"
       : "Chaos Orb Equivalent"
   )

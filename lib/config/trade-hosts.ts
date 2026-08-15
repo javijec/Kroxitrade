@@ -1,3 +1,5 @@
+import { tradeContext } from "../core/trade-context"
+
 export const tradeHosts = [
   "https://www.pathofexile.com/trade*",
   "https://pathofexile.com/trade*",
@@ -27,8 +29,6 @@ export const tradeHostPermissions = [
   "https://poe2.kakaogames.com/*"
 ]
 
-export const isNativeChineseTradeSite = () =>
-  typeof location !== "undefined" && location.hostname === "pathofexile.tw"
+export const isNativeChineseTradeSite = () => tradeContext.get().isNativeChinese
 
-export const isPoe2TradeSite = () =>
-  typeof location !== "undefined" && location.pathname.startsWith("/trade2/")
+export const isPoe2TradeSite = () => tradeContext.get().game === "poe2"

@@ -436,6 +436,8 @@ export const englishTranslations: Record<string, TranslationValue> = {
   "bookmarks.automaticSyncDescription":
     "Your bookmarks and settings sync automatically with Chrome while you use the extension.",
   "bookmarks.restoreFile": "Restore From File",
+  "bookmarks.lastSync": ({ date, time }) => `Last sync: ${date} at ${time}`,
+  "bookmarks.lastSyncNever": "Last sync: never",
   "bookmarks.folderCopyTitle": ({ title }) => `${title} (copy)`,
   "confirm.cancel": "Cancel",
   "confirm.delete": "Delete",

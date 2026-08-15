@@ -1,4 +1,5 @@
 import { tradeHosts } from "~/lib/config/trade-hosts"
+import { tradeContext } from "~/lib/core/trade-context"
 import { storageService } from "~/lib/services/storage"
 import { getPendingSyncValue } from "~/lib/services/sync-journal"
 
@@ -11,9 +12,10 @@ export default defineContentScript({
   runAt: "document_start",
 
   main() {
-    const settingsKey = location.pathname.startsWith("/trade2/")
-      ? "app-settings-poe2"
-      : "app-settings-poe1"
+    const settingsKey =
+      tradeContext.get().game === "poe2"
+        ? "app-settings-poe2"
+        : "app-settings-poe1"
 
     const apply = async () => {
       const settings =

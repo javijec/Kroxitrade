@@ -1,3 +1,21 @@
+import {
+  itemLevelDataField,
+  itemPopup,
+  itemPopupContent,
+  itemPopupHeaderLine,
+  modLabelField,
+  modStatField,
+  qualityDataField
+} from "../site-adapter/selectors/common";
+import {
+  explicitMods,
+  explicitModsWithDesecrated,
+  fracturedMod,
+  implicitMod,
+  modCraftedClass,
+  modFracturedClass
+} from "../site-adapter/selectors/poe1";
+
 const SEPARATOR = "--------";
 const UNSUPPORTED_CRAFT_OF_EXILE_MOD_PATTERN =
   /[+\-]\s*\d+\s+(?:Prefix|Suffix)\s+Modifiers?\s+allowed/i;
@@ -15,7 +33,7 @@ const readAnnotatedMods = (
   Array.from(popup.querySelectorAll<HTMLElement>(selector))
     .map((row) => {
       const value = row
-        .querySelector<HTMLElement>('[data-field^="stat."]')
+        .querySelector<HTMLElement>(modStatField)
         ?.textContent
         ?.replace(/\s+/g, " ")
         .trim();
@@ -23,13 +41,13 @@ const readAnnotatedMods = (
 
       let type: "Implicit" | "Prefix" | "Suffix" = fixedType || "Prefix";
       if (!fixedType) {
-        const tierLabel = row.querySelector<HTMLElement>(".lc.l")?.textContent?.trim() || "";
+        const tierLabel = row.querySelector<HTMLElement>(modLabelField)?.textContent?.trim() || "";
         type = tierLabel.charAt(0).toUpperCase() === "S" ? "Suffix" : "Prefix";
       }
 
       const annotations = [
-        row.classList.contains("item-mod--fractured") && "Fractured",
-        row.classList.contains("item-mod--crafted") && "Crafted"
+        row.classList.contains(modFracturedClass) && "Fractured",
+        row.classList.contains(modCraftedClass) && "Crafted"
       ].filter(Boolean);
 
       return `{ ${[...annotations, type, "Modifier"].join(" ")} }\n${value}`;
@@ -40,20 +58,20 @@ export const buildCraftOfExileText = (
   row: HTMLElement,
   includeDesecratedMods = false
 ): string | null => {
-  const popup = row.querySelector<HTMLElement>(".item-popup");
+  const popup = row.querySelector<HTMLElement>(itemPopup);
   if (!popup) return null;
 
   const headerLines = Array.from(
-    popup.querySelectorAll<HTMLElement>(".item-popup__header-line")
+    popup.querySelectorAll<HTMLElement>(itemPopupHeaderLine)
   )
     .map((line) => line.textContent?.trim() || "")
     .filter(Boolean);
   if (headerLines.length === 0) return null;
 
-  const implicits = readAnnotatedMods(popup, ".item-mod--implicit", "Implicit");
+  const implicits = readAnnotatedMods(popup, implicitMod, "Implicit");
   const explicitSelector = includeDesecratedMods
-    ? ".item-mod:is(.item-mod--explicit, .item-mod--fractured, .item-mod--desecrated, .item-mod--crafted)"
-    : ".item-mod:is(.item-mod--explicit, .item-mod--fractured, .item-mod--crafted)";
+    ? explicitModsWithDesecrated
+    : explicitMods;
   const explicits = readAnnotatedMods(popup, explicitSelector, null);
   const rarity = headerLines.length >= 2
     ? "Rare"
@@ -62,9 +80,9 @@ export const buildCraftOfExileText = (
       : "Normal";
   const name = headerLines.length >= 2 ? headerLines[0] : "";
   const base = headerLines.length >= 2 ? headerLines[1] : headerLines[0];
-  const quality = readNumber(popup, '[data-field="quality"]');
-  const itemLevel = readNumber(popup, '[data-field="ilvl"]');
-  const fractured = popup.querySelector(".item-mod--fractured") !== null;
+  const quality = readNumber(popup, qualityDataField);
+  const itemLevel = readNumber(popup, itemLevelDataField);
+  const fractured = popup.querySelector(fracturedMod) !== null;
   const corrupted = /\bcorrupted\b/i.test(popup.textContent || "");
 
   const sections: string[][] = [
@@ -81,7 +99,7 @@ export const buildCraftOfExileText = (
 };
 
 export const hasUnsupportedCraftOfExileMod = (row: HTMLElement): boolean => {
-  const content = row.querySelector<HTMLElement>(".item-popup__content") || row;
+  const content = row.querySelector<HTMLElement>(itemPopupContent) || row;
   return UNSUPPORTED_CRAFT_OF_EXILE_MOD_PATTERN.test(content.textContent || "");
 };
 

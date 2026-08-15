@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Path of Exile Trade</title>
+  </head>
+  <body>
+    <div class="search-panel">
+      <div class="search-bar">
+        <div class="search-left">
+          <input type="text" placeholder="Search items..." />
+        </div>
+        <button class="btn search-btn" type="button">Search</button>
+      </div>
+    </div>
+
+    <div class="search-advanced-pane brown">
+      <div class="filter-group expanded">
+        <div class="filter-group-body">
+          <div class="filter filter-property">
+            <div class="filter-title">Name</div>
+            <div class="multiselect">
+              <input class="multiselect__input" type="text" />
+              <div class="multiselect__single">Headhunter</div>
+              <div class="multiselect__option">Exalted Orb</div>
+            </div>
+          </div>
+          <div class="filter filter-property">
+            <div class="filter-title">Type</div>
+            <div class="multiselect">
+              <input class="multiselect__input" type="text" />
+              <div class="multiselect__option">Leather Belt</div>
+            </div>
+          </div>
+          <div class="filter">
+            <div class="filter-title">Price</div>
+            <input class="minmax" type="text" placeholder="Min" />
+            <input class="minmax" type="text" placeholder="Max" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="resultset">
+      <div class="row" data-id="row1">
+        <div class="item-popup" data-id="item1">
+          <div class="item-popup__header item-popup__header--unique">
+            <div class="item-popup__header-line">Headhunter</div>
+          </div>
+          <div class="item-popup__content">
+            <div class="item-mod item-mod--implicit" data-id="mod1">
+              <span class="lc s" data-field="stat.life">+100 to maximum Life</span>
+              <span class="lc l">(implicit)</span>
+              <span class="lc r">100</span>
+            </div>
+            <hr name="flags" />
+            <div class="item-mod item-mod--explicit" data-id="mod2">
+              <span class="lc s" data-field="stat.3299347043">+15% to Fire Resistance</span>
+              <span class="lc l">T1</span>
+              <span class="lc r su">15</span>
+            </div>
+            <div class="item-mod item-mod--explicit" data-id="mod3">
+              <span class="lc s" data-field="stat.cold">+20% to Cold Resistance</span>
+              <span class="lc l">T2</span>
+              <span class="lc r">20</span>
+            </div>
+            <hr name="explicit" />
+            <div class="item-property" data-field="ilvl"><span>Item Level: 86</span></div>
+            <div class="item-property" data-field="quality"><span>Quality: 20%</span></div>
+            <div class="item-property" data-field="price">
+              <span class="price">3 chaos</span>
+              <span class="currency-text"><span>Chaos Orb</span></span>
+            </div>
+            <div class="sockets">
+              <div class="socket">R</div>
+              <div class="socket">B</div>
+            </div>
+            <span class="icon"><img alt="Headhunter" /></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" data-id="row2">
+        <div class="item-popup item-popup--unique" data-id="item2">
+          <div class="item-popup__header item-popup__header--gem">
+            <div class="item-popup__header-line">Mirror of Kalandra</div>
+          </div>
+          <div class="item-popup__content">
+            <div class="item-mod item-mod--mutated" data-id="mod4">
+              <span class="lc s" data-field="stat.4220027924">+10% to All Resistances</span>
+              <span class="lc l">(crafted)</span>
+              <span class="lc r">10</span>
+            </div>
+            <div class="item-mod item-mod--mutated item-mod--fractured" data-id="mod5">
+              <span class="lc s" data-field="stat.fractured">+30 to Strength</span>
+              <span class="lc l">Fractured</span>
+              <span class="lc r">30</span>
+            </div>
+            <div class="item-mod item-mod--explicit" data-id="mod6">
+              <span class="lc s" data-field="stat.chaos">+12% to Chaos Resistance</span>
+              <span class="lc l"></span>
+              <span class="lc r">12</span>
+            </div>
+            <hr name="explicit" />
+            <div class="item-property" data-field="price">
+              <span class="price">1 divine</span>
+              <span class="currency-text"><span>Divine Orb</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="results compact">
+      <div class="result-item" data-id="row3">compact row</div>
+    </div>
+
+    <span class="profile-link"><a href="#">Seller</a></span>
+    <span class="account-name">Account</span>
+  </body>
+</html>

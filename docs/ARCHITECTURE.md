@@ -20,7 +20,7 @@ It injects base styles, shifts the Path of Exile trade page to make room for the
 - `lib/services/storage.ts`: wrapper around `chrome.storage.local` plus localStorage helpers
 - `lib/services/bookmarks.ts`: bookmark folders, trades, backup serialization and restore
 - `lib/services/trade-location.ts`: parses the current trade URL, polls for navigation changes, logs history
-- `lib/services/item-results.ts`: observes result rows and injects pinning, highlights and price equivalents
+- `lib/features/item-results/`: observes result rows and injects pinning, highlights and price equivalents
 - `lib/services/poe-ninja.ts`: fetches and caches currency ratios through the background script
 - `lib/services/page-title.ts`: keeps the browser tab title aligned with the current search context
 - `lib/services/search-panel.ts`: scrapes the live search UI to infer names, rarity and stat filters

@@ -50,6 +50,18 @@ const createArea = (name) => ({
     if (Object.keys(changes).length > 0) {
       for (const listener of listeners) listener(changes, name)
     }
+  },
+  async getBytesInUse(keys = null) {
+    const map = stores[name]
+    const selected =
+      keys === null ? [...map.keys()] : Array.isArray(keys) ? keys : [keys]
+    return selected.reduce((total, key) => {
+      if (!map.has(key)) return total
+      const encoder = new TextEncoder()
+      return (
+        total + encoder.encode(key + JSON.stringify(clone(map.get(key)))).length
+      )
+    }, 0)
   }
 })
 
@@ -138,9 +150,10 @@ test("keeps the previous manifest readable when a staged chunk batch fails", asy
   reset()
   await seedPreviousFolders()
   const bookmarks = new BookmarksService()
-  failSyncSet = (values) => Object.keys(values).some((key) =>
-    key.startsWith("bookmark-folders-chunk--")
-  )
+  failSyncSet = (values) =>
+    Object.keys(values).some((key) =>
+      key.startsWith("bookmark-folders-chunk--")
+    )
 
   await assert.rejects(
     bookmarks.persistFoldersToChunks([
@@ -172,7 +185,12 @@ test("waits for a quiet Sync window before publishing batched changes", async ()
 
   const first = storageService.setValue("batch-one", { value: 1 }, null, "sync")
   await new Promise((resolve) => setTimeout(resolve, 15))
-  const second = storageService.setValue("batch-two", { value: 2 }, null, "sync")
+  const second = storageService.setValue(
+    "batch-two",
+    { value: 2 },
+    null,
+    "sync"
+  )
   await new Promise((resolve) => setTimeout(resolve, 30))
 
   assert.equal(syncSetCalls, 0)
@@ -207,23 +225,29 @@ test("rehydrates a pending local bookmark journal before Sync is flushed", async
     await writer.persistTrades([trade("pending")], "journal-folder")
 
     assert.deepEqual(
-      await storageService.getValue("bookmark-trades-manifest--journal-folder", null, "sync"),
+      await storageService.getValue(
+        "bookmark-trades-manifest--journal-folder",
+        null,
+        "sync"
+      ),
       null
     )
 
     const reloaded = new BookmarksService()
     assert.deepEqual(
-      (await reloaded.fetchTradesByFolderId("journal-folder", { force: true })).map(
-        ({ id }) => id
-      ),
+      (
+        await reloaded.fetchTradesByFolderId("journal-folder", { force: true })
+      ).map(({ id }) => id),
       ["pending"]
     )
 
     await reloaded.flushPendingOperations()
     assert.deepEqual(
-      (await new BookmarksService().fetchTradesByFolderId("journal-folder", {
-        force: true
-      })).map(({ id }) => id),
+      (
+        await new BookmarksService().fetchTradesByFolderId("journal-folder", {
+          force: true
+        })
+      ).map(({ id }) => id),
       ["pending"]
     )
   } finally {
@@ -236,10 +260,9 @@ test("keeps the latest generic Sync mutation locally until the worker flushes it
   await stageSyncValue("app-settings-poe1", { language: "es" })
   await stageSyncValue("app-settings-poe1", { language: "pt" })
 
-  assert.deepEqual(
-    await getPendingSyncValue("app-settings-poe1"),
-    { language: "pt" }
-  )
+  assert.deepEqual(await getPendingSyncValue("app-settings-poe1"), {
+    language: "pt"
+  })
   assert.equal(
     await storageService.getValue("app-settings-poe1", null, "sync"),
     null
@@ -279,38 +302,92 @@ test("merges independent offline bookmark operations from two devices", () => {
 
   const merged = replayBookmarkOplog(operations)
   assert.deepEqual(
-    merged.tradesByFolder.get("shared").map(({ id }) => id).sort(),
+    merged.tradesByFolder
+      .get("shared")
+      .map(({ id }) => id)
+      .sort(),
     ["from-a", "from-b"]
   )
 })
 
-test("compacts an actor oplog and keeps tombstones before segmenting it", () => {
+test("compacts an actor oplog and keeps tombstones before segmenting it", async () => {
   const oplog = new BookmarkOplog("device-a")
   const first = oplog.upsertTrade("folder", trade("replace", "before"))
   const latest = oplog.upsertTrade("folder", trade("replace", "after"))
   const deleted = oplog.deleteTrade("folder", "gone")
   const compacted = compactBookmarkOplog([first, latest, deleted])
 
-  assert.deepEqual(compacted.map(({ id }) => id), [latest.id, deleted.id])
-  const segmented = createBookmarkOplogChunks("device-a", [first, latest, deleted])
-  assert.equal(segmented.manifest.chunkKeys[0], bookmarkOplogChunkKey("device-a", 0))
-  assert.deepEqual(Object.values(segmented.chunks).flat().map(({ id }) => id), [latest.id, deleted.id])
+  assert.deepEqual(
+    compacted.map(({ id }) => id),
+    [latest.id, deleted.id]
+  )
+  const segmented = await createBookmarkOplogChunks("device-a", [
+    first,
+    latest,
+    deleted
+  ])
+  assert.equal(
+    segmented.manifest.chunkKeys[0],
+    bookmarkOplogChunkKey("device-a", 0)
+  )
+  assert.deepEqual(
+    Object.values(segmented.chunks)
+      .flat()
+      .map(({ id }) => id),
+    [latest.id, deleted.id]
+  )
 })
 
-test("segments oplog records below 8 KB and rejects the 100 KB budget", () => {
+test("segments oplog records below 8 KB and rejects the 100 KB budget", async () => {
   const oplog = new BookmarkOplog("device-a")
   const operations = Array.from({ length: 8 }, (_, index) =>
     oplog.upsertTrade("folder", trade(`large-${index}`, "x".repeat(1_400)))
   )
-  const segmented = createBookmarkOplogChunks("device-a", operations)
-  assert.ok(Object.values(segmented.chunks).every((chunk, index) =>
-    new TextEncoder().encode(
-      bookmarkOplogChunkKey("device-a", index) + JSON.stringify({ expiresAt: null, value: chunk })
-    ).length <= BOOKMARK_OPLOG_MAX_ITEM_BYTES
-  ))
-  assert.throws(
-    () => createBookmarkOplogChunks("device-a", operations, BOOKMARK_OPLOG_MAX_TOTAL_BYTES),
+  const segmented = await createBookmarkOplogChunks("device-a", operations)
+  assert.ok(
+    Object.values(segmented.chunks).every(
+      (chunk, index) =>
+        new TextEncoder().encode(
+          bookmarkOplogChunkKey("device-a", index) +
+            JSON.stringify({ expiresAt: null, value: chunk })
+        ).length <= BOOKMARK_OPLOG_MAX_ITEM_BYTES
+    )
+  )
+  await assert.rejects(
+    () =>
+      createBookmarkOplogChunks(
+        "device-a",
+        operations,
+        BOOKMARK_OPLOG_MAX_TOTAL_BYTES
+      ),
     /100 KB/
+  )
+})
+
+test("oplog guard measures the compressed payload, not the logical JSON", async () => {
+  const oplog = new BookmarkOplog("device-a")
+  const operations = Array.from({ length: 50 }, (_, index) =>
+    oplog.upsertTrade(
+      "folder",
+      trade(
+        `compress-${index}`,
+        "mod1+mod2+mod3+mod4+mod5+mod6+mod7+mod8+mod9+mod10+".repeat(36)
+      )
+    )
+  )
+  const segmented = await createBookmarkOplogChunks("device-a", operations)
+  const logical = Object.entries(segmented.chunks).reduce(
+    (total, [key, chunk]) =>
+      total + new TextEncoder().encode(key + JSON.stringify(chunk)).length,
+    0
+  )
+  assert.ok(
+    logical > BOOKMARK_OPLOG_MAX_TOTAL_BYTES,
+    "test data must exceed 100 KB of logical JSON to exercise the guard"
+  )
+  assert.ok(
+    segmented.bytes < BOOKMARK_OPLOG_MAX_TOTAL_BYTES,
+    "compressed payload must fit inside the Sync quota"
   )
 })
 
@@ -328,7 +405,10 @@ test("publishes independent actor streams atomically and reads their merged oper
 
   const merged = replayBookmarkOplog(await readBookmarkOplog())
   assert.deepEqual(
-    merged.tradesByFolder.get("shared").map(({ id }) => id).sort(),
+    merged.tradesByFolder
+      .get("shared")
+      .map(({ id }) => id)
+      .sort(),
     ["from-a", "from-b"]
   )
   assert.ok(stores.sync.has("bookmark-oplog--device-a--manifest"))
@@ -436,12 +516,13 @@ test("keeps independent folder changes from two devices during concurrent add, d
   )
 })
 
-
 test("keeps a local journal entry when a trade flush fails so it can retry", async () => {
   reset()
   const bookmarks = new BookmarksService()
   failSyncSet = (values) =>
-    Object.keys(values).some((key) => key.startsWith("bookmark-trades-chunk--failure-"))
+    Object.keys(values).some((key) =>
+      key.startsWith("bookmark-trades-chunk--failure-")
+    )
 
   await assert.rejects(bookmarks.persistTrades([trade("will-fail")], "failure"))
 
@@ -454,9 +535,11 @@ test("keeps a local journal entry when a trade flush fails so it can retry", asy
   )
   await bookmarks.flushPendingOperations()
   assert.deepEqual(
-    (await new BookmarksService().fetchTradesByFolderId("failure", {
-      force: true
-    })).map(({ id }) => id),
+    (
+      await new BookmarksService().fetchTradesByFolderId("failure", {
+        force: true
+      })
+    ).map(({ id }) => id),
     ["will-fail"]
   )
 })
@@ -465,7 +548,10 @@ test("creates new bookmarks without inheriting a category", async () => {
   reset()
   const bookmarks = new BookmarksService()
   await bookmarks.persistFolders([
-    { ...folder("created"), categories: [{ id: "category", title: "Category" }] }
+    {
+      ...folder("created"),
+      categories: [{ id: "category", title: "Category" }]
+    }
   ])
 
   const { id: _ignoredId, ...newTrade } = {
@@ -475,9 +561,9 @@ test("creates new bookmarks without inheriting a category", async () => {
   const id = await bookmarks.persistTrade(newTrade, "created")
 
   assert.equal(
-    (await bookmarks.fetchTradesByFolderId("created", { force: true }))
-      .find((entry) => entry.id === id)
-      .categoryId,
+    (await bookmarks.fetchTradesByFolderId("created", { force: true })).find(
+      (entry) => entry.id === id
+    ).categoryId,
     null
   )
 })
@@ -488,7 +574,9 @@ test("deduplicates repeated bookmark ids before publishing a folder", async () =
   await bookmarks.persistTrades([trade("same"), trade("same")], "dedupe")
 
   assert.deepEqual(
-    (await bookmarks.fetchTradesByFolderId("dedupe", { force: true })).map(({ id }) => id),
+    (await bookmarks.fetchTradesByFolderId("dedupe", { force: true })).map(
+      ({ id }) => id
+    ),
     ["same"]
   )
 })
@@ -497,17 +585,30 @@ test("moveTradeBetweenFolders carries a missing category into its target", async
   reset()
   const bookmarks = new BookmarksService()
   await bookmarks.persistFolders([
-    { ...folder("source"), categories: [{ id: "source-category", title: "Source" }] },
-    { ...folder("target"), categories: [{ id: "other-category", title: "Other" }] }
+    {
+      ...folder("source"),
+      categories: [{ id: "source-category", title: "Source" }]
+    },
+    {
+      ...folder("target"),
+      categories: [{ id: "other-category", title: "Other" }]
+    }
   ])
-  await bookmarks.persistTrades([{ ...trade("moved"), categoryId: "source-category" }], "source")
+  await bookmarks.persistTrades(
+    [{ ...trade("moved"), categoryId: "source-category" }],
+    "source"
+  )
   await bookmarks.persistTrades([], "target")
 
   await bookmarks.moveTradeBetweenFolders("moved", "source", "target")
 
-  assert.deepEqual(await bookmarks.fetchTradesByFolderId("source", { force: true }), [])
+  assert.deepEqual(
+    await bookmarks.fetchTradesByFolderId("source", { force: true }),
+    []
+  )
   assert.equal(
-    (await bookmarks.fetchTradesByFolderId("target", { force: true }))[0].categoryId,
+    (await bookmarks.fetchTradesByFolderId("target", { force: true }))[0]
+      .categoryId,
     "source-category"
   )
   assert.deepEqual(
@@ -521,14 +622,16 @@ test("moveTradeBetweenFolders carries a missing category into its target", async
 test("moveCategory uses the requested final visual index", async () => {
   reset()
   const bookmarks = new BookmarksService()
-  await bookmarks.persistFolders([{
-    ...folder("categories"),
-    categories: [
-      { id: "a", title: "A" },
-      { id: "b", title: "B" },
-      { id: "c", title: "C" }
-    ]
-  }])
+  await bookmarks.persistFolders([
+    {
+      ...folder("categories"),
+      categories: [
+        { id: "a", title: "A" },
+        { id: "b", title: "B" },
+        { id: "c", title: "C" }
+      ]
+    }
+  ])
 
   await bookmarks.moveCategory("categories", 0, 2)
 
@@ -542,7 +645,10 @@ test("rehydrates the final category transfer while its Sync flush is still publi
   reset()
   const bookmarks = new BookmarksService()
   await bookmarks.persistFolders([
-    { ...folder("source"), categories: [{ id: "moved-category", title: "Moved" }] },
+    {
+      ...folder("source"),
+      categories: [{ id: "moved-category", title: "Moved" }]
+    },
     folder("target")
   ])
   await bookmarks.persistTrades(
@@ -553,8 +659,12 @@ test("rehydrates the final category transfer while its Sync flush is still publi
 
   let entered
   let release
-  const enteredGate = new Promise((resolve) => { entered = resolve })
-  const releaseGate = new Promise((resolve) => { release = resolve })
+  const enteredGate = new Promise((resolve) => {
+    entered = resolve
+  })
+  const releaseGate = new Promise((resolve) => {
+    release = resolve
+  })
   let blocked = false
   syncSetGate = (_name, values) => {
     if (!blocked && "bookmark-trades-manifest--target" in values) {
@@ -573,11 +683,15 @@ test("rehydrates the final category transfer while its Sync flush is still publi
 
   const reloaded = new BookmarksService()
   assert.deepEqual(
-    (await reloaded.fetchTradesByFolderId("source", { force: true })).map(({ id }) => id),
+    (await reloaded.fetchTradesByFolderId("source", { force: true })).map(
+      ({ id }) => id
+    ),
     []
   )
   assert.deepEqual(
-    (await reloaded.fetchTradesByFolderId("target", { force: true })).map(({ id }) => id),
+    (await reloaded.fetchTradesByFolderId("target", { force: true })).map(
+      ({ id }) => id
+    ),
     ["moved"]
   )
 
@@ -590,7 +704,9 @@ test("rehydrates the final category transfer while its Sync flush is still publi
     []
   )
   assert.deepEqual(
-    (await completed.fetchTradesByFolderId("target", { force: true })).map(({ id }) => id),
+    (await completed.fetchTradesByFolderId("target", { force: true })).map(
+      ({ id }) => id
+    ),
     ["moved"]
   )
 })
@@ -636,7 +752,6 @@ test("moves a bookmark whose category assignment is still only in the local jour
   }
 })
 
-
 test("moves the only source trade into an empty target folder", async () => {
   reset()
   const bookmarks = new BookmarksService()
@@ -646,9 +761,14 @@ test("moves the only source trade into an empty target folder", async () => {
 
   await bookmarks.moveTradeBetweenFolders("only", "source", "target")
 
-  assert.deepEqual(await bookmarks.fetchTradesByFolderId("source", { force: true }), [])
   assert.deepEqual(
-    (await bookmarks.fetchTradesByFolderId("target", { force: true })).map(({ id }) => id),
+    await bookmarks.fetchTradesByFolderId("source", { force: true }),
+    []
+  )
+  assert.deepEqual(
+    (await bookmarks.fetchTradesByFolderId("target", { force: true })).map(
+      ({ id }) => id
+    ),
     ["only"]
   )
 })
@@ -660,13 +780,17 @@ test("retains a category when the exact destination category exists", async () =
     { ...folder("source"), categories: [{ id: "shared", title: "Shared" }] },
     { ...folder("target"), categories: [{ id: "shared", title: "Shared" }] }
   ])
-  await bookmarks.persistTrades([{ ...trade("categorized"), categoryId: "shared" }], "source")
+  await bookmarks.persistTrades(
+    [{ ...trade("categorized"), categoryId: "shared" }],
+    "source"
+  )
   await bookmarks.persistTrades([], "target")
 
   await bookmarks.moveTradeBetweenFolders("categorized", "source", "target")
 
   assert.equal(
-    (await bookmarks.fetchTradesByFolderId("target", { force: true }))[0].categoryId,
+    (await bookmarks.fetchTradesByFolderId("target", { force: true }))[0]
+      .categoryId,
     "shared"
   )
 })
@@ -678,14 +802,25 @@ test("rejects invalid cross-folder moves without changing either folder", async 
   await bookmarks.persistTrades([trade("present")], "source")
   await bookmarks.persistTrades([], "target")
 
-  await assert.rejects(bookmarks.moveTradeBetweenFolders("missing", "source", "target"))
-  await assert.rejects(bookmarks.moveTradeBetweenFolders("present", "source", "source"))
-  await assert.rejects(bookmarks.moveTradeBetweenFolders("present", "source", "target", -1))
+  await assert.rejects(
+    bookmarks.moveTradeBetweenFolders("missing", "source", "target")
+  )
+  await assert.rejects(
+    bookmarks.moveTradeBetweenFolders("present", "source", "source")
+  )
+  await assert.rejects(
+    bookmarks.moveTradeBetweenFolders("present", "source", "target", -1)
+  )
   await bookmarks.moveTradeBetweenFolders("present", "source", "target", 999)
 
-  assert.deepEqual(await bookmarks.fetchTradesByFolderId("source", { force: true }), [])
   assert.deepEqual(
-    (await bookmarks.fetchTradesByFolderId("target", { force: true })).map(({ id }) => id),
+    await bookmarks.fetchTradesByFolderId("source", { force: true }),
+    []
+  )
+  assert.deepEqual(
+    (await bookmarks.fetchTradesByFolderId("target", { force: true })).map(
+      ({ id }) => id
+    ),
     ["present"]
   )
 })
@@ -698,18 +833,28 @@ test("rolls back a cross-folder move when the target write fails", async () => {
   await bookmarks.persistTrades([], "target")
   let targetFailure = true
   failSyncSet = (values) =>
-    targetFailure && Object.keys(values).some((key) => key.startsWith("bookmark-trades-chunk--target"))
+    targetFailure &&
+    Object.keys(values).some((key) =>
+      key.startsWith("bookmark-trades-chunk--target")
+    )
       ? !(targetFailure = false)
       : false
 
-  await assert.rejects(bookmarks.moveTradeBetweenFolders("moved", "source", "target"))
+  await assert.rejects(
+    bookmarks.moveTradeBetweenFolders("moved", "source", "target")
+  )
 
   const reloaded = new BookmarksService()
   assert.deepEqual(
-    (await reloaded.fetchTradesByFolderId("source", { force: true })).map(({ id }) => id),
+    (await reloaded.fetchTradesByFolderId("source", { force: true })).map(
+      ({ id }) => id
+    ),
     ["moved"]
   )
-  assert.deepEqual(await reloaded.fetchTradesByFolderId("target", { force: true }), [])
+  assert.deepEqual(
+    await reloaded.fetchTradesByFolderId("target", { force: true }),
+    []
+  )
 })
 
 test("queued trade persistence cannot recreate chunks after deleting its folder", async () => {
@@ -718,11 +863,20 @@ test("queued trade persistence cannot recreate chunks after deleting its folder"
   await bookmarks.persistFolders([folder("queued")])
   let entered
   let release
-  const enteredGate = new Promise((resolve) => { entered = resolve })
-  const releaseGate = new Promise((resolve) => { release = resolve })
+  const enteredGate = new Promise((resolve) => {
+    entered = resolve
+  })
+  const releaseGate = new Promise((resolve) => {
+    release = resolve
+  })
   let blocked = false
   syncSetGate = (_name, values) => {
-    if (!blocked && Object.keys(values).some((key) => key.startsWith("bookmark-trades-chunk--queued"))) {
+    if (
+      !blocked &&
+      Object.keys(values).some((key) =>
+        key.startsWith("bookmark-trades-chunk--queued")
+      )
+    ) {
       blocked = true
       entered()
       return releaseGate
@@ -737,8 +891,10 @@ test("queued trade persistence cannot recreate chunks after deleting its folder"
   await deletion
 
   assert.ok(
-    ![...stores.sync.keys()].some((key) =>
-      key.startsWith("bookmark-trades-manifest--queued") || key.startsWith("bookmark-trades-chunk--queued")
+    ![...stores.sync.keys()].some(
+      (key) =>
+        key.startsWith("bookmark-trades-manifest--queued") ||
+        key.startsWith("bookmark-trades-chunk--queued")
     )
   )
 })
@@ -786,7 +942,10 @@ test("restores the visible folder when its Sync deletion fails", async () => {
   failSyncSet = null
   unsubscribe()
 
-  assert.deepEqual(visibleFolders.map(({ id }) => id), ["rollback"])
+  assert.deepEqual(
+    visibleFolders.map(({ id }) => id),
+    ["rollback"]
+  )
   assert.deepEqual(
     (await bookmarks.fetchFolders()).map(({ id }) => id),
     ["rollback"]
@@ -796,7 +955,10 @@ test("restores the visible folder when its Sync deletion fails", async () => {
 test("serializes rapid repeated persistence and remains usable after a failed write", async () => {
   reset()
   const bookmarks = new BookmarksService()
-  failSyncSet = (values) => Object.keys(values).some((key) => key.startsWith("bookmark-trades-chunk--rapid"))
+  failSyncSet = (values) =>
+    Object.keys(values).some((key) =>
+      key.startsWith("bookmark-trades-chunk--rapid")
+    )
   await assert.rejects(bookmarks.persistTrades([trade("failed")], "rapid"))
   failSyncSet = null
 
@@ -807,7 +969,9 @@ test("serializes rapid repeated persistence and remains usable after a failed wr
 
   const reloaded = new BookmarksService()
   assert.deepEqual(
-    (await reloaded.fetchTradesByFolderId("rapid", { force: true })).map(({ id }) => id),
+    (await reloaded.fetchTradesByFolderId("rapid", { force: true })).map(
+      ({ id }) => id
+    ),
     ["second"]
   )
 })

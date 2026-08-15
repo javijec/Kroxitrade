@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import layersIcon from "lucide-static/icons/layers-3.svg?raw";
   import { storageService } from "../../lib/services/storage";
-  import { bulkSellersService } from "../../lib/services/bulk-sellers";
+  import { bulkSellers } from "../../lib/services/bulk-sellers";
   import { flashMessages } from "../../lib/services/flash";
   import { languageStore, translate } from "../../lib/services/i18n";
   import Button from "../Button.svelte";
@@ -10,7 +10,6 @@
 
   const COLLAPSED_STORAGE_KEY = "bulk-sellers-collapsed";
   const VISITED_STORAGE_KEY = "bulk-sellers-visited";
-  const bulkSellers = bulkSellersService;
   let collapsedSellers: string[] = $state([]);
   let collapsedLookup = $derived(new Set(collapsedSellers));
   let visitedItems = $state(new Set<string>());
@@ -77,13 +76,13 @@
   });
 
   const findItem = (id: string) => {
-    if (!bulkSellersService.find(id)) {
+    if (!bulkSellers.find(id)) {
       flashMessages.alert(translate($languageStore, "bulk.findError"));
     }
   };
 
   const buyItem = (id: string) => {
-    if (!bulkSellersService.buy(id)) {
+    if (!bulkSellers.buy(id)) {
       flashMessages.alert(translate($languageStore, "bulk.buyError"));
     } else {
       visitedItems = new Set([...visitedItems, id]);
@@ -92,7 +91,7 @@
   };
 
   const refreshBulkSellers = () => {
-    bulkSellersService.refresh();
+    bulkSellers.refresh();
   };
 
   const getSellerPanelId = (seller: string) =>

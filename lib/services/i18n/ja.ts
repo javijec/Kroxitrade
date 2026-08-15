@@ -239,8 +239,10 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
     "フォルダー、保存済み検索、設定、拡張機能の設定を含むポータブルファイルを保存、または以前のファイルから復元します。",
   "bookmarks.saveFile": "バックアップ",
   "bookmarks.automaticSyncDescription":
-    "拡張機能の使用中は、ブックマークと設定が Chrome と自動的に同期されます。",
+    "拡張機能の使用中、ブックマークと設定は Chrome と自動的に同期されます。",
   "bookmarks.restoreFile": "ファイルから復元",
+  "bookmarks.lastSync": ({ date, time }) => `最終同期: ${date} ${time}`,
+  "bookmarks.lastSyncNever": "最終同期: なし",
   "history.clear": "履歴を消去",
   "history.cleared": "履歴を消去しました！",
   "history.empty": ({ version }) => `PoE ${version} の履歴は空です。`,

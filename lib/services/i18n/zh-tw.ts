@@ -389,8 +389,10 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
       "儲存一個含資料夾、已儲存搜尋、設定與擴充功能偏好的可攜檔案，或還原你先前匯出的檔案。",
     "bookmarks.saveFile": "備份",
     "bookmarks.automaticSyncDescription":
-      "使用擴充功能時，你的書籤和設定會自動與 Chrome 同步。",
+      "使用擴充功能時，書籤與設定會自動透過 Chrome 同步。",
     "bookmarks.restoreFile": "從檔案還原",
+    "bookmarks.lastSync": ({ date, time }) => `上次同步：${date} ${time}`,
+    "bookmarks.lastSyncNever": "上次同步：從未",
     "bookmarks.folderCopyTitle": ({ title }) => `${title}（複本）`,
     "confirm.cancel": "取消",
     "confirm.delete": "刪除",
