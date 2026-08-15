@@ -23,7 +23,10 @@
     openUrlInNewTab,
     openUrlInNewWindow
   } from "../lib/services/active-trade-tab"
-  import { saveBookmarkScroll } from "../lib/services/bookmark-scroll"
+  import {
+    consumeBookmarkScroll,
+    saveBookmarkScroll
+  } from "../lib/services/bookmark-scroll"
   import { bookmarksService } from "../lib/services/bookmarks"
   import {
     bookmarkFolderIconOptions,
@@ -165,8 +168,17 @@
   }
 
   const refreshTrades = async () => {
+    const top = scrollContainer?.scrollTop
+    if (typeof top === "number") {
+      await saveBookmarkScroll(top)
+    }
     hasLoadedTrades = false
     await loadTrades(true)
+    await tick()
+    const savedTop = (await consumeBookmarkScroll()) ?? top
+    if (scrollContainer && typeof savedTop === "number") {
+      scrollContainer.scrollTop = savedTop
+    }
   }
 
   const syncTradesFromCache = () => {
