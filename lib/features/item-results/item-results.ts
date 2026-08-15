@@ -2,29 +2,33 @@ import {
   poeNinjaService,
   type PoeNinjaCurrencyData,
   type PoeNinjaUniqueDivinePrices
-} from "../../services/poe-ninja";
-import { translate } from "../../services/i18n";
-import { tradeLocationService } from "../../services/trade-location";
-import { settings } from "../../services/settings";
-import { slugify } from "../../utilities/slugify";
-import { normalizeValdoRewardName } from "../../utilities/normalize-valdo-reward-name";
-import { emitPageDebug } from "../../utilities/page-debug";
-import { getCurrencyIconUrl } from "../../data/currency-icons";
-import { MAGEBLOOD_LEGACY_TEXTS } from "../../data/mageblood-legacy-texts";
+} from "../../services/poe-ninja.ts";
+import { translate } from "../../services/i18n.ts";
+import { tradeLocationService } from "../../services/trade-location.ts";
+import { settings } from "../../services/settings.ts";
+import { slugify } from "../../utilities/slugify.ts";
+import { normalizeValdoRewardName } from "../../utilities/normalize-valdo-reward-name.ts";
+import { emitPageDebug } from "../../utilities/page-debug.ts";
+import { getCurrencyIconUrl } from "../../data/currency-icons.ts";
+import { MAGEBLOOD_LEGACY_TEXTS } from "../../data/mageblood-legacy-texts.ts";
 import coeButtonImage from "../../../assets/coe-button.webp?inline";
-import { copyItemForPob } from "../../utilities/copy-item-for-pob";
+import { copyItemForPob } from "../../utilities/copy-item-for-pob.ts";
 import {
   buildCraftOfExileText,
   copyTextSynchronously,
   hasUnsupportedCraftOfExileMod
-} from "../../utilities/copy-item-for-craft-of-exile";
-import { flashMessages } from "../../services/flash";
-import { experimentalSettings } from "../../services/experimental";
-import { pinnedItemsService } from "../../services/pinned-items";
-import { isNativeChineseTradeSite } from "../../config/trade-hosts";
-import { extensionBus } from "../../core/extension-bus";
-import { tradeContext } from "../../core/trade-context";
-import { tradeDomObserver } from "../../core/trade-dom-observer";
+} from "../../utilities/copy-item-for-craft-of-exile.ts";
+import { flashMessages } from "../../services/flash.ts";
+import { experimentalSettings } from "../../services/experimental.ts";
+import { pinnedItemsService } from "../../services/pinned-items.ts";
+import { isNativeChineseTradeSite } from "../../config/trade-hosts.ts";
+import { extensionBus } from "../../core/extension-bus.ts";
+import { tradeContext } from "../../core/trade-context.ts";
+import { tradeDomObserver } from "../../core/trade-dom-observer.ts";
+import {
+  createFeatureLifecycle,
+  type FeatureLifecycle
+} from "../../core/feature-lifecycle.ts";
 import {
   explicitSeparator,
   flagsSeparator,
@@ -43,9 +47,9 @@ import {
   searchButton,
   socket,
   uniqueItemHeader
-} from "../../site-adapter/selectors/common";
-import { tradeDom } from "../../site-adapter/trade-dom";
-import { copyButton } from "../../site-adapter/selectors/poe2";
+} from "../../site-adapter/selectors/common.ts";
+import { tradeDom } from "../../site-adapter/trade-dom.ts";
+import { copyButton } from "../../site-adapter/selectors/poe2.ts";
 import {
   MAGEBLOOD_DUPLICATE_FIELD,
   MAGEBLOOD_DUPLICATE_PATTERN,
@@ -62,9 +66,9 @@ import {
   getMagebloodLegacyLocale,
   normalizeMagebloodLegacyKey,
   titleCaseLegacyName
-} from "./mageblood-legacy";
-import { CHAOS_SLUG, extractPriceInfo, referenceSlugs, resolveCurrencySlug } from "./price-info";
-import { extractValdoRewardName } from "./valdo-reward";
+} from "./mageblood-legacy.ts";
+import { CHAOS_SLUG, extractPriceInfo, referenceSlugs, resolveCurrencySlug } from "./price-info.ts";
+import { extractValdoRewardName } from "./valdo-reward.ts";
 import pinIcon from "lucide-static/icons/pin.svg?raw";
 import pinOffIcon from "lucide-static/icons/pin-off.svg?raw";
 
@@ -88,21 +92,26 @@ const isEnglishTradeHost = () => {
   return host === "www.pathofexile.com" || host === "pathofexile.com";
 };
 
+export interface ItemResultsFeature extends FeatureLifecycle {
+  forceRefreshEquivalentPricing(): Promise<void>
+}
 
+export const createItemResults = (): ItemResultsFeature => {
+  let currencyData: PoeNinjaCurrencyData | null = null;
+  let valdoUniqueDivinePrices: PoeNinjaUniqueDivinePrices | null = null;
+  let valdoPriceRequest: Promise<void> | null = null;
+  let showEquivalentPricing = false;
+  let showValdoRewardPricing = false;
+  let showMagebloodLegacyDescriptions = false;
+  let showPinnedItems = false;
+  let unsubscribeSettings: (() => void) | null = null;
+  let unsubscribeLocation: (() => void) | null = null;
+  const postSearchRefreshDelays = [80, 220, 500, 900];
+  let searchRefreshTimers: number[] = [];
+  let unsubscribeObserver: (() => void) | null = null;
+  let unsubscribeExperimental: (() => void) | null = null;
 
-export class ItemResultsService {
-  private currencyData: PoeNinjaCurrencyData | null = null;
-  private valdoUniqueDivinePrices: PoeNinjaUniqueDivinePrices | null = null;
-  private valdoPriceRequest: Promise<void> | null = null;
-  private showEquivalentPricing = false;
-  private showValdoRewardPricing = false;
-  private showMagebloodLegacyDescriptions = false;
-  private showPinnedItems = false;
-  private unsubscribeSettings: (() => void) | null = null;
-  private unsubscribeLocation: (() => void) | null = null;
-  private readonly postSearchRefreshDelays = [80, 220, 500, 900];
-  private searchRefreshTimers: number[] = [];
-  private readonly handleDocumentClick = (event: MouseEvent) => {
+  const handleDocumentClick = (event: MouseEvent) => {
     const target = event.target as Element | null;
     const clickedCopyButton = target?.closest<HTMLButtonElement>(copyButton);
     const coeButton = target?.closest<HTMLButtonElement>("button.bt-copy-coe");
@@ -144,7 +153,7 @@ export class ItemResultsService {
         ? buildCraftOfExileText(row, experimentalSettings.isCoeDesecratedModsEnabled())
         : null;
       if (text && copyTextSynchronously(text)) {
-        this.showCopyFeedback("Item copied for Craft of Exile.");
+        showCopyFeedback("Item copied for Craft of Exile.");
       } else {
         flashMessages.alert("Could not copy this item for Craft of Exile.");
       }
@@ -161,7 +170,7 @@ export class ItemResultsService {
 
       const row = clickedCopyButton.closest<HTMLElement>(resultRowAncestor);
       if (row && copyItemForPob(row)) {
-        this.showCopyFeedback("Item text copied.");
+        showCopyFeedback("Item text copied.");
       } else {
         flashMessages.alert("Could not copy this item for Path of Building.");
       }
@@ -169,99 +178,17 @@ export class ItemResultsService {
     }
 
     if (!target?.closest(searchButton)) return;
-    this.schedulePostSearchRefresh();
+    schedulePostSearchRefresh();
   };
-  private readonly handleExperimentalChange = () => {
-    this.enhanceResults();
+  const handleExperimentalChange = () => {
+    enhanceResults();
   };
 
-  async initialize() {
-    emitPageDebug("item-results-initialize", {
-      href: window.location.href
-    });
-    if (window.location.protocol === "chrome-extension:") {
-      return;
-    }
+  const showCopyFeedback = (toastMessage: string) => {
+    showItemCopiedToast(toastMessage);
+  };
 
-    await settings.load();
-    this.showEquivalentPricing = settings.getCurrent().showEquivalentPricing;
-    this.showValdoRewardPricing =
-      settings.getCurrent().showValdoRewardPricing && !isNativeChineseTradeSite();
-    this.showMagebloodLegacyDescriptions = settings.getCurrent().showMagebloodLegacyDescriptions;
-    this.showPinnedItems = settings.getCurrent().showPinnedItems;
-    this.unsubscribeSettings?.();
-    this.unsubscribeSettings = settings.subscribe((value) => {
-      const changed = this.showEquivalentPricing !== value.showEquivalentPricing;
-      const nextValdoRewardPricing =
-        value.showValdoRewardPricing && !isNativeChineseTradeSite();
-      const valdoChanged = this.showValdoRewardPricing !== nextValdoRewardPricing;
-      const magebloodChanged =
-        this.showMagebloodLegacyDescriptions !== value.showMagebloodLegacyDescriptions;
-      const pinsChanged = this.showPinnedItems !== value.showPinnedItems;
-      this.showEquivalentPricing = value.showEquivalentPricing;
-      this.showValdoRewardPricing = nextValdoRewardPricing;
-      this.showMagebloodLegacyDescriptions = value.showMagebloodLegacyDescriptions;
-      this.showPinnedItems = value.showPinnedItems;
-      if (changed) {
-        this.refreshEquivalentPricing();
-      }
-      if (valdoChanged) {
-        if (this.showValdoRewardPricing) {
-          void this.fetchValdoRewardPrices().then(() => {
-            this.refreshValdoRewardPricing();
-            this.schedulePostSearchRefresh();
-          });
-        } else {
-          this.refreshValdoRewardPricing();
-        }
-      }
-      if (magebloodChanged) {
-        this.refreshMagebloodLegacyDescriptions();
-      }
-      if (pinsChanged) {
-        this.refreshPinButtons();
-      }
-    });
-    this.unsubscribeLocation?.();
-    this.unsubscribeLocation = tradeLocationService.onChange(() => {
-      void this.handleLocationChange();
-    });
-    
-    try {
-      await this.fetchRatios();
-    } catch (e) {
-      console.error("[Poe Trade Plus] Failed to fetch ratios from poe.ninja:", e);
-    }
-
-    this.startObserving();
-    document.removeEventListener("click", this.handleDocumentClick, true);
-    document.addEventListener("click", this.handleDocumentClick, true);
-    this.unsubscribeExperimental?.();
-    this.unsubscribeExperimental = extensionBus.on(
-      "item-results:experimental-change",
-      this.handleExperimentalChange
-    );
-  }
-
-  teardown() {
-    this.unsubscribeSettings?.();
-    this.unsubscribeSettings = null;
-    this.unsubscribeLocation?.();
-    this.unsubscribeLocation = null;
-    this.unsubscribeExperimental?.();
-    this.unsubscribeExperimental = null;
-    this.unsubscribeObserver?.();
-    this.unsubscribeObserver = null;
-    this.searchRefreshTimers.forEach((timer) => window.clearTimeout(timer));
-    this.searchRefreshTimers = [];
-    document.removeEventListener("click", this.handleDocumentClick, true);
-  }
-
-  private showCopyFeedback(toastMessage: string) {
-    this.showItemCopiedToast(toastMessage);
-  }
-
-  private showItemCopiedToast(message: string) {
+  const showItemCopiedToast = (message: string) => {
     document.querySelector(".poe-toast-trade.bt-item-copied-toast")?.remove();
 
     let container = document.body.querySelector<HTMLElement>(
@@ -318,31 +245,31 @@ export class ItemResultsService {
         }
       }, 180);
     }, 1500);
-  }
+  };
 
-  private async handleLocationChange() {
+  const handleLocationChange = async () => {
     pinnedItemsService.clear();
-    this.valdoUniqueDivinePrices = null;
-    this.valdoPriceRequest = null;
+    valdoUniqueDivinePrices = null;
+    valdoPriceRequest = null;
 
     try {
-      await this.fetchRatios();
+      await fetchRatios();
     } catch (e) {
       console.error("[Poe Trade Plus] Failed to refresh ratios after location change:", e);
     }
 
-    this.schedulePostSearchRefresh();
-    this.refreshEquivalentPricing();
-  }
+    schedulePostSearchRefresh();
+    refreshEquivalentPricing();
+  };
 
 
 
-  private async fetchRatios(forceFresh = false) {
+  const fetchRatios = async (forceFresh = false) => {
     const { league, type, slug, version } = tradeLocationService.current;
 
     if (!league) {
-      this.currencyData = null;
-      this.valdoUniqueDivinePrices = null;
+      currencyData = null;
+      valdoUniqueDivinePrices = null;
       emitPageDebug("poe-ninja-skip", {
         reason: "missing-league",
         league,
@@ -358,52 +285,52 @@ export class ItemResultsService {
       slug,
       forceFresh
     });
-    this.currencyData = forceFresh
+    currencyData = forceFresh
       ? await poeNinjaService.fetchFreshCurrencyDataFor(league, version)
       : await poeNinjaService.fetchCurrencyDataFor(league, version);
 
-    if (this.showValdoRewardPricing && version === "1") {
-      await this.fetchValdoRewardPrices();
+    if (showValdoRewardPricing && version === "1") {
+      await fetchValdoRewardPrices();
     }
-  }
+  };
 
-  async forceRefreshEquivalentPricing() {
-    await this.fetchRatios(true);
-    this.refreshEquivalentPricing();
-  }
+  const forceRefreshEquivalentPricing = async () => {
+    await fetchRatios(true);
+    refreshEquivalentPricing();
+  };
 
-  private async fetchValdoRewardPrices() {
+  const fetchValdoRewardPrices = async () => {
     if (tradeLocationService.current.version !== "1" || !tradeLocationService.current.league) {
-      this.valdoUniqueDivinePrices = null;
+      valdoUniqueDivinePrices = null;
       return;
     }
-    if (this.valdoUniqueDivinePrices) return;
-    if (this.valdoPriceRequest) return this.valdoPriceRequest;
+    if (valdoUniqueDivinePrices) return;
+    if (valdoPriceRequest) return valdoPriceRequest;
 
     const { league } = tradeLocationService.current;
     const request = poeNinjaService
       .fetchUniqueDivinePricesFor(league)
       .then((prices) => {
         if (tradeLocationService.current.version === "1" && tradeLocationService.current.league === league) {
-          this.valdoUniqueDivinePrices = prices;
+          valdoUniqueDivinePrices = prices;
         }
       })
       .catch((error) => {
         console.error("[Poe Trade Plus] Failed to fetch Valdo reward prices from poe.ninja:", error);
         if (tradeLocationService.current.version === "1" && tradeLocationService.current.league === league) {
-          this.valdoUniqueDivinePrices = null;
+          valdoUniqueDivinePrices = null;
         }
       })
       .finally(() => {
-        if (this.valdoPriceRequest === request) {
-          this.valdoPriceRequest = null;
+        if (valdoPriceRequest === request) {
+          valdoPriceRequest = null;
         }
       });
-    this.valdoPriceRequest = request;
+    valdoPriceRequest = request;
     return request;
-  }
+  };
 
-  private injectEquivalentPricing(row: HTMLElement) {
+  const injectEquivalentPricing = (row: HTMLElement) => {
     const priceInfo = extractPriceInfo(row);
     if (!priceInfo) {
       return;
@@ -411,13 +338,13 @@ export class ItemResultsService {
 
     const { container: priceContainer, amount, currencyText } = priceInfo;
 
-    if (!this.currencyData) {
-      this.removeEquivalentPricing(row);
+    if (!currencyData) {
+      removeEquivalentPricing(row);
       return;
     }
 
     if (!currencyText || isNaN(amount)) {
-      this.removeEquivalentPricing(row);
+      removeEquivalentPricing(row);
       emitPageDebug("equivalent-missing-details", {
         currency: currencyText,
         amount,
@@ -428,14 +355,14 @@ export class ItemResultsService {
     }
 
     const slug = resolveCurrencySlug(currencyText);
-    const pricedCurrency = this.currencyData[slug];
+    const pricedCurrency = currencyData[slug];
     if (!pricedCurrency) {
-      this.removeEquivalentPricing(row);
+      removeEquivalentPricing(row);
       emitPageDebug("equivalent-unresolved", {
         amount,
         currencyText,
         slug,
-        availableSample: Object.keys(this.currencyData).slice(0, 10)
+        availableSample: Object.keys(currencyData).slice(0, 10)
       });
       return;
     }
@@ -445,7 +372,7 @@ export class ItemResultsService {
     const parts = referenceSlugs[version]
       .filter((referenceSlug) => referenceSlug !== slug)
       .flatMap((referenceSlug) => {
-        const reference = this.currencyData?.[referenceSlug];
+        const reference = currencyData?.[referenceSlug];
         if (!reference?.value) return [];
 
         const equivalent = valueInPrimary / reference.value;
@@ -458,7 +385,7 @@ export class ItemResultsService {
       });
 
     if (parts.length === 0) {
-      this.removeEquivalentPricing(row);
+      removeEquivalentPricing(row);
       return;
     }
 
@@ -468,13 +395,13 @@ export class ItemResultsService {
       slug,
       parts
     });
-    this.renderEquivalentPricing(priceContainer, parts);
-  }
+    renderEquivalentPricing(priceContainer, parts);
+  };
 
-  private renderEquivalentPricing(
+  const renderEquivalentPricing = (
     container: HTMLElement,
     parts: Array<{ amount: number | string; slug: string; icon: string }>
-  ) {
+  ) => {
     let el = container.querySelector(".bt-equivalent-pricings-equivalent") as HTMLElement | null;
     if (!el) {
       el = document.createElement("span");
@@ -483,20 +410,20 @@ export class ItemResultsService {
     }
 
     el.replaceChildren();
-    el.appendChild(this.createTextSpan("bt-equivalent-label", "equivalent:"));
+    el.appendChild(createTextSpan("bt-equivalent-label", "equivalent:"));
 
     parts.forEach((part, index) => {
       if (index > 0) {
-        el!.appendChild(this.createTextSpan("bt-equivalent-separator", "="));
+        el!.appendChild(createTextSpan("bt-equivalent-separator", "="));
       }
-      el!.appendChild(this.createCurrencyFragment(part.amount, part.slug, part.icon));
+      el!.appendChild(createCurrencyFragment(part.amount, part.slug, part.icon));
     });
-    this.syncEquivalentVisibility(el!);
-  }
+    syncEquivalentVisibility(el!);
+  };
 
-  private createCurrencyFragment(amount: number | string, slug: string, iconUrl: string) {
+  const createCurrencyFragment = (amount: number | string, slug: string, iconUrl: string) => {
     const fragment = document.createDocumentFragment();
-    fragment.appendChild(this.createTextSpan("bt-equivalent-amount", String(amount)));
+    fragment.appendChild(createTextSpan("bt-equivalent-amount", String(amount)));
 
     const icon = document.createElement("img");
     icon.className = "bt-equivalent-icon currency-icon";
@@ -505,45 +432,45 @@ export class ItemResultsService {
     fragment.appendChild(icon);
 
     return fragment;
-  }
+  };
 
-  private createTextSpan(className: string, text: string) {
+  const createTextSpan = (className: string, text: string) => {
     const span = document.createElement("span");
     span.className = className;
     span.textContent = text;
     return span;
-  }
+  };
 
-  private removeEquivalentPricing(row: HTMLElement) {
+  const removeEquivalentPricing = (row: HTMLElement) => {
     row.querySelectorAll(".bt-equivalent-pricings-equivalent").forEach((el) => el.remove());
-  }
+  };
 
-  private injectValdoRewardPricing(row: HTMLElement) {
-    if (!this.showValdoRewardPricing || tradeLocationService.current.version !== "1") {
-      this.removeValdoRewardPricing(row);
+  const injectValdoRewardPricing = (row: HTMLElement) => {
+    if (!showValdoRewardPricing || tradeLocationService.current.version !== "1") {
+      removeValdoRewardPricing(row);
       return;
     }
 
     const rewardName = extractValdoRewardName(row);
     const priceInfo = extractPriceInfo(row);
-    if (!rewardName || !priceInfo || !this.valdoUniqueDivinePrices || !this.currencyData) {
-      this.removeValdoRewardPricing(row);
+    if (!rewardName || !priceInfo || !valdoUniqueDivinePrices || !currencyData) {
+      removeValdoRewardPricing(row);
       return;
     }
 
-    const rewardValue = this.valdoUniqueDivinePrices[slugify(normalizeValdoRewardName(rewardName))];
-    const divineValue = this.currencyData["divine-orb"]?.value;
-    const priceCurrency = this.currencyData[resolveCurrencySlug(priceInfo.currencyText)]?.value;
+    const rewardValue = valdoUniqueDivinePrices[slugify(normalizeValdoRewardName(rewardName))];
+    const divineValue = currencyData["divine-orb"]?.value;
+    const priceCurrency = currencyData[resolveCurrencySlug(priceInfo.currencyText)]?.value;
     if (rewardValue === undefined || !divineValue || !priceCurrency || !Number.isFinite(priceInfo.amount)) {
-      this.removeValdoRewardPricing(row);
+      removeValdoRewardPricing(row);
       return;
     }
 
     const mapCostInDivines = (priceInfo.amount * priceCurrency) / divineValue;
-    this.renderValdoRewardPricing(priceInfo.container, rewardValue, rewardValue - mapCostInDivines);
-  }
+    renderValdoRewardPricing(priceInfo.container, rewardValue, rewardValue - mapCostInDivines);
+  };
 
-  private renderValdoRewardPricing(container: HTMLElement, rewardValue: number, profit: number) {
+  const renderValdoRewardPricing = (container: HTMLElement, rewardValue: number, profit: number) => {
     let element = container.querySelector<HTMLElement>(".bt-valdo-reward-pricing");
     if (!element) {
       element = document.createElement("span");
@@ -553,87 +480,84 @@ export class ItemResultsService {
     const language = settings.getCurrent().language;
     const format = (value: number) => Math.round(value * 10) / 10;
     const formattedProfit = format(profit);
-    const divineIcon = this.currencyData?.["divine-orb"]?.icon || getCurrencyIconUrl("divine");
+    const divineIcon = currencyData?.["divine-orb"]?.icon || getCurrencyIconUrl("divine");
     element.replaceChildren(
-      this.createTextSpan("bt-valdo-reward-label", `${translate(language, "results.valdoReward")} `),
-      this.createCurrencyFragment(format(rewardValue), "divine-orb", divineIcon),
-      this.createTextSpan(
+      createTextSpan("bt-valdo-reward-label", `${translate(language, "results.valdoReward")} `),
+      createCurrencyFragment(format(rewardValue), "divine-orb", divineIcon),
+      createTextSpan(
         `bt-valdo-profit ${formattedProfit >= 0 ? "is-positive" : "is-negative"}`,
         ` ${translate(language, "results.valdoProfit")} `
       ),
-      this.createCurrencyFragment(
+      createCurrencyFragment(
         `${formattedProfit >= 0 ? "+" : ""}${formattedProfit}`,
         "divine-orb",
         divineIcon
       )
     );
-  }
+  };
 
-  private removeValdoRewardPricing(row: HTMLElement) {
+  const removeValdoRewardPricing = (row: HTMLElement) => {
     row.querySelectorAll(".bt-valdo-reward-pricing").forEach((element) => element.remove());
-  }
+  };
 
-  private syncEquivalentVisibility(element: HTMLElement) {
-    const isHidden = !this.showEquivalentPricing;
+  const syncEquivalentVisibility = (element: HTMLElement) => {
+    const isHidden = !showEquivalentPricing;
     element.classList.toggle("is-hidden", isHidden);
     element.toggleAttribute("hidden", isHidden);
     element.style.display = isHidden ? "none" : "block";
     element.setAttribute("aria-hidden", String(isHidden));
-  }
+  };
 
-  private unsubscribeObserver: (() => void) | null = null;
-  private unsubscribeExperimental: (() => void) | null = null;
-
-  private startObserving() {
-    this.unsubscribeObserver?.();
-    this.unsubscribeObserver = tradeDomObserver.subscribe({
+  const startObserving = () => {
+    unsubscribeObserver?.();
+    unsubscribeObserver = tradeDomObserver.subscribe({
       id: "item-results",
       selector: resultsContainer,
       debounceMs: 100,
-      handler: () => this.enhanceResults()
+      handler: () => enhanceResults()
     });
-  }
+  };
 
-  private schedulePostSearchRefresh() {
-    this.searchRefreshTimers.forEach((timer) => window.clearTimeout(timer));
-    this.searchRefreshTimers = this.postSearchRefreshDelays.map((delay) =>
-      window.setTimeout(() => this.enhanceResults(), delay)
+  const schedulePostSearchRefresh = () => {
+    searchRefreshTimers.forEach((timer) => window.clearTimeout(timer));
+    searchRefreshTimers = postSearchRefreshDelays.map((delay) =>
+      window.setTimeout(() => enhanceResults(), delay)
     );
-  }
+  };
 
-  private enhanceResults() {
+  const enhanceResults = () => {
     // Current trade site uses .result-item, but some pages or versions use .row.
     // Re-run equivalent pricing on every visible result because the trade site can recycle DOM nodes between searches.
     const results = tradeDom.getItemResultRows();
     results.forEach((row: Element) => {
       const typedRow = row as HTMLElement;
-      this.enablePoe2CopyButton(typedRow);
-      this.syncCoeButton(typedRow);
-      this.syncWikiButton(typedRow);
-      this.syncPoedbButton(typedRow);
-      this.injectEquivalentPricing(typedRow);
-      this.injectValdoRewardPricing(typedRow);
-       this.enhanceMagebloodLegacy(typedRow);
-       this.syncPinButton(typedRow);
+      enablePoe2CopyButton(typedRow);
+      syncCoeButton(typedRow);
+      syncWikiButton(typedRow);
+      syncPoedbButton(typedRow);
+      injectEquivalentPricing(typedRow);
+      injectValdoRewardPricing(typedRow);
+      enhanceMagebloodLegacy(typedRow);
+      syncPinButton(typedRow);
       if (typedRow.hasAttribute("bt-enhanced")) {
         return;
       }
 
       typedRow.setAttribute("bt-enhanced", "true");
-      this.checkMaximumSockets(typedRow);
+      checkMaximumSockets(typedRow);
     });
-  }
+  };
 
-  private enablePoe2CopyButton(row: HTMLElement) {
+  const enablePoe2CopyButton = (row: HTMLElement) => {
     if (tradeLocationService.current.version !== "2") return;
 
     const rowCopyButton = row.querySelector<HTMLButtonElement>(copyButton);
     if (!rowCopyButton) return;
 
     experimentalSettings.applyPoe2CopyButton(rowCopyButton);
-  }
+  };
 
-  private syncCoeButton(row: HTMLElement) {
+  const syncCoeButton = (row: HTMLElement) => {
     const left = row.querySelector<HTMLElement>(".left");
     if (!left) return;
 
@@ -645,8 +569,8 @@ export class ItemResultsService {
     }
 
     if (button) {
-      this.syncCoeButtonUnsupportedState(button, row);
-      if (searchByButton) this.positionCoeButton(button, searchByButton);
+      syncCoeButtonUnsupportedState(button, row);
+      if (searchByButton) positionCoeButton(button, searchByButton);
       return;
     }
 
@@ -654,8 +578,8 @@ export class ItemResultsService {
     button.type = "button";
     button.className = "bt-copy-coe";
     button.setAttribute("aria-label", "Copy for Craft of Exile");
-    this.syncCoeButtonUnsupportedState(button, row);
-    
+    syncCoeButtonUnsupportedState(button, row);
+
     const image = document.createElement("img");
     image.src = coeButtonImage;
     image.alt = "";
@@ -663,15 +587,15 @@ export class ItemResultsService {
     button.appendChild(image);
     if (searchByButton) {
       searchByButton.insertAdjacentElement("afterend", button);
-      this.positionCoeButton(button, searchByButton);
+      positionCoeButton(button, searchByButton);
     } else {
       left.appendChild(button);
     }
-  }
+  };
 
-  private syncPinButton(row: HTMLElement) {
+  const syncPinButton = (row: HTMLElement) => {
     const existingButton = row.querySelector<HTMLButtonElement>("button.bt-pin-button");
-    if (!this.showPinnedItems) {
+    if (!showPinnedItems) {
       existingButton?.remove();
       row.classList.remove("bt-pinned");
       row.removeAttribute("data-bt-pin-id");
@@ -707,7 +631,7 @@ export class ItemResultsService {
           pricingHtml: row.querySelector<HTMLElement>(itemPrice)?.outerHTML || ""
         });
         console.debug("[Poe Trade Plus] Pin toggled", { currentId });
-        this.syncPinButton(row);
+        syncPinButton(row);
       }, true);
       left.appendChild(button);
     }
@@ -718,22 +642,22 @@ export class ItemResultsService {
     button.title = label;
     button.setAttribute("aria-label", label);
     row.dataset.btPinId = id;
-  }
+  };
 
-  private refreshPinButtons() {
+  const refreshPinButtons = () => {
     tradeDom
       .getItemResultRows()
-      .forEach((row) => this.syncPinButton(row));
-  }
+      .forEach((row) => syncPinButton(row));
+  };
 
-  private syncWikiButton(row: HTMLElement) {
+  const syncWikiButton = (row: HTMLElement) => {
     const left = row.querySelector<HTMLElement>(".left");
     if (!left) return;
 
     const existingButton = left.querySelector<HTMLButtonElement>("button.bt-open-wiki");
     const searchByButton = left.querySelector<HTMLButtonElement>("button.searchBy");
     const wikiUrl = experimentalSettings.isWikiVisible() && isEnglishTradeHost()
-      ? this.getItemWikiUrl(row)
+      ? getItemWikiUrl(row)
       : null;
 
     if (!wikiUrl) {
@@ -758,20 +682,20 @@ export class ItemResultsService {
       if (!button.isConnected) {
         (coeButton || searchByButton).insertAdjacentElement("afterend", button);
       }
-      this.positionResultActionButton(button, searchByButton, coeButton ? 1 : 0);
+      positionResultActionButton(button, searchByButton, coeButton ? 1 : 0);
     } else if (!button.isConnected) {
       left.appendChild(button);
     }
-  }
+  };
 
-  private syncPoedbButton(row: HTMLElement) {
+  const syncPoedbButton = (row: HTMLElement) => {
     const left = row.querySelector<HTMLElement>(".left")
     if (!left) return
 
     const existingButton = left.querySelector<HTMLButtonElement>("button.bt-open-poedb")
     const searchByButton = left.querySelector<HTMLButtonElement>("button.searchBy")
     const poedbUrl = experimentalSettings.isWikiVisible() && isEnglishTradeHost()
-      ? this.getItemPoedbUrl(row)
+      ? getItemPoedbUrl(row)
       : null
 
     if (!poedbUrl) {
@@ -797,24 +721,24 @@ export class ItemResultsService {
       if (!button.isConnected) {
         ;(wikiButton || coeButton || searchByButton).insertAdjacentElement("afterend", button)
       }
-      this.positionResultActionButton(button, searchByButton, index)
+      positionResultActionButton(button, searchByButton, index)
     } else if (!button.isConnected) {
       left.appendChild(button)
     }
-  }
+  };
 
-  private getItemPoedbUrl(row: HTMLElement) {
-    const name = this.getExternalItemName(row)
+  const getItemPoedbUrl = (row: HTMLElement) => {
+    const name = getExternalItemName(row)
     if (!name || tradeLocationService.current.version !== "1") return null
 
     const pageName = encodeURIComponent(
       name.replace(/['’]/g, "").replace(/\s+/g, "_")
     )
     return `https://poedb.tw/us/${pageName}`
-  }
+  };
 
-  private getItemWikiUrl(row: HTMLElement) {
-    const name = this.getExternalItemName(row)
+  const getItemWikiUrl = (row: HTMLElement) => {
+    const name = getExternalItemName(row)
     if (!name) return null
 
     const baseUrl = tradeLocationService.current.version === "2"
@@ -822,9 +746,9 @@ export class ItemResultsService {
       : "https://www.poewiki.net/wiki/"
     const pageName = encodeURIComponent(name.replace(/\s+/g, "_")).replace(/'/g, "%27")
     return `${baseUrl}${pageName}`
-  }
+  };
 
-  private getExternalItemName(row: HTMLElement) {
+  const getExternalItemName = (row: HTMLElement) => {
     const header = row.querySelector<HTMLElement>(uniqueItemHeader)
     const name = header
       ?.querySelector<HTMLElement>(itemPopupHeaderLine)
@@ -833,22 +757,22 @@ export class ItemResultsService {
 
     if (!name) return null;
     return name
-  }
+  };
 
-  private syncCoeButtonUnsupportedState(button: HTMLButtonElement, row: HTMLElement) {
+  const syncCoeButtonUnsupportedState = (button: HTMLButtonElement, row: HTMLElement) => {
     const unsupported = hasUnsupportedCraftOfExileMod(row);
     button.classList.toggle("bt-copy-coe--disabled", unsupported);
     button.setAttribute("aria-disabled", unsupported ? "true" : "false");
     button.title = unsupported
       ? "Craft of Exile can't import this item yet (Prefix/Suffix Modifier mods)."
       : "Copy for Craft of Exile";
-  }
+  };
 
-  private positionCoeButton(button: HTMLButtonElement, searchByButton: HTMLButtonElement) {
-    this.positionResultActionButton(button, searchByButton, 0);
-  }
+  const positionCoeButton = (button: HTMLButtonElement, searchByButton: HTMLButtonElement) => {
+    positionResultActionButton(button, searchByButton, 0);
+  };
 
-  private positionResultActionButton(button: HTMLButtonElement, searchByButton: HTMLButtonElement, index: number) {
+  const positionResultActionButton = (button: HTMLButtonElement, searchByButton: HTMLButtonElement, index: number) => {
     const searchStyle = window.getComputedStyle(searchByButton);
     const searchLeft = Number.parseFloat(searchStyle.left);
     const searchWidth = Number.parseFloat(searchStyle.width);
@@ -864,25 +788,25 @@ export class ItemResultsService {
       button.style.top = searchStyle.top;
       button.style.bottom = "auto";
     }
-  }
+  };
 
-  private refreshEquivalentPricing() {
+  const refreshEquivalentPricing = () => {
     const results = tradeDom.getItemResultRows();
-    results.forEach((row) => this.injectEquivalentPricing(row as HTMLElement));
-  }
+    results.forEach((row) => injectEquivalentPricing(row as HTMLElement));
+  };
 
-  private refreshValdoRewardPricing() {
+  const refreshValdoRewardPricing = () => {
     const results = tradeDom.getItemResultRows();
-    results.forEach((row) => this.injectValdoRewardPricing(row as HTMLElement));
-  }
+    results.forEach((row) => injectValdoRewardPricing(row as HTMLElement));
+  };
 
-  private enhanceMagebloodLegacy(row: HTMLElement) {
-    if (!this.showMagebloodLegacyDescriptions) {
-      this.removeMagebloodLegacyDescriptions(row);
+  const enhanceMagebloodLegacy = (row: HTMLElement) => {
+    if (!showMagebloodLegacyDescriptions) {
+      removeMagebloodLegacyDescriptions(row);
       return;
     }
 
-    this.removeMagebloodLegacyDescriptions(row);
+    removeMagebloodLegacyDescriptions(row);
 
     const legacies: MagebloodLegacy[] = [];
     const duplicateMods: HTMLElement[] = [];
@@ -946,36 +870,36 @@ export class ItemResultsService {
     legacies.forEach(({ mod }) => mod.classList.add(MAGEBLOOD_LEGACY_CLASS));
 
     if (!row.querySelector(`.${MAGEBLOOD_EXPLANATIONS_CLASS}`)) {
-      const explanationAnchor = this.findMagebloodExplanationAnchor(row, legacies);
+      const explanationAnchor = findMagebloodExplanationAnchor(row, legacies);
       const fragment = document.createDocumentFragment();
       fragment.appendChild(
-        this.buildMagebloodLegacyExplanations(counts, displayTitles, multiplier, increasedEffect)
+        buildMagebloodLegacyExplanations(counts, displayTitles, multiplier, increasedEffect)
       );
 
       explanationAnchor?.after(fragment);
     }
-  }
+  };
 
-  private removeMagebloodLegacyDescriptions(row: HTMLElement) {
+  const removeMagebloodLegacyDescriptions = (row: HTMLElement) => {
     row
       .querySelectorAll(`.${MAGEBLOOD_EXPLANATIONS_CLASS}`)
       .forEach((element) => element.remove());
     row
       .querySelectorAll(`.${MAGEBLOOD_LEGACY_CLASS}`)
       .forEach((element) => element.classList.remove(MAGEBLOOD_LEGACY_CLASS));
-  }
+  };
 
-  private createMagebloodDiv(className: string, text?: string) {
+  const createMagebloodDiv = (className: string, text?: string) => {
     const el = document.createElement("div");
     el.className = className;
     if (text !== undefined) el.textContent = text;
     return el;
-  }
+  };
 
-  private findMagebloodExplanationAnchor(
+  const findMagebloodExplanationAnchor = (
     row: HTMLElement,
     legacies: MagebloodLegacy[]
-  ) {
+  ) => {
     const content = row.querySelector<HTMLElement>(itemPopupContent) || row;
     const flagsHr = content.querySelector<HTMLHRElement>(flagsSeparator);
     if (flagsHr) {
@@ -998,15 +922,15 @@ export class ItemResultsService {
     }
 
     return legacies[legacies.length - 1]?.mod || content.lastElementChild;
-  }
+  };
 
-  private buildMagebloodLegacyExplanations(
+  const buildMagebloodLegacyExplanations = (
     counts: Record<string, number>,
     displayTitles: Record<string, string>,
     multiplier: number,
     increasedEffect: number
-  ) {
-    const container = this.createMagebloodDiv(MAGEBLOOD_EXPLANATIONS_CLASS);
+  ) => {
+    const container = createMagebloodDiv(MAGEBLOOD_EXPLANATIONS_CLASS);
     const locale = getMagebloodLegacyLocale();
     const legacyTexts = MAGEBLOOD_LEGACY_TEXTS[locale] || MAGEBLOOD_LEGACY_TEXTS.en;
     const baseLabel = getMagebloodLegacyBaseLabel(locale);
@@ -1057,16 +981,16 @@ export class ItemResultsService {
     });
 
     return container;
-  }
+  };
 
-  private refreshMagebloodLegacyDescriptions() {
+  const refreshMagebloodLegacyDescriptions = () => {
     const results = tradeDom.getItemResultRows();
-    results.forEach((row) => this.enhanceMagebloodLegacy(row as HTMLElement));
-  }
+    results.forEach((row) => enhanceMagebloodLegacy(row as HTMLElement));
+  };
 
 
 
-  private checkMaximumSockets(row: HTMLElement) {
+  const checkMaximumSockets = (row: HTMLElement) => {
     if (tradeLocationService.current.version !== "1") return;
 
     const ilvlEl = row.querySelector(itemLevelField);
@@ -1103,9 +1027,97 @@ export class ItemResultsService {
             rendered.prepend(warning);
         }
     }
-  }
+  };
 
+  const feature = createFeatureLifecycle("item-results", () => {
+    emitPageDebug("item-results-initialize", {
+      href: window.location.href
+    });
 
-}
+    void (async () => {
+      if (window.location.protocol === "chrome-extension:") {
+        return;
+      }
 
-export const itemResultsService = new ItemResultsService();
+      await settings.load();
+      showEquivalentPricing = settings.getCurrent().showEquivalentPricing;
+      showValdoRewardPricing =
+        settings.getCurrent().showValdoRewardPricing && !isNativeChineseTradeSite();
+      showMagebloodLegacyDescriptions = settings.getCurrent().showMagebloodLegacyDescriptions;
+      showPinnedItems = settings.getCurrent().showPinnedItems;
+      unsubscribeSettings?.();
+      unsubscribeSettings = settings.subscribe((value) => {
+        const changed = showEquivalentPricing !== value.showEquivalentPricing;
+        const nextValdoRewardPricing =
+          value.showValdoRewardPricing && !isNativeChineseTradeSite();
+        const valdoChanged = showValdoRewardPricing !== nextValdoRewardPricing;
+        const magebloodChanged =
+          showMagebloodLegacyDescriptions !== value.showMagebloodLegacyDescriptions;
+        const pinsChanged = showPinnedItems !== value.showPinnedItems;
+        showEquivalentPricing = value.showEquivalentPricing;
+        showValdoRewardPricing = nextValdoRewardPricing;
+        showMagebloodLegacyDescriptions = value.showMagebloodLegacyDescriptions;
+        showPinnedItems = value.showPinnedItems;
+        if (changed) {
+          refreshEquivalentPricing();
+        }
+        if (valdoChanged) {
+          if (showValdoRewardPricing) {
+            void fetchValdoRewardPrices().then(() => {
+              refreshValdoRewardPricing();
+              schedulePostSearchRefresh();
+            });
+          } else {
+            refreshValdoRewardPricing();
+          }
+        }
+        if (magebloodChanged) {
+          refreshMagebloodLegacyDescriptions();
+        }
+        if (pinsChanged) {
+          refreshPinButtons();
+        }
+      });
+      unsubscribeLocation?.();
+      unsubscribeLocation = tradeLocationService.onChange(() => {
+        void handleLocationChange();
+      });
+
+      try {
+        await fetchRatios();
+      } catch (e) {
+        console.error("[Poe Trade Plus] Failed to fetch ratios from poe.ninja:", e);
+      }
+
+      startObserving();
+      document.removeEventListener("click", handleDocumentClick, true);
+      document.addEventListener("click", handleDocumentClick, true);
+      unsubscribeExperimental?.();
+      unsubscribeExperimental = extensionBus.on(
+        "item-results:experimental-change",
+        handleExperimentalChange
+      );
+    })();
+
+    return () => {
+      unsubscribeSettings?.();
+      unsubscribeSettings = null;
+      unsubscribeLocation?.();
+      unsubscribeLocation = null;
+      unsubscribeExperimental?.();
+      unsubscribeExperimental = null;
+      unsubscribeObserver?.();
+      unsubscribeObserver = null;
+      searchRefreshTimers.forEach((timer) => window.clearTimeout(timer));
+      searchRefreshTimers = [];
+      document.removeEventListener("click", handleDocumentClick, true);
+    };
+  });
+
+  return {
+    ...feature,
+    forceRefreshEquivalentPricing
+  };
+};
+
+export const itemResults = createItemResults();

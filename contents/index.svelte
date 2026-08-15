@@ -1,7 +1,8 @@
 <script lang="ts">
   import Layout from "~components/Layout.svelte"
-  import { pageTitleService } from "~lib/services/page-title"
-  import { itemResultsService } from "~lib/features/item-results"
+  import { pageTitle } from "~lib/services/page-title"
+  import { itemResults } from "~lib/features/item-results"
+  import { bulkSellers } from "~lib/services/bulk-sellers"
   import { settings } from "~lib/services/settings"
   import { hasValidExtensionContext, isExtensionContextInvalidatedError } from "~lib/utilities/extension-context"
   import { escapeCssAttributeValue } from "~lib/utilities/css"
@@ -15,19 +16,11 @@
     extraLarge: "1.34"
   } as const
 
-  let bulkSellersEnabled = false
-  let bulkSellersStop: (() => void) | null = null
-
-  async function ensureBulkSellers(enabled: boolean) {
-    bulkSellersEnabled = enabled
-    if (enabled && !bulkSellersStop) {
-      const { bulkSellersService } = await import("~lib/services/bulk-sellers")
-      if (!bulkSellersEnabled) return
-      bulkSellersService.initialize()
-      bulkSellersStop = () => bulkSellersService.teardown()
-    } else if (!enabled && bulkSellersStop) {
-      bulkSellersStop()
-      bulkSellersStop = null
+  function ensureBulkSellers(enabled: boolean) {
+    if (enabled) {
+      bulkSellers.start()
+    } else {
+      bulkSellers.stop()
     }
   }
 
@@ -46,13 +39,13 @@
     document.documentElement.classList.add("bt-has-kroxitrade-sidebar")
     document.body.classList.add("bt-has-kroxitrade-sidebar")
 
-    pageTitleService.initialize()
-    void itemResultsService.initialize()
-    void ensureBulkSellers(settings.getCurrent().showBulkSellers)
+    pageTitle.start()
+    void itemResults.start()
+    ensureBulkSellers(settings.getCurrent().showBulkSellers)
 
     const unsubscribeSettings = settings.subscribe((value) => {
       applyTextSize(value.textSize)
-      void ensureBulkSellers(value.showBulkSellers)
+      ensureBulkSellers(value.showBulkSellers)
     })
 
     const handleMessage = (request: { query?: string; itemId?: string }) => {
@@ -84,12 +77,10 @@
     }
 
     return () => {
-      bulkSellersEnabled = false
-      bulkSellersStop?.()
-      bulkSellersStop = null
+      bulkSellers.stop()
       unsubscribeSettings()
-      itemResultsService.teardown()
-      pageTitleService.teardown()
+      itemResults.stop()
+      pageTitle.stop()
       if (hasValidExtensionContext()) {
         try {
           chrome.runtime.onMessage.removeListener(handleMessage)

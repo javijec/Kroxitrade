@@ -10,7 +10,7 @@
     wikiButtonSetting
   } from "../../lib/services/experimental";
   import { flashMessages } from "../../lib/services/flash";
-  import { itemResultsService } from "../../lib/features/item-results";
+  import { itemResults } from "../../lib/features/item-results";
   import {
     chineseTradeMessage,
     chineseTradePageStorageFor,
@@ -245,7 +245,7 @@
 
     isRefreshingEquivalentRatios = true;
     try {
-      await itemResultsService.forceRefreshEquivalentPricing();
+      await itemResults.forceRefreshEquivalentPricing();
       flashMessages.success(
         translate($languageStore, "settings.equivalentRefreshSuccess", { league })
       );

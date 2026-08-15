@@ -1,107 +1,112 @@
-import { bookmarksService } from "./bookmarks";
-import { searchPanelService } from "./search-panel";
-import { tradeLocationService } from "./trade-location";
+// Page title manager — keeps the browser tab title in sync with the trade
+// search's active bookmark or fallback name, and restores it after the site
+// overwrites it. Lives as a feature with an explicit start()/stop() lifecycle
+// so the sidebar can mount/unmount it without leaking listeners.
 
-const WOOP_PREFIX_REGEX = /^\((\d+)\) /;
-const TITLE_MUTATION_THROTTLE_MS = 250;
-const TITLE_RECOVERY_MS = 500;
+import { createFeatureLifecycle, type FeatureLifecycle } from "../core/feature-lifecycle"
+import { bookmarksService } from "./bookmarks"
+import { searchPanelService } from "./search-panel"
+import { tradeLocationService } from "./trade-location"
 
-export class PageTitleService {
-  private baseSiteTitle: string = "";
-  private lastWoopCount: number | null = null;
-  private title: string | null = null;
-  private observer: MutationObserver | null = null;
-  private throttleTimer: ReturnType<typeof setTimeout> | null = null;
-  private unsubscribeBookmarks: (() => void) | null = null;
-  private unsubscribeLocation: (() => void) | null = null;
+const WOOP_PREFIX_REGEX = /^\((\d+)\) /
+const TITLE_MUTATION_THROTTLE_MS = 250
 
-  initialize() {
-    const titleElement = document.querySelector("title");
-    if (!titleElement) return;
+export const createPageTitle = (): FeatureLifecycle =>
+  createFeatureLifecycle("page-title", () => {
+    const stops: Array<() => void> = []
+    let baseSiteTitle = ""
+    let lastWoopCount: number | null = null
+    let title: string | null = null
+    let throttleTimer: ReturnType<typeof setTimeout> | null = null
 
-    this.baseSiteTitle = document.title;
+    const titleElement = document.querySelector("title")
+    if (!titleElement) return () => {}
 
-    // Observe title mutations (the trade site resets the title frequently)
-    this.observer = new MutationObserver(() => this.throttledTitleMutation());
-    this.observer.observe(titleElement, { childList: true });
+    baseSiteTitle = document.title
 
-    // Recalculate on bookmark or location changes
-    this.unsubscribeBookmarks?.();
-    this.unsubscribeLocation?.();
-    this.unsubscribeBookmarks = bookmarksService.onChange(() => void this.recalculateTitle());
-    this.unsubscribeLocation = tradeLocationService.onChange(() => void this.recalculateTitle());
-
-    void this.recalculateTitle();
-  }
-
-  teardown() {
-    this.observer?.disconnect();
-    this.observer = null;
-    if (this.throttleTimer) {
-      clearTimeout(this.throttleTimer);
-      this.throttleTimer = null;
-    }
-    this.unsubscribeBookmarks?.();
-    this.unsubscribeBookmarks = null;
-    this.unsubscribeLocation?.();
-    this.unsubscribeLocation = null;
-  }
-
-  private throttledTitleMutation() {
-    if (this.throttleTimer) return;
-    this.throttleTimer = setTimeout(() => {
-      this.throttleTimer = null;
-      this.onDocumentTitleMutation();
-    }, TITLE_MUTATION_THROTTLE_MS);
-  }
-
-  private async recalculateTitle() {
-    const currentLocation = tradeLocationService.current;
-    const activeBookmark = await bookmarksService.fetchTradeByLocation(currentLocation);
-
-    let activeTradeTitle = "";
-    if (activeBookmark) {
-      activeTradeTitle = activeBookmark.title;
-    } else if (currentLocation.type === "search") {
-      activeTradeTitle = searchPanelService.recommendTitle() || "";
+    const updateTitle = () => {
+      if (title === null) return
+      const woopPrefix = lastWoopCount !== null ? `(${lastWoopCount}) ` : ""
+      const newTitle = woopPrefix + title
+      if (document.title !== newTitle) {
+        document.title = newTitle
+      }
     }
 
-    const isLiveSegment = currentLocation.isLive ? "⚡ " : "";
-    const tradeTitleSegment = activeTradeTitle ? `${activeTradeTitle} - ` : "";
-
-    this.title = `${isLiveSegment}${tradeTitleSegment}${this.baseSiteTitle}`;
-    this.updateTitle();
-  }
-
-  private updateTitle() {
-    if (this.title === null) return;
-
-    const woopPrefix = this.lastWoopCount !== null ? `(${this.lastWoopCount}) ` : "";
-    const newTitle = woopPrefix + this.title;
-    if (document.title !== newTitle) {
-      document.title = newTitle;
+    const parseWoopCount = (input: string): number | null => {
+      const match = WOOP_PREFIX_REGEX.exec(input)
+      if (match) {
+        const parsed = parseInt(match[1], 10)
+        return isNaN(parsed) ? null : parsed
+      }
+      return null
     }
-  }
 
-  private parseWoopCount(title: string): number | null {
-    const match = WOOP_PREFIX_REGEX.exec(title);
-    if (match) {
-      const parsed = parseInt(match[1], 10);
-      return isNaN(parsed) ? null : parsed;
+    const onDocumentTitleMutation = () => {
+      const newWoopCount = parseWoopCount(document.title)
+      if (newWoopCount !== lastWoopCount) {
+        lastWoopCount = newWoopCount
+        updateTitle()
+      } else if (
+        title &&
+        document.title !== title &&
+        !document.title.startsWith("(")
+      ) {
+        // Site reset the title but no new woop: force our title back.
+        updateTitle()
+      }
     }
-    return null;
-  }
 
-  private onDocumentTitleMutation() {
-    const newWoopCount = this.parseWoopCount(document.title);
-    if (newWoopCount !== this.lastWoopCount) {
-      this.lastWoopCount = newWoopCount;
-      this.updateTitle();
-    } else if (this.title && document.title !== this.title && !document.title.startsWith("(")) {
-      // If the site reset the title but there's no new woop, force our title back
-      this.updateTitle();
+    const throttledTitleMutation = () => {
+      if (throttleTimer) return
+      throttleTimer = setTimeout(() => {
+        throttleTimer = null
+        onDocumentTitleMutation()
+      }, TITLE_MUTATION_THROTTLE_MS)
     }
-  }
-}
 
-export const pageTitleService = new PageTitleService();
+    const recalculateTitle = async () => {
+      const currentLocation = tradeLocationService.current
+      const activeBookmark = await bookmarksService.fetchTradeByLocation(currentLocation)
+
+      let activeTradeTitle = ""
+      if (activeBookmark) {
+        activeTradeTitle = activeBookmark.title
+      } else if (currentLocation.type === "search") {
+        activeTradeTitle = searchPanelService.recommendTitle() || ""
+      }
+
+      const isLiveSegment = currentLocation.isLive ? "⚡ " : ""
+      const tradeTitleSegment = activeTradeTitle ? `${activeTradeTitle} - ` : ""
+
+      title = `${isLiveSegment}${tradeTitleSegment}${baseSiteTitle}`
+      updateTitle()
+    }
+
+    const observer = new MutationObserver(() => throttledTitleMutation())
+    observer.observe(titleElement, { childList: true })
+    stops.push(() => {
+      observer.disconnect()
+      if (throttleTimer) {
+        clearTimeout(throttleTimer)
+        throttleTimer = null
+      }
+    })
+
+    const unsubscribeBookmarks = bookmarksService.onChange(() =>
+      void recalculateTitle()
+    )
+    const unsubscribeLocation = tradeLocationService.onChange(() =>
+      void recalculateTitle()
+    )
+    stops.push(() => {
+      unsubscribeBookmarks()
+      unsubscribeLocation()
+    })
+
+    void recalculateTitle()
+
+    return () => stops.forEach((stop) => stop())
+  })
+
+export const pageTitle = createPageTitle()
