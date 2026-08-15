@@ -1,16 +1,11 @@
+// The tradeFilters adapter is the only public surface of the Vue-backed
+// filter backend. Tests assert the adapter's behaviour end-to-end so the
+// internal Vue helpers in site-adapter/trade-filters.ts stay unexported.
+
 import assert from "node:assert/strict"
 import test from "node:test"
 
-const {
-  createFilter,
-  getItemResultPanel,
-  getStatFilterGroups,
-  hasTradeVueApp,
-  pushStatGroup,
-  refreshResults,
-  saveSearch,
-  tradeFilters
-} = await import("../lib/site-adapter/trade-filters.ts")
+const { tradeFilters } = await import("../lib/site-adapter/trade-filters.ts")
 
 const buildApp = () => {
   const calls = []
@@ -81,93 +76,12 @@ const setWindow = (value) => {
   globalThis.window = value
 }
 
-test("hasTradeVueApp reflects window.app presence", () => {
+test("tradeFilters.isAvailable mirrors window.app presence", () => {
   setWindow({})
-  assert.equal(hasTradeVueApp(), false)
+  assert.equal(tradeFilters.isAvailable(), false)
   setWindow({ app: {} })
-  assert.equal(hasTradeVueApp(), true)
-})
-
-test("getStatFilterGroups traverses the Vue tree and filters by type", () => {
-  const { app, groups } = buildApp()
-  setWindow({ app })
-
-  assert.deepEqual(getStatFilterGroups(), groups)
-  assert.deepEqual(getStatFilterGroups("and"), [groups[0], groups[1]])
-  assert.deepEqual(getStatFilterGroups("not"), [groups[2]])
-})
-
-test("getStatFilterGroups returns an empty list without window.app", () => {
+  assert.equal(tradeFilters.isAvailable(), true)
   setWindow({})
-  assert.deepEqual(getStatFilterGroups(), [])
-  assert.deepEqual(getStatFilterGroups("and"), [])
-})
-
-test("getItemResultPanel finds the results panel with its search method", () => {
-  const { app, resultPanel } = buildApp()
-  setWindow({ app })
-  assert.equal(getItemResultPanel(), resultPanel)
-})
-
-test("getItemResultPanel returns undefined without window.app", () => {
-  setWindow({})
-  assert.equal(getItemResultPanel(), undefined)
-})
-
-test("createFilter builds a disabled-less stat filter and stays falsy for empty ids", () => {
-  assert.deepEqual(createFilter("total_life"), {
-    id: "total_life",
-    value: {},
-    disabled: false
-  })
-  assert.equal(createFilter(""), "")
-})
-
-test("pushStatGroup commits through the Vue store", () => {
-  const { app, calls } = buildApp()
-  setWindow({ app })
-
-  const filter = createFilter("total_fire_resistance")
-  pushStatGroup("not", [filter])
-
-  assert.deepEqual(calls.at(-1), {
-    method: "store.commit",
-    mutation: "pushStatGroup",
-    payload: { type: "not", filters: [filter] }
-  })
-})
-
-test("pushStatGroup is a no-op without a store commit handler", () => {
-  setWindow({ app: { $store: {} } })
-  assert.doesNotThrow(() => pushStatGroup("and", [createFilter("life")]))
-})
-
-test("saveSearch triggers the app save and refreshResults the results panel", () => {
-  const { app, calls } = buildApp()
-  setWindow({ app })
-
-  saveSearch()
-  refreshResults()
-
-  assert.deepEqual(calls.at(-2), { method: "app.save", reload: true })
-  assert.deepEqual(calls.at(-1), { method: "panel.search" })
-})
-
-test("saveSearch and refreshResults are safe without window.app", () => {
-  setWindow({})
-  assert.doesNotThrow(saveSearch)
-  assert.doesNotThrow(refreshResults)
-})
-
-test("filter groups expose the mutation methods features rely on", () => {
-  const { app, groups } = buildApp()
-  setWindow({ app })
-
-  const andGroup = getStatFilterGroups("and").find((group) => group.index === 0)
-  assert.ok(andGroup?.selectFilter)
-  assert.ok(andGroup?.updateFilter)
-  assert.ok(andGroup?.removeFilter)
-  assert.ok(andGroup?.filters.some((filter) => filter.id === "life"))
 })
 
 test("tradeFilters.getFilters maps Vue groups into feature-facing views", () => {
@@ -182,13 +96,24 @@ test("tradeFilters.getFilters maps Vue groups into feature-facing views", () => 
     filters: [{ id: "life", value: { min: 0 } }]
   })
   assert.deepEqual(views[1], { index: 1, type: "and", filters: [] })
+  setWindow({})
 })
 
-test("tradeFilters.isAvailable mirrors window.app presence", () => {
+test("tradeFilters.getFilters only returns the requested type", () => {
+  const { app } = buildApp()
+  setWindow({ app })
+
+  assert.equal(tradeFilters.getFilters("and").length, 2)
+  assert.equal(tradeFilters.getFilters("not").length, 1)
+  assert.equal(tradeFilters.getFilters("and")[0].type, "and")
+  assert.equal(tradeFilters.getFilters("not")[0].type, "not")
   setWindow({})
-  assert.equal(tradeFilters.isAvailable(), false)
-  setWindow({ app: {} })
-  assert.equal(tradeFilters.isAvailable(), true)
+})
+
+test("tradeFilters.getFilters returns empty arrays without window.app", () => {
+  setWindow({})
+  assert.deepEqual(tradeFilters.getFilters(), [])
+  assert.deepEqual(tradeFilters.getFilters("and"), [])
 })
 
 test("tradeFilters.addFilter targets the first non-zero group by default", () => {
@@ -200,6 +125,7 @@ test("tradeFilters.addFilter targets the first non-zero group by default", () =>
     method: "and1.selectFilter",
     id: "total_fire_resistance"
   })
+  setWindow({})
 })
 
 test("tradeFilters.addFilter can target an explicit group", () => {
@@ -212,9 +138,10 @@ test("tradeFilters.addFilter can target an explicit group", () => {
     method: "and0.selectFilter",
     id: "total_fire_resistance"
   })
+  setWindow({})
 })
 
-test("tradeFilters.addFilter falls back to pushStatGroup without a group", () => {
+test("tradeFilters.addFilter falls back to the store commit when no group is available", () => {
   const { app, calls } = buildApp()
   setWindow({ app })
   app.$children[0].$children[0].$children = []
@@ -228,6 +155,7 @@ test("tradeFilters.addFilter falls back to pushStatGroup without a group", () =>
       filters: [{ id: "total_fire_resistance", value: {}, disabled: false }]
     }
   })
+  setWindow({})
 })
 
 test("tradeFilters.updateFilter and removeFilter act on the live group", () => {
@@ -244,6 +172,7 @@ test("tradeFilters.updateFilter and removeFilter act on the live group", () => {
 
   tradeFilters.removeFilter(and0, 0)
   assert.deepEqual(calls.at(-1), { method: "and0.removeFilter", index: 0 })
+  setWindow({})
 })
 
 test("tradeFilters.updateFilter and removeFilter are safe without a live group", () => {
@@ -269,4 +198,16 @@ test("tradeFilters.save and refresh delegate to the site backend", () => {
 
   assert.deepEqual(calls.at(-2), { method: "app.save", reload: true })
   assert.deepEqual(calls.at(-1), { method: "panel.search" })
+  setWindow({})
+})
+
+test("tradeFilters.save and refresh are safe without window.app", () => {
+  setWindow({})
+  assert.doesNotThrow(() => tradeFilters.save())
+  assert.doesNotThrow(() => tradeFilters.refresh())
+})
+
+test("tradeFilters.addFilter is safe without a store commit handler", () => {
+  setWindow({ app: { $store: {} } })
+  assert.doesNotThrow(() => tradeFilters.addFilter("life", "and"))
 })

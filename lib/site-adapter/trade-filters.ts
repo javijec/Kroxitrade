@@ -8,13 +8,13 @@
 // Trade site as a plain TradeFiltersAdapter and keeps every Vue concept out of
 // the feature layer.
 
-export interface PoeFilter {
+interface PoeFilter {
   id: string
   value: Record<string, number | undefined>
   disabled: boolean
 }
 
-export interface PoeVueFilterGroup extends PoeVueNode {
+interface PoeVueFilterGroup extends PoeVueNode {
   index: number
   type: "and" | "not"
   filters: PoeFilter[]
@@ -60,12 +60,10 @@ const findVueItem = (tags: string[]): PoeVueNode | undefined =>
     getGlobalApp()
   )
 
-export const getItemResultPanel = (): PoeVueResultPanel | undefined =>
+const getItemResultPanel = (): PoeVueResultPanel | undefined =>
   findVueItem(["item-results-panel"]) as PoeVueResultPanel | undefined
 
-export const getStatFilterGroups = (
-  type?: "and" | "not"
-): PoeVueFilterGroup[] => {
+const getStatFilterGroups = (type?: "and" | "not"): PoeVueFilterGroup[] => {
   const panel = findVueItem(["item-search-panel", "item-filter-panel"])
   return (panel?.$children?.filter(
     (child) =>
@@ -74,21 +72,21 @@ export const getStatFilterGroups = (
   ) || []) as PoeVueFilterGroup[]
 }
 
-export const createFilter = (id: string): PoeFilter | "" =>
+const createFilter = (id: string): PoeFilter | "" =>
   id ? { id, value: {}, disabled: false } : ""
 
-export const pushStatGroup = (
+const pushStatGroup = (
   type: "and" | "not",
   filters: Array<PoeFilter | "">
 ) => {
   getGlobalApp()?.$store?.commit?.("pushStatGroup", { type, filters })
 }
 
-export const hasTradeVueApp = () => !!getGlobalApp()
+const hasTradeVueApp = () => !!getGlobalApp()
 
-export const saveSearch = () => getGlobalApp()?.save?.(true)
+const saveSearch = () => getGlobalApp()?.save?.(true)
 
-export const refreshResults = () => getItemResultPanel()?.search?.()
+const refreshResults = () => getItemResultPanel()?.search?.()
 
 // ---------------------------------------------------------------------------
 // Feature-facing adapter. Features never touch PoeVue* or window.app; they work
