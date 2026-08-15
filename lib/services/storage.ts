@@ -643,6 +643,14 @@ export class StorageService {
       mutations.forEach((mutation) => mutation.reject(error))
     }
   }
+
+  getLastSyncAt(): number | null {
+    if (typeof window === "undefined") return null
+    const raw = window.localStorage.getItem(LAST_SYNC_TIMESTAMP_KEY)
+    if (!raw) return null
+    const parsed = Number(raw)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+  }
 }
 
 export const storageService = StorageService.getInstance()
@@ -671,11 +679,3 @@ const installLastSyncTracker = () => {
 }
 
 installLastSyncTracker()
-
-export const getLastSyncAt = (): number | null => {
-  if (typeof window === "undefined") return null
-  const raw = window.localStorage.getItem(LAST_SYNC_TIMESTAMP_KEY)
-  if (!raw) return null
-  const parsed = Number(raw)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-}
