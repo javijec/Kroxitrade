@@ -752,6 +752,11 @@
 
   const createTradeFromCurrent = async () => {
     if (!folder.id) return
+    if (draftTrade) {
+      tradeEditInputEl?.focus()
+      tradeEditInputEl?.select()
+      return
+    }
     const current = tradeLocationService.current
     if (!current.slug) {
       flashMessages.alert(translate($languageStore, "folder.invalidTradePage"))
@@ -774,11 +779,14 @@
         .replace(" - Path of Exile", "")
         .replace(/⚡ /g, "") ||
       translate($languageStore, "folder.tradeFallback")
-    await bookmarksService.persistTrade(trade, folder.id)
-    await refreshTrades()
-    flashMessages.success(
-      translate($languageStore, "folder.addedToFolder", { title: trade.title })
-    )
+
+    editingTradeId = null
+    draftTrade = trade
+    tradeEditTitle = trade.title
+
+    await tick()
+    tradeEditInputEl?.focus()
+    tradeEditInputEl?.select()
   }
 
   type TradeOpenTarget = "active" | "tab" | "window"
@@ -962,9 +970,12 @@
   let tradeEditTitle = $state("")
   let tradeEditInputEl: HTMLInputElement | null = $state(null)
   let savingTradeId: string | null = null
+  let draftTrade: BookmarksTradeStruct | null = $state(null)
+  let isCommittingDraft = false
 
   const startEditingTrade = async (trade: BookmarksTradeStruct) => {
     if (!trade.id) return
+    draftTrade = null
     editingTradeId = trade.id
     tradeEditTitle = trade.title
     await tick()
@@ -992,6 +1003,33 @@
 
   const cancelTradeEdit = () => {
     editingTradeId = null
+  }
+
+  const cancelDraftTrade = () => {
+    draftTrade = null
+  }
+
+  const commitDraftTrade = async () => {
+    if (!draftTrade || !folder.id || isCommittingDraft) return
+    const pendingTrade = draftTrade
+    const title = tradeEditTitle.trim() || pendingTrade.title
+
+    isCommittingDraft = true
+    try {
+      // `persistTrade` only appends when the trade has no id, so the draft must
+      // stay id-less until the service assigns one.
+      await bookmarksService.persistTrade(
+        { ...pendingTrade, id: undefined, title },
+        folder.id
+      )
+      cancelDraftTrade()
+      await refreshTrades()
+      flashMessages.success(
+        translate($languageStore, "folder.addedToFolder", { title })
+      )
+    } finally {
+      isCommittingDraft = false
+    }
   }
 
   const openTradeFromCard = (
@@ -1077,6 +1115,7 @@
       trades = []
       hasLoadedTrades = false
       isLoading = false
+      cancelDraftTrade()
     }
   });
   $effect(() => {
@@ -1528,6 +1567,28 @@
               </li>
             {/if}
           {/each}
+          {#if draftTrade}
+            <li>
+              <div class="trade-item">
+                <div class="trade-content">
+                  <div class="trade-top">
+                    <input
+                      type="text"
+                      class="inline-edit-input trade-edit"
+                      aria-label={translate($languageStore, "folder.saveCurrentSearch")}
+                      bind:this={tradeEditInputEl}
+                      bind:value={tradeEditTitle}
+                      onblur={cancelDraftTrade}
+                      onkeydown={(event) => {
+                        event.stopPropagation()
+                        if (event.key === "Enter") void commitDraftTrade()
+                        if (event.key === "Escape") cancelDraftTrade()
+                      }} />
+                  </div>
+                </div>
+              </div>
+            </li>
+          {/if}
         </ul>
         {#if !previewTrades}
           <div class="footer-actions">
