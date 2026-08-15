@@ -1,5 +1,6 @@
 import { tradeContext } from "../core/trade-context"
 import {
+  buyoutPriceInputs,
   filterProperty,
   filterTitle,
   multiselect,
@@ -132,7 +133,7 @@ const findBuyoutFilterStructural = () => {
         `${multiselect} ${multiselectInput}`
       )
       const priceInputs = filter.querySelectorAll<HTMLInputElement>(
-        "input.minmax, input[placeholder]"
+        buyoutPriceInputs
       )
       return hasCurrencyMultiselect && priceInputs.length >= 2
     }) || null

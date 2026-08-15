@@ -49,6 +49,50 @@ export const searchButton = ".btn.search-btn"
 export const directBuyButton =
   "button.direct-btn, .direct-btn, button.btn.direct-btn"
 
+export const resultRowId = "[data-id]"
+export const resultRowAncestor = ".row, .result-item"
+export const modElement = ".item-mod"
+export const uniqueItemPopup = ".item-popup--unique"
+export const compactResults = ".results.compact"
+
+export const itemPopup = ".item-popup"
+export const itemPopupHeaderLine = ".item-popup__header-line"
+export const itemPopupContent = ".item-popup__content"
+export const uniqueItemHeader =
+  ".item-popup__header--unique, .item-popup__header--gem"
+export const itemTitleLine = ".itemName .itemHeader, .item-popup__header-line"
+export const itemTitleCandidates = [
+  ".itemName",
+  ".itemHeader .name",
+  ".itemHeader .title",
+  ".itemHeader .lprice .title",
+  ".item-popup__header",
+  ".item-popup__header-line",
+  ".details .itemName",
+  ".details .title",
+  ".details h3",
+  ".header .title"
+] as const
+export const itemDetails = ".details"
+export const sellerName = "span.profile-link a, .profile-link a, .account-name"
+export const pinnedItemDetails = ".itemPopupContainer, .item-popup"
+
+export const itemPrice = '[data-field="price"], .price'
+export const itemPriceIcon =
+  '[data-field="price"] img, .price img.currency-icon, .price img'
+export const priceNote = ".price-note, .note"
+export const priceInfo =
+  '[data-field="price"], .details .price, .itemHeader .lprice, .price'
+export const priceCurrency =
+  '[data-field="price"] .currency-text span, .currency-text span, .currency-text'
+export const buyoutPriceInputs = "input.minmax, input[placeholder]"
+
+export const modStatField = '[data-field^="stat."]'
+export const qualityDataField = '[data-field="quality"]'
+export const itemLevelDataField = '[data-field="ilvl"]'
+export const flagsSeparator = 'hr[name="flags"]'
+export const explicitSeparator = 'hr[name="explicit"]'
+
 export const itemLevelField =
   '.item-property [data-field="ilvl"], [data-field="ilvl"], .itemLevel'
 export const socket = ".sockets .socket"

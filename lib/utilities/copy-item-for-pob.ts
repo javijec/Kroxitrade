@@ -1,3 +1,5 @@
+import { itemPopup } from "../site-adapter/selectors/common";
+
 const EXCLUDED_FROM_COPY_SELECTOR = [
   "#btns-finer",
   ".finer-filtered-overlay",
@@ -6,12 +8,12 @@ const EXCLUDED_FROM_COPY_SELECTOR = [
 ].join(", ");
 
 export const copyItemForPob = (row: HTMLElement): boolean => {
-  const itemPopup = row.querySelector<HTMLElement>(".item-popup");
+  const itemPopupElement = row.querySelector<HTMLElement>(itemPopup);
   const selection = window.getSelection();
-  if (!itemPopup || !selection) return false;
+  if (!itemPopupElement || !selection) return false;
 
   const hiddenElements = Array.from(
-    itemPopup.querySelectorAll<HTMLElement>(EXCLUDED_FROM_COPY_SELECTOR)
+    itemPopupElement.querySelectorAll<HTMLElement>(EXCLUDED_FROM_COPY_SELECTOR)
   ).map((element) => ({
     element,
     display: element.style.getPropertyValue("display"),
@@ -30,7 +32,7 @@ export const copyItemForPob = (row: HTMLElement): boolean => {
     });
 
     const range = document.createRange();
-    range.selectNodeContents(itemPopup);
+    range.selectNodeContents(itemPopupElement);
     selection.removeAllRanges();
     selection.addRange(range);
     copied = document.execCommand("copy");

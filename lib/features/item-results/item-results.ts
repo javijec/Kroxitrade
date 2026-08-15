@@ -25,13 +25,24 @@ import { isNativeChineseTradeSite } from "../../config/trade-hosts";
 import { extensionBus } from "../../core/extension-bus";
 import { tradeDomObserver } from "../../core/trade-dom-observer";
 import {
+  explicitSeparator,
+  flagsSeparator,
   itemIcon,
   itemLevelField,
+  itemPopupContent,
+  itemPopupHeaderLine,
+  itemPrice,
   itemRendered,
   itemResultRows,
+  itemTitleLine,
+  modElement,
   modValueSpan,
+  pinnedItemDetails,
+  resultRowAncestor,
   resultsContainer,
-  socket
+  searchButton,
+  socket,
+  uniqueItemHeader
 } from "../../site-adapter/selectors/common";
 import { copyButton } from "../../site-adapter/selectors/poe2";
 import {
@@ -127,7 +138,7 @@ export class ItemResultsService {
       event.stopImmediatePropagation();
       if (coeButton.getAttribute("aria-disabled") === "true") return;
 
-      const row = coeButton.closest<HTMLElement>(".row, .result-item");
+      const row = coeButton.closest<HTMLElement>(resultRowAncestor);
       const text = row
         ? buildCraftOfExileText(row, experimentalSettings.isCoeDesecratedModsEnabled())
         : null;
@@ -147,7 +158,7 @@ export class ItemResultsService {
       event.preventDefault();
       event.stopImmediatePropagation();
 
-      const row = clickedCopyButton.closest<HTMLElement>(".row, .result-item");
+      const row = clickedCopyButton.closest<HTMLElement>(resultRowAncestor);
       if (row && copyItemForPob(row)) {
         this.showCopyFeedback("Item text copied.");
       } else {
@@ -156,7 +167,7 @@ export class ItemResultsService {
       return;
     }
 
-    if (!target?.closest(".btn.search-btn")) return;
+    if (!target?.closest(searchButton)) return;
     this.schedulePostSearchRefresh();
   };
   private readonly handleExperimentalChange = () => {
@@ -686,13 +697,13 @@ export class ItemResultsService {
           console.debug("[Poe Trade Plus] Pin ignored: result has no id");
           return;
         }
-        const title = row.querySelector<HTMLElement>(".itemName .itemHeader, .item-popup__header-line")?.textContent?.trim() || "Item";
+        const title = row.querySelector<HTMLElement>(itemTitleLine)?.textContent?.trim() || "Item";
         pinnedItemsService.toggle({
           id: currentId,
           title,
-          detailsHtml: row.querySelector<HTMLElement>(".itemPopupContainer, .item-popup")?.outerHTML || "",
+          detailsHtml: row.querySelector<HTMLElement>(pinnedItemDetails)?.outerHTML || "",
           renderedHtml: row.querySelector<HTMLElement>(".item")?.outerHTML || "",
-          pricingHtml: row.querySelector<HTMLElement>("[data-field=price], .price")?.outerHTML || ""
+          pricingHtml: row.querySelector<HTMLElement>(itemPrice)?.outerHTML || ""
         });
         console.debug("[Poe Trade Plus] Pin toggled", { currentId });
         this.syncPinButton(row);
@@ -813,11 +824,9 @@ export class ItemResultsService {
   }
 
   private getExternalItemName(row: HTMLElement) {
-    const header = row.querySelector<HTMLElement>(
-      ".item-popup__header--unique, .item-popup__header--gem"
-    )
+    const header = row.querySelector<HTMLElement>(uniqueItemHeader)
     const name = header
-      ?.querySelector<HTMLElement>(".item-popup__header-line")
+      ?.querySelector<HTMLElement>(itemPopupHeaderLine)
       ?.textContent
       ?.trim();
 
@@ -882,7 +891,7 @@ export class ItemResultsService {
       const inner = valueSpan.querySelector<HTMLElement>("span") || valueSpan;
       const text = (inner.textContent || "").replace(/\s+/g, " ").trim();
       const field = valueSpan.dataset.field || "";
-      const mod = valueSpan.closest<HTMLElement>(".item-mod");
+      const mod = valueSpan.closest<HTMLElement>(modElement);
 
       const legacyFieldMatch = field.match(MAGEBLOOD_LEGACY_FIELD_PATTERN);
       if (legacyFieldMatch) {
@@ -966,10 +975,10 @@ export class ItemResultsService {
     row: HTMLElement,
     legacies: MagebloodLegacy[]
   ) {
-    const content = row.querySelector<HTMLElement>(".item-popup__content") || row;
-    const flagsSeparator = content.querySelector<HTMLHRElement>('hr[name="flags"]');
-    if (flagsSeparator) {
-      return flagsSeparator;
+    const content = row.querySelector<HTMLElement>(itemPopupContent) || row;
+    const flagsHr = content.querySelector<HTMLHRElement>(flagsSeparator);
+    if (flagsHr) {
+      return flagsHr;
     }
 
     const corruptedLine = Array.from(content.children).find((child) =>
@@ -982,9 +991,9 @@ export class ItemResultsService {
         : corruptedLine;
     }
 
-    const explicitSeparator = content.querySelector<HTMLHRElement>('hr[name="explicit"]');
-    if (explicitSeparator) {
-      return explicitSeparator;
+    const explicitHr = content.querySelector<HTMLHRElement>(explicitSeparator);
+    if (explicitHr) {
+      return explicitHr;
     }
 
     return legacies[legacies.length - 1]?.mod || content.lastElementChild;

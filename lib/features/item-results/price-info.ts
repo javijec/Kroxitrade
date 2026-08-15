@@ -3,6 +3,7 @@
 // convert it with poe.ninja ratios.
 
 import { slugify } from "../../utilities/slugify"
+import { priceCurrency, priceInfo } from "../../site-adapter/selectors/common"
 
 export const CHAOS_SLUG = "chaos-orb"
 
@@ -59,9 +60,7 @@ export const resolveCurrencySlug = (currencyText: string) => {
 }
 
 export const extractPriceInfo = (row: HTMLElement) => {
-  const container = row.querySelector<HTMLElement>(
-    '[data-field="price"], .details .price, .itemHeader .lprice, .price'
-  )
+  const container = row.querySelector<HTMLElement>(priceInfo)
   if (!container) {
     return null
   }
@@ -81,7 +80,7 @@ export const extractPriceInfo = (row: HTMLElement) => {
 
   if (!currencyText) {
     const rawCurrencyText = row.querySelector<HTMLElement>(
-      '[data-field="price"] .currency-text span, .currency-text span, .currency-text'
+      priceCurrency
     )?.textContent
     currencyText = rawCurrencyText?.trim() || ""
   }

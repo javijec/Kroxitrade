@@ -5,7 +5,13 @@ import { escapeCssAttributeValue } from "../utilities/css";
 import {
   bulkSellerRows,
   directBuyButton,
-  searchButton
+  itemDetails,
+  itemPrice,
+  itemPriceIcon,
+  itemTitleCandidates,
+  priceNote,
+  searchButton,
+  sellerName
 } from "../site-adapter/selectors/common";
 import { tradeDomObserver } from "../core/trade-dom-observer";
 import type { BulkSellerGroup, BulkSellerItem } from "../types/bulk-sellers";
@@ -169,32 +175,19 @@ export class BulkSellersService {
   }
 
   private extractSeller(row: HTMLElement) {
-    const sellerLink = row.querySelector<HTMLElement>("span.profile-link a, .profile-link a, .account-name");
+    const sellerLink = row.querySelector<HTMLElement>(sellerName);
     return sellerLink?.textContent?.trim() || null;
   }
 
   private extractItemName(row: HTMLElement) {
-    const candidates = [
-      ".itemName",
-      ".itemHeader .name",
-      ".itemHeader .title",
-      ".itemHeader .lprice .title",
-      ".item-popup__header",
-      ".item-popup__header-line",
-      ".details .itemName",
-      ".details .title",
-      ".details h3",
-      ".header .title"
-    ];
-
-    for (const selector of candidates) {
+    for (const selector of itemTitleCandidates) {
       const text = row.querySelector<HTMLElement>(selector)?.textContent?.trim();
       if (text) {
         return text.replace(/\s+/g, " ");
       }
     }
 
-    const detailsText = row.querySelector<HTMLElement>(".details")?.textContent?.replace(/\s+/g, " ").trim();
+    const detailsText = row.querySelector<HTMLElement>(itemDetails)?.textContent?.replace(/\s+/g, " ").trim();
     if (detailsText) {
       return this.cleanListingText(detailsText);
     }
@@ -215,9 +208,9 @@ export class BulkSellersService {
   }
 
   private extractPriceLabel(row: HTMLElement) {
-    const priceRoot = row.querySelector<HTMLElement>('[data-field="price"], .price');
+    const priceRoot = row.querySelector<HTMLElement>(itemPrice);
     if (!priceRoot) {
-      const note = row.querySelector<HTMLElement>(".price-note, .note");
+      const note = row.querySelector<HTMLElement>(priceNote);
       return note?.textContent?.replace(/\s+/g, " ").trim() || null;
     }
 
@@ -243,7 +236,7 @@ export class BulkSellersService {
   }
 
   private extractCurrencyIcon(row: HTMLElement) {
-    const icon = row.querySelector<HTMLImageElement>('[data-field="price"] img, .price img.currency-icon, .price img');
+    const icon = row.querySelector<HTMLImageElement>(itemPriceIcon);
     if (!icon?.src) return null;
 
     return {

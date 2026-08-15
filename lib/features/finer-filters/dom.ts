@@ -1,17 +1,26 @@
 // DOM scanning and decoration of item mods on the Trade site (Finer Filters).
 
 import {
+  compactResults,
   modHashField,
   modLabelField,
   mods,
-  modValueField
+  modValueField,
+  resultRowId,
+  uniqueItemPopup
 } from "~/lib/site-adapter/selectors/common"
-import { mutatedModContainer } from "~/lib/site-adapter/selectors/poe1"
+import {
+  containerModItems,
+  modExplicitClass,
+  modImplicitClass,
+  modMutatedClass,
+  mutatedModContainer
+} from "~/lib/site-adapter/selectors/poe1"
 
 import { ItemSearchGroupsVueItems } from "./vue-internals"
 
 export const getRowId = (mod: HTMLElement) => {
-  const row = mod.closest("[data-id]") as HTMLElement | null
+  const row = mod.closest(resultRowId) as HTMLElement | null
   return row?.getAttribute("data-id") || row?.id || mod.dataset.rowid || ""
 }
 
@@ -32,12 +41,10 @@ export const normalizeMutatedModHashes = (root: ParentNode = document) => {
 
   containers.forEach((container) => {
     const mods = Array.from(
-      container.querySelectorAll(
-        ":scope > .item-mod--mutated, :scope > .item-mod--explicit"
-      )
+      container.querySelectorAll(containerModItems)
     ) as HTMLElement[]
     const mutatedCount = mods.filter((mod) =>
-      mod.classList.contains("item-mod--mutated")
+      mod.classList.contains(modMutatedClass)
     ).length
 
     if (!mutatedCount || mutatedCount >= mods.length) {
@@ -47,7 +54,7 @@ export const normalizeMutatedModHashes = (root: ParentNode = document) => {
 
     const mutatedModsAreFirst = mods
       .slice(0, mutatedCount)
-      .every((mod) => mod.classList.contains("item-mod--mutated"))
+      .every((mod) => mod.classList.contains(modMutatedClass))
     const hashes = mods.map(getModHashFromDom)
 
     if (!mutatedModsAreFirst || hashes.some((hash) => !hash)) {
@@ -114,12 +121,12 @@ export const attachButtons = (mod: HTMLElement) => {
   if (rowId) btns.setAttribute("data-rowid", rowId)
   if (statHash) btns.setAttribute("data-hash", statHash)
 
-  const isImplicitMod = mod.classList.contains("item-mod--implicit")
+  const isImplicitMod = mod.classList.contains(modImplicitClass)
   const isUniqueExplicitMod =
-    !!mod.closest(".item-popup--unique") &&
-    mod.classList.contains("item-mod--explicit")
+    !!mod.closest(uniqueItemPopup) &&
+    mod.classList.contains(modExplicitClass)
   const isSpecialMod = isImplicitMod || isUniqueExplicitMod
-  const isCompactResults = !!mod.closest(".results.compact")
+  const isCompactResults = !!mod.closest(compactResults)
   btns.classList.remove("finer-fixed-right")
   const host =
     isSpecialMod && isCompactResults
