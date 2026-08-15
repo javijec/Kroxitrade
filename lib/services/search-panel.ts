@@ -2,9 +2,9 @@ import { get } from "svelte/store";
 import {
   categoryInput,
   rarityInput,
-  searchInput,
-  statsTitles
+  searchInput
 } from "../site-adapter/selectors/common";
+import { tradeDom } from "../site-adapter/trade-dom";
 import { languageStore, translate } from "./i18n";
 
 export class SearchPanelService {
@@ -28,7 +28,7 @@ export class SearchPanelService {
   getStats() {
     const stats: string[] = [];
 
-    document.querySelectorAll(statsTitles).forEach((item: any) => {
+    tradeDom.getStatsTitles().forEach((item) => {
       let stat = item.innerText;
       stat = stat.trim().toLowerCase().replace(/^pseudo /, "");
       stats.push(stat);
@@ -38,13 +38,7 @@ export class SearchPanelService {
   }
 
   private _scrapeInputValue(selector: string, nullValue?: string): string | null {
-    const input = document.querySelector(selector) as HTMLInputElement | null;
-    if (!input) return null;
-
-    const value = input.value;
-    if (!value || (nullValue && value === nullValue)) return null;
-
-    return value;
+    return tradeDom.readInputValue(selector, nullValue);
   }
 
   private _normalizeSearchName(value: string | null): string | null {

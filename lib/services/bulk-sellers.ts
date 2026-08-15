@@ -1,9 +1,7 @@
 import { writable } from "svelte/store";
 import { get } from "svelte/store";
 import { languageStore, translate } from "./i18n";
-import { escapeCssAttributeValue } from "../utilities/css";
 import {
-  bulkSellerRows,
   directBuyButton,
   itemDetails,
   itemPrice,
@@ -13,6 +11,7 @@ import {
   searchButton,
   sellerName
 } from "../site-adapter/selectors/common";
+import { tradeDom } from "../site-adapter/trade-dom";
 import { tradeDomObserver } from "../core/trade-dom-observer";
 import type { BulkSellerGroup, BulkSellerItem } from "../types/bulk-sellers";
 
@@ -96,7 +95,7 @@ export class BulkSellersService {
   }
 
   private collectGroups() {
-    const rows = Array.from(document.querySelectorAll<HTMLElement>(bulkSellerRows));
+    const rows = tradeDom.getBulkSellerRows();
     const sellers = new Map<string, BulkSellerItem[]>();
 
     rows.forEach((row, index) => {
@@ -246,15 +245,14 @@ export class BulkSellersService {
   }
 
   private resolveRow(itemId: string) {
-    const escapedItemId = escapeCssAttributeValue(itemId);
-    const direct = document.querySelector<HTMLElement>(`.row[data-id="${escapedItemId}"], .result-item[data-id="${escapedItemId}"]`);
+    const direct = tradeDom.findRowById(itemId);
     if (direct) return direct;
 
     const currentGroups = this.snapshot();
     const item = currentGroups.flatMap((group) => group.items).find((entry) => entry.id === itemId);
     if (!item) return null;
 
-    return Array.from(document.querySelectorAll<HTMLElement>(bulkSellerRows)).find((row) => {
+    return tradeDom.getBulkSellerRows().find((row) => {
       const seller = this.extractSeller(row);
       const itemName = this.extractItemName(row);
       const priceLabel = this.extractPriceLabel(row);

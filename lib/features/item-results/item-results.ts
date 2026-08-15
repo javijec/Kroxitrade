@@ -33,7 +33,6 @@ import {
   itemPopupHeaderLine,
   itemPrice,
   itemRendered,
-  itemResultRows,
   itemTitleLine,
   modElement,
   modValueSpan,
@@ -44,6 +43,7 @@ import {
   socket,
   uniqueItemHeader
 } from "../../site-adapter/selectors/common";
+import { tradeDom } from "../../site-adapter/trade-dom";
 import { copyButton } from "../../site-adapter/selectors/poe2";
 import {
   MAGEBLOOD_DUPLICATE_FIELD,
@@ -603,7 +603,7 @@ export class ItemResultsService {
   private enhanceResults() {
     // Current trade site uses .result-item, but some pages or versions use .row.
     // Re-run equivalent pricing on every visible result because the trade site can recycle DOM nodes between searches.
-    const results = document.querySelectorAll(itemResultRows);
+    const results = tradeDom.getItemResultRows();
     results.forEach((row: Element) => {
       const typedRow = row as HTMLElement;
       this.enablePoe2CopyButton(typedRow);
@@ -720,8 +720,8 @@ export class ItemResultsService {
   }
 
   private refreshPinButtons() {
-    document
-      .querySelectorAll<HTMLElement>(itemResultRows)
+    tradeDom
+      .getItemResultRows()
       .forEach((row) => this.syncPinButton(row));
   }
 
@@ -866,12 +866,12 @@ export class ItemResultsService {
   }
 
   private refreshEquivalentPricing() {
-    const results = document.querySelectorAll(itemResultRows);
+    const results = tradeDom.getItemResultRows();
     results.forEach((row) => this.injectEquivalentPricing(row as HTMLElement));
   }
 
   private refreshValdoRewardPricing() {
-    const results = document.querySelectorAll(itemResultRows);
+    const results = tradeDom.getItemResultRows();
     results.forEach((row) => this.injectValdoRewardPricing(row as HTMLElement));
   }
 
@@ -1059,7 +1059,7 @@ export class ItemResultsService {
   }
 
   private refreshMagebloodLegacyDescriptions() {
-    const results = document.querySelectorAll(itemResultRows);
+    const results = tradeDom.getItemResultRows();
     results.forEach((row) => this.enhanceMagebloodLegacy(row as HTMLElement));
   }
 

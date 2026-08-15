@@ -1,12 +1,12 @@
 import { tradeContext } from "../core/trade-context"
 import {
   buyoutPriceInputs,
-  filterProperty,
   filterTitle,
   multiselect,
   multiselectInput,
   multiselectOption
 } from "../site-adapter/selectors/common"
+import { tradeDom } from "../site-adapter/trade-dom"
 
 export type BuyoutCurrency =
   | "Chaos Orb"
@@ -123,9 +123,7 @@ const normalizeLabel = (value: string | null | undefined) =>
 // currency multiselect and its two price inputs. This survives the translated
 // title text and is independent of the trade-site language.
 const findBuyoutFilterStructural = () => {
-  const filters = Array.from(
-    document.querySelectorAll<HTMLElement>(filterProperty)
-  )
+  const filters = tradeDom.getFilterProperties()
 
   return (
     filters.find((filter) => {
@@ -141,9 +139,7 @@ const findBuyoutFilterStructural = () => {
 }
 
 const findBuyoutFilter = () => {
-  const filters = Array.from(
-    document.querySelectorAll<HTMLElement>(filterProperty)
-  )
+  const filters = tradeDom.getFilterProperties()
 
   const byTitle = filters.find((filter) => {
     const title = normalizeLabel(filter.querySelector(filterTitle)?.textContent)

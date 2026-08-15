@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
 import type { TradeSiteVersion } from "../types/trade-location";
 import { extensionBus } from "../core/extension-bus";
-import { poe2CopyButton } from "../site-adapter/selectors/poe2";
+import { tradeDom } from "../site-adapter/trade-dom";
 import { settings } from "./settings";
 
 const BODY_CLASS = "bt-dev-result-actions-visible";
@@ -44,7 +44,7 @@ function applyPoe2CopyVisibility(value: boolean) {
   document.body?.classList.toggle(POE2_COPY_BODY_CLASS, isPoe2CopyVisible);
 
   if (activeVersion === "2") {
-    document.querySelectorAll<HTMLButtonElement>(poe2CopyButton).forEach((button) => {
+    tradeDom.getPoe2CopyButtons().forEach((button) => {
       experimentalSettings.applyPoe2CopyButton(button);
     });
   }

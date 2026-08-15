@@ -18,7 +18,7 @@
     "dev:firefox": "node scripts/wxt-firefox-dev.cjs",
     "whats-new": "node scripts/generate-whats-new.cjs",
     "data:refresh": "node scripts/refresh-trade-locale-data.mjs && node scripts/refresh-chinese-trade-dictionaries.mjs",
-    "test": "pnpm run test:bookmark-sync && node --no-warnings --experimental-strip-types --test tests/bookmark-export-compatibility.test.mjs tests/legacy-bookmark-search-state.test.mjs tests/chinese-trade-text-transform.test.mjs tests/chinese-trade-stat-cache.test.mjs tests/chinese-trade-cache-lifecycle.test.mjs tests/normalize-valdo-reward-name.test.mjs tests/trade-selectors.test.mjs tests/trade-filters.test.mjs tests/feature-lifecycle.test.mjs tests/trade-dom-observer.test.mjs tests/extension-bus.test.mjs",
+    "test": "pnpm run test:bookmark-sync && node --no-warnings --experimental-strip-types --test tests/bookmark-export-compatibility.test.mjs tests/legacy-bookmark-search-state.test.mjs tests/chinese-trade-text-transform.test.mjs tests/chinese-trade-stat-cache.test.mjs tests/chinese-trade-cache-lifecycle.test.mjs tests/normalize-valdo-reward-name.test.mjs tests/trade-selectors.test.mjs tests/trade-filters.test.mjs tests/trade-dom.test.mjs tests/feature-lifecycle.test.mjs tests/trade-dom-observer.test.mjs tests/extension-bus.test.mjs",
     "test:bookmark-sync": "node scripts/test-bookmark-sync.cjs",
     "test:bookmark-exports": "pnpm test",
     "typecheck": "tsc --noEmit",

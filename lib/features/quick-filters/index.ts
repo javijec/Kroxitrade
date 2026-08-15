@@ -10,10 +10,9 @@ import { tradeContext } from "~/lib/core/trade-context"
 import { tradeDomObserver } from "~/lib/core/trade-dom-observer"
 import { storageService } from "~/lib/services/storage"
 import {
-  expandedFilterGroup,
-  quickFiltersPane
+  expandedFilterGroup
 } from "~/lib/site-adapter/selectors/common"
-import { on } from "~/lib/site-adapter/trade-dom"
+import { on, tradeDom } from "~/lib/site-adapter/trade-dom"
 import {
   BUYOUT_CURRENCY_PRESETS,
   clearBuyoutPrice,
@@ -25,7 +24,7 @@ import { listModifiers } from "./presets"
 import { createBuyoutClearButton, globalPresetsTemplate } from "./templates"
 
 const injectSearchPanelQuickFilters = () => {
-  const pane = document.querySelector<HTMLElement>(quickFiltersPane)
+  const pane = tradeDom.getQuickFiltersPane()
   const existing = pane?.querySelector('[data-krox-filter-presets="true"]')
   const isExchangeRoute = /^\/trade2?\/exchange(?:\/|$)/.test(
     window.location.pathname
