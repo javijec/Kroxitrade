@@ -1,4 +1,5 @@
 import type { PoeGame, TradeContext, TradeRoute } from "../types/trade-context"
+import { subscribeNavigation } from "./trade-navigation.ts"
 
 const HOST_LANGUAGE: Record<string, string> = {
   "pathofexile.com": "en",
@@ -51,10 +52,49 @@ const parseContext = (location: Location | undefined): TradeContext => {
   }
 }
 
+type Listener = (context: TradeContext) => void
+
+const listeners = new Set<Listener>()
+let navigationUnsubscribe: (() => void) | null = null
+
+const notify = () => {
+  const context = tradeContext.get()
+  for (const listener of listeners) {
+    listener(context)
+  }
+}
+
+const ensureNavigationSubscription = () => {
+  if (navigationUnsubscribe) return
+  navigationUnsubscribe = subscribeNavigation(() => notify())
+}
+
 export const tradeContext = {
   get(): TradeContext {
     return parseContext(
       typeof window !== "undefined" ? window.location : undefined
     )
+  },
+
+  /**
+   * Subscribe to context changes. The listener is invoked on the next microtask
+   * with the current context, then again whenever the SPA navigates to a new
+   * URL. Returns an unsubscribe function that detaches the listener; the
+   * internal navigation subscription is torn down once the last listener
+   * leaves.
+   */
+  subscribe(listener: Listener): () => void {
+    listeners.add(listener)
+    ensureNavigationSubscription()
+    queueMicrotask(() => {
+      if (listeners.has(listener)) listener(tradeContext.get())
+    })
+    return () => {
+      listeners.delete(listener)
+      if (listeners.size === 0 && navigationUnsubscribe) {
+        navigationUnsubscribe()
+        navigationUnsubscribe = null
+      }
+    }
   }
 }

@@ -26,9 +26,7 @@ import { createBuyoutClearButton, globalPresetsTemplate } from "./templates"
 const injectSearchPanelQuickFilters = () => {
   const pane = tradeDom.getQuickFiltersPane()
   const existing = pane?.querySelector('[data-krox-filter-presets="true"]')
-  const isExchangeRoute = /^\/trade2?\/exchange(?:\/|$)/.test(
-    window.location.pathname
-  )
+  const isExchangeRoute = tradeContext.get().route === "exchange"
 
   if (isExchangeRoute) {
     existing?.remove()

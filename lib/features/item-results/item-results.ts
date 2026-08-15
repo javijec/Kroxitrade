@@ -23,6 +23,7 @@ import { experimentalSettings } from "../../services/experimental";
 import { pinnedItemsService } from "../../services/pinned-items";
 import { isNativeChineseTradeSite } from "../../config/trade-hosts";
 import { extensionBus } from "../../core/extension-bus";
+import { tradeContext } from "../../core/trade-context";
 import { tradeDomObserver } from "../../core/trade-dom-observer";
 import {
   explicitSeparator,
@@ -83,7 +84,7 @@ const ILVL_THRESHOLDS = [
 ];
 
 const isEnglishTradeHost = () => {
-  const host = window.location.hostname.toLowerCase();
+  const { host } = tradeContext.get();
   return host === "www.pathofexile.com" || host === "pathofexile.com";
 };
 

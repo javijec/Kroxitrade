@@ -3,6 +3,7 @@
 // ItemResultsService stays focused on orchestrating result-row enhancement.
 
 import type { MagebloodLegacyLocale } from "../../data/mageblood-legacy-texts"
+import { tradeContext } from "../../core/trade-context"
 
 export interface LegacyEffect {
   stats: Array<[number, string]>
@@ -111,7 +112,7 @@ export const titleCaseLegacyName = (name: string) =>
   name.charAt(0).toUpperCase() + name.slice(1)
 
 export const getMagebloodLegacyLocale = (): MagebloodLegacyLocale => {
-  const host = window.location.hostname.toLowerCase()
+  const host = tradeContext.get().host.toLowerCase()
   if (host === "poe.kakaogames.com" || host === "poe2.kakaogames.com")
     return "ko"
   if (host === "pathofexile.tw") return "zh-tw"
