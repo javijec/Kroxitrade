@@ -1,5 +1,6 @@
 import { tradeHosts } from "~/lib/config/trade-hosts"
 import { tradeContext } from "~/lib/core/trade-context"
+import { multiselect } from "~/lib/site-adapter/selectors/common"
 
 /**
  * Fuzzy Chinese search for English-only filter dropdowns.
@@ -51,7 +52,7 @@ export default defineContentScript({
 
     const findLocalizedAny = () => {
       if (localizedAny) return
-      for (const el of document.querySelectorAll<HTMLElement>(".multiselect")) {
+      for (const el of document.querySelectorAll<HTMLElement>(multiselect)) {
         const v = (el as unknown as { __vue__?: { options?: unknown[] } }).__vue__
         if (!v || !Array.isArray(v.options)) continue
         for (const raw of v.options) {
@@ -148,7 +149,7 @@ export default defineContentScript({
 
     const patch = () => {
       if (!Object.keys(nameZh).length) return
-      const widgets = document.querySelectorAll<HTMLElement>(".multiselect")
+      const widgets = document.querySelectorAll<HTMLElement>(multiselect)
       for (const el of widgets) {
         const v = (el as unknown as {
           __vue__?: {

@@ -1,33 +1,34 @@
 import { get } from "svelte/store";
+import {
+  categoryInput,
+  rarityInput,
+  searchInput,
+  statsTitles
+} from "../site-adapter/selectors/common";
 import { languageStore, translate } from "./i18n";
 
 export class SearchPanelService {
-  private readonly SEARCH_INPUT_SELECTOR = '.search-panel .search-bar .search-left input, .search-panel-content .search-bar input';
-  private readonly CATEGORY_INPUT_SELECTOR = '.search-advanced-items .filter-group:nth-of-type(1) .filter-property:nth-of-type(1) input';
-  private readonly RARITY_INPUT_SELECTOR = '.search-advanced-items .filter-group:nth-of-type(1) .filter-property:nth-of-type(2) input';
-  private readonly STATS_SELECTOR = '.search-advanced-pane:last-child .filter-group-body .filter:not(.disabled) .filter-title, .filter-group-body .filter .filter-title';
-
   recommendTitle() {
     return this.getName() || translate(get(languageStore), "search.tradeFallback");
   }
 
   getCategory() {
-    return this._scrapeInputValue(this.CATEGORY_INPUT_SELECTOR, 'Any');
+    return this._scrapeInputValue(categoryInput, 'Any');
   }
 
   getName() {
-    const value = this._scrapeInputValue(this.SEARCH_INPUT_SELECTOR);
+    const value = this._scrapeInputValue(searchInput);
     return this._normalizeSearchName(value);
   }
 
   getRarity() {
-    return this._scrapeInputValue(this.RARITY_INPUT_SELECTOR, 'Any');
+    return this._scrapeInputValue(rarityInput, 'Any');
   }
 
   getStats() {
     const stats: string[] = [];
 
-    document.querySelectorAll(this.STATS_SELECTOR).forEach((item: any) => {
+    document.querySelectorAll(statsTitles).forEach((item: any) => {
       let stat = item.innerText;
       stat = stat.trim().toLowerCase().replace(/^pseudo /, "");
       stats.push(stat);

@@ -4,6 +4,12 @@ import { tradeHosts } from "~/lib/config/trade-hosts"
 import { chineseTradeStorageFor } from "~/lib/services/chinese-trade/contract"
 import { toSimplifiedChinese } from "~/lib/services/chinese-trade/simplifier"
 import { getChineseSupplementState } from "~/lib/services/trade-translation"
+import {
+  multiselect,
+  multiselectInput,
+  multiselectItem,
+  multiselectOption
+} from "~/lib/site-adapter/selectors/common"
 
 // Trade's header, navigation and dialogs sit outside the search/result
 // containers. Scan the page root so every known local UI phrase is covered.
@@ -59,7 +65,7 @@ export default defineContentScript({
       const inMercenary = !!text.parentElement?.closest(".item-mod--mercenary")
       const translated = resolve(value, inMercenary)
       if (!translated || translated === value) return
-      const option = text.parentElement?.closest(".multiselect__option, .multiselect__single")
+      const option = text.parentElement?.closest(multiselectItem)
       if (option && containsChinese(option.textContent ?? "")) return
       text.nodeValue = raw.replace(value, option ? `${translated} (${value})` : translated)
     }
@@ -171,7 +177,7 @@ export default defineContentScript({
 
     document.addEventListener("input", (event) => {
       const input = event.target
-      if (!(input instanceof HTMLInputElement) || !input.matches(".multiselect__input")) return
+      if (!(input instanceof HTMLInputElement) || !input.matches(multiselectInput)) return
       const match = input.value.match(/^([\s~+-]*)(.+)$/)
       if (!match || !containsChinese(match[2])) return
       const typed = match[2].trim()
@@ -183,7 +189,7 @@ export default defineContentScript({
       // clearer and avoids an unnecessary language switch.
       setTimeout(() => {
         if (input.value !== original) return
-        const options = input.closest(".multiselect")?.querySelectorAll(".multiselect__option")
+        const options = input.closest(multiselect)?.querySelectorAll(multiselectOption)
         const hasDirectMatch = Array.from(options ?? []).some((option) =>
           (option.textContent ?? "").includes(typed)
         )

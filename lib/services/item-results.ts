@@ -25,6 +25,16 @@ import { flashMessages } from "./flash";
 import { experimentalSettings } from "./experimental";
 import { pinnedItemsService } from "./pinned-items";
 import { isNativeChineseTradeSite } from "../config/trade-hosts";
+import {
+  itemIcon,
+  itemLevelField,
+  itemRendered,
+  itemResultRows,
+  modValueSpan,
+  resultsContainer,
+  socket
+} from "../site-adapter/selectors/common";
+import { copyButton } from "../site-adapter/selectors/poe2";
 import pinIcon from "lucide-static/icons/pin.svg?raw";
 import pinOffIcon from "lucide-static/icons/pin-off.svg?raw";
 
@@ -239,7 +249,7 @@ export class ItemResultsService {
   private searchRefreshTimers: number[] = [];
   private readonly handleDocumentClick = (event: MouseEvent) => {
     const target = event.target as Element | null;
-    const copyButton = target?.closest<HTMLButtonElement>("button.copy");
+    const clickedCopyButton = target?.closest<HTMLButtonElement>(copyButton);
     const coeButton = target?.closest<HTMLButtonElement>("button.bt-copy-coe");
     const wikiButton = target?.closest<HTMLButtonElement>("button.bt-open-wiki");
     const poedbButton = target?.closest<HTMLButtonElement>("button.bt-open-poedb");
@@ -287,14 +297,14 @@ export class ItemResultsService {
     }
 
     if (
-      copyButton &&
+      clickedCopyButton &&
       tradeLocationService.current.version === "2" &&
       experimentalSettings.isPoe2CopyVisible()
     ) {
       event.preventDefault();
       event.stopImmediatePropagation();
 
-      const row = copyButton.closest<HTMLElement>(".row, .result-item");
+      const row = clickedCopyButton.closest<HTMLElement>(".row, .result-item");
       if (row && copyItemForPob(row)) {
         this.showCopyFeedback("Item text copied.");
       } else {
@@ -777,7 +787,7 @@ export class ItemResultsService {
       this.observerTimer = setTimeout(() => this.enhanceResults(), 100);
     });
 
-    const target = document.querySelector(".search-results, .resultset, .results");
+    const target = document.querySelector(resultsContainer);
     if (target) {
       this.observerRetries = 0;
       observer.observe(target, { childList: true, subtree: true });
@@ -809,7 +819,7 @@ export class ItemResultsService {
   private enhanceResults() {
     // Current trade site uses .result-item, but some pages or versions use .row.
     // Re-run equivalent pricing on every visible result because the trade site can recycle DOM nodes between searches.
-    const results = document.querySelectorAll(".search-results .result-item, .search-results .row, .result-list .result-item, .row");
+    const results = document.querySelectorAll(itemResultRows);
     results.forEach((row: Element) => {
       const typedRow = row as HTMLElement;
       this.enablePoe2CopyButton(typedRow);
@@ -832,10 +842,10 @@ export class ItemResultsService {
   private enablePoe2CopyButton(row: HTMLElement) {
     if (tradeLocationService.current.version !== "2") return;
 
-    const copyButton = row.querySelector<HTMLButtonElement>(".left > button.copy");
-    if (!copyButton) return;
+    const rowCopyButton = row.querySelector<HTMLButtonElement>(copyButton);
+    if (!rowCopyButton) return;
 
-    experimentalSettings.applyPoe2CopyButton(copyButton);
+    experimentalSettings.applyPoe2CopyButton(rowCopyButton);
   }
 
   private syncCoeButton(row: HTMLElement) {
@@ -927,7 +937,7 @@ export class ItemResultsService {
 
   private refreshPinButtons() {
     document
-      .querySelectorAll<HTMLElement>(".search-results .result-item, .search-results .row, .result-list .result-item, .row")
+      .querySelectorAll<HTMLElement>(itemResultRows)
       .forEach((row) => this.syncPinButton(row));
   }
 
@@ -1074,12 +1084,12 @@ export class ItemResultsService {
   }
 
   private refreshEquivalentPricing() {
-    const results = document.querySelectorAll(".search-results .result-item, .search-results .row, .result-list .result-item, .row");
+    const results = document.querySelectorAll(itemResultRows);
     results.forEach((row) => this.injectEquivalentPricing(row as HTMLElement));
   }
 
   private refreshValdoRewardPricing() {
-    const results = document.querySelectorAll(".search-results .result-item, .search-results .row, .result-list .result-item, .row");
+    const results = document.querySelectorAll(itemResultRows);
     results.forEach((row) => this.injectValdoRewardPricing(row as HTMLElement));
   }
 
@@ -1095,7 +1105,7 @@ export class ItemResultsService {
     const duplicateMods: HTMLElement[] = [];
     let duplicatePercent = 0;
 
-    row.querySelectorAll<HTMLElement>('.item-mod [data-field^="stat."]').forEach((valueSpan) => {
+    row.querySelectorAll<HTMLElement>(modValueSpan).forEach((valueSpan) => {
       const inner = valueSpan.querySelector<HTMLElement>("span") || valueSpan;
       const text = (inner.textContent || "").replace(/\s+/g, " ").trim();
       const field = valueSpan.dataset.field || "";
@@ -1267,7 +1277,7 @@ export class ItemResultsService {
   }
 
   private refreshMagebloodLegacyDescriptions() {
-    const results = document.querySelectorAll(".search-results .result-item, .search-results .row, .result-list .result-item, .row");
+    const results = document.querySelectorAll(itemResultRows);
     results.forEach((row) => this.enhanceMagebloodLegacy(row as HTMLElement));
   }
 
@@ -1276,15 +1286,15 @@ export class ItemResultsService {
   private checkMaximumSockets(row: HTMLElement) {
     if (tradeLocationService.current.version !== "1") return;
 
-    const ilvlEl = row.querySelector('.item-property [data-field="ilvl"], [data-field="ilvl"], .itemLevel');
+    const ilvlEl = row.querySelector(itemLevelField);
     const ilvlMatch = ilvlEl?.textContent?.match(/(\d+)/);
     if (!ilvlMatch) return;
     const ilvl = parseInt(ilvlMatch[0], 10);
 
-    const socketsCount = row.querySelectorAll(".sockets .socket").length;
+    const socketsCount = row.querySelectorAll(socket).length;
     if (socketsCount === 0) return;
 
-    const iconImg = row.querySelector(".icon img") as HTMLImageElement;
+    const iconImg = row.querySelector(itemIcon) as HTMLImageElement;
     const iconSrc = iconImg?.src || "";
     let type = ItemResultsType.UNKNOWN;
     if (/\/BodyArmours\//.test(iconSrc)) type = ItemResultsType.ARMOR;
@@ -1296,7 +1306,7 @@ export class ItemResultsService {
     if (!threshold) return;
 
     if (threshold.maxSockets > socketsCount) {
-        const rendered = row.querySelector(".itemRendered");
+        const rendered = row.querySelector(itemRendered);
         if (rendered) {
             const warning = document.createElement("div");
             warning.className = "bt-maximum-sockets-warning";

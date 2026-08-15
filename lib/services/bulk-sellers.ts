@@ -2,9 +2,13 @@ import { writable } from "svelte/store";
 import { get } from "svelte/store";
 import { languageStore, translate } from "./i18n";
 import { escapeCssAttributeValue } from "../utilities/css";
+import {
+  bulkSellerRows,
+  directBuyButton,
+  searchButton
+} from "../site-adapter/selectors/common";
 import type { BulkSellerGroup, BulkSellerItem } from "../types/bulk-sellers";
 
-const RESULT_SELECTOR = ".search-results .row, .search-results .result-item, .result-list .row, .result-list .result-item, .row[data-id]";
 const HIGHLIGHT_CLASS = "bt-bulk-seller-glow";
 
 export class BulkSellersService {
@@ -18,7 +22,7 @@ export class BulkSellersService {
   private readonly rowCache = new Map<string, { signature: string; item: BulkSellerItem | null }>();
   private readonly handleDocumentClick = (event: MouseEvent) => {
     const target = event.target as Element | null;
-    if (!target?.closest(".btn.search-btn")) return;
+    if (!target?.closest(searchButton)) return;
     this.schedulePostSearchRefresh();
   };
 
@@ -67,7 +71,7 @@ export class BulkSellersService {
     const row = this.resolveRow(itemId);
     if (!row) return false;
 
-    const button = row.querySelector<HTMLElement>("button.direct-btn, .direct-btn, button.btn.direct-btn");
+    const button = row.querySelector<HTMLElement>(directBuyButton);
     if (!button) return false;
 
     button.click();
@@ -92,7 +96,7 @@ export class BulkSellersService {
   }
 
   private collectGroups() {
-    const rows = Array.from(document.querySelectorAll<HTMLElement>(RESULT_SELECTOR));
+    const rows = Array.from(document.querySelectorAll<HTMLElement>(bulkSellerRows));
     const sellers = new Map<string, BulkSellerItem[]>();
 
     rows.forEach((row, index) => {
@@ -263,7 +267,7 @@ export class BulkSellersService {
     const item = currentGroups.flatMap((group) => group.items).find((entry) => entry.id === itemId);
     if (!item) return null;
 
-    return Array.from(document.querySelectorAll<HTMLElement>(RESULT_SELECTOR)).find((row) => {
+    return Array.from(document.querySelectorAll<HTMLElement>(bulkSellerRows)).find((row) => {
       const seller = this.extractSeller(row);
       const itemName = this.extractItemName(row);
       const priceLabel = this.extractPriceLabel(row);

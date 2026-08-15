@@ -7,6 +7,19 @@ import {
 import { tradeContext } from "~/lib/core/trade-context"
 import { translate, type AppLanguage } from "~/lib/services/i18n"
 import { storageService } from "~/lib/services/storage"
+import {
+  expandedFilterGroup,
+  finerResultRows,
+  layoutButton,
+  modHashField,
+  modLabelField,
+  mods,
+  modsForAction,
+  modValueField,
+  multiselectInput,
+  quickFiltersPane
+} from "~/lib/site-adapter/selectors/common"
+import { mutatedModContainer } from "~/lib/site-adapter/selectors/poe1"
 
 export const initFilterPanel = () => {
   if ((window as any).__KROX_STARTED__) {
@@ -237,8 +250,7 @@ export const initFilterPanel = () => {
     )
   }
 
-  const modSelectors =
-    '.item-popup__content .item-mod, .itemBoxContent > .content > div, .content [class*="Mod"], .item-stats .stat-line'
+  const modSelectors = mods
 
   const getRowId = (mod: HTMLElement) => {
     const row = mod.closest("[data-id]") as HTMLElement | null
@@ -246,7 +258,7 @@ export const initFilterPanel = () => {
   }
 
   const getModHashFromDom = (mod: HTMLElement) => {
-    const sEl = mod.querySelector(".lc.s") as HTMLElement | null
+    const sEl = mod.querySelector(modHashField) as HTMLElement | null
     const fieldVal =
       sEl?.dataset?.field || sEl?.getAttribute("data-field") || ""
     return fieldVal.startsWith("stat.") ? fieldVal.slice(5) : fieldVal
@@ -256,12 +268,12 @@ export const initFilterPanel = () => {
     const containers = new Set<HTMLElement>()
     if (
       root instanceof HTMLElement &&
-      root.matches(".item-popup__content, .itemBoxContent > .content")
+      root.matches(mutatedModContainer)
     ) {
       containers.add(root)
     }
     root
-      .querySelectorAll?.(".item-popup__content, .itemBoxContent > .content")
+      .querySelectorAll?.(mutatedModContainer)
       .forEach((container) => containers.add(container as HTMLElement))
 
     containers.forEach((container) => {
@@ -331,8 +343,8 @@ export const initFilterPanel = () => {
     btns.classList.remove("finer-fixed-right")
     const host =
       isSpecialMod && isCompactResults
-        ? (mod.querySelector(".lc.l") as HTMLElement | null)
-        : (mod.querySelector(".lc.r.su, .lc.r.pr, .lc.r") as HTMLElement | null)
+        ? (mod.querySelector(modLabelField) as HTMLElement | null)
+        : (mod.querySelector(modValueField) as HTMLElement | null)
 
     if (isSpecialMod && !isCompactResults) {
       btns.classList.add("finer-fixed-right")
@@ -391,7 +403,7 @@ export const initFilterPanel = () => {
 
   // step 1: hover a result row -> check filters
   onEnter(
-    ".resultset > .row, .resultset > .result-item, .search-results .result-item, .search-results .row",
+    finerResultRows,
     (e: any, row: HTMLElement) => {
       if (row.classList.contains("finer-processed")) return
 
@@ -422,7 +434,7 @@ export const initFilterPanel = () => {
         if (!(node instanceof HTMLElement)) return
         if (node.matches?.(modSelectors)) {
           const content = node.closest(
-            ".item-popup__content, .itemBoxContent > .content"
+            mutatedModContainer
           )
           if (content) normalizeMutatedModHashes(content)
           decorateMod(node, ItemSearchGroupsVueItems())
@@ -433,7 +445,7 @@ export const initFilterPanel = () => {
   })
   observer.observe(document.body, { childList: true, subtree: true })
 
-  on("click", ".layout-btn", () => {
+  on("click", layoutButton, () => {
     refreshButtonsForLayout()
     setTimeout(refreshButtonsForLayout, 220)
   })
@@ -494,7 +506,7 @@ export const initFilterPanel = () => {
   }
 
   const injectSearchPanelQuickFilters = () => {
-    const pane = document.querySelector<HTMLElement>(".search-advanced-pane.brown")
+    const pane = document.querySelector<HTMLElement>(quickFiltersPane)
     const existing = pane?.querySelector('[data-krox-filter-presets="true"]')
     const isExchangeRoute = /^\/trade2?\/exchange(?:\/|$)/.test(
       window.location.pathname
@@ -593,7 +605,7 @@ export const initFilterPanel = () => {
     currencyRow.append(createBuyoutClearButton())
     list.appendChild(currencyRow)
 
-    const firstExpandedGroup = pane.querySelector(".filter-group.expanded")
+    const firstExpandedGroup = pane.querySelector(expandedFilterGroup)
     pane.insertBefore(panel, firstExpandedGroup || pane.firstChild)
   }
 
@@ -660,7 +672,7 @@ export const initFilterPanel = () => {
   ): HTMLInputElement | null => {
     if (!(target instanceof Element)) return null
 
-    const input = target.closest("input.multiselect__input")
+    const input = target.closest(multiselectInput)
     return input instanceof HTMLInputElement ? input : null
   }
 
@@ -721,7 +733,7 @@ export const initFilterPanel = () => {
     const filterType = isAnd ? "and" : "not"
     const btns = btn.closest("#btns-finer") as HTMLElement | null
     const modEl = btn.closest(
-      '.item-mod, .itemBoxContent > .content > div, .content [class*="Mod"], .item-stats .stat-line'
+      modsForAction
     ) as HTMLElement | null
     const rowId = btns?.dataset?.rowid || modEl?.dataset?.rowid
     if (!rowId) return
