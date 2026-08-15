@@ -14,10 +14,7 @@ import {
 } from "~/lib/site-adapter/selectors/common"
 import { mutatedModContainer } from "~/lib/site-adapter/selectors/poe1"
 import { on, onEnter } from "~/lib/site-adapter/trade-dom"
-import {
-  getStatFilterGroups,
-  hasTradeVueApp
-} from "~/lib/site-adapter/trade-filters"
+import { tradeFilters } from "~/lib/site-adapter/trade-filters"
 
 import {
   decorateMod,
@@ -36,16 +33,16 @@ export const createFinerFilters = (): FeatureLifecycle =>
       onEnter(finerResultRows, (e: any, row: HTMLElement) => {
         if (row.classList.contains("finer-processed")) return
 
-        // Check if the vue app exists
-        if (!hasTradeVueApp()) {
+        // Check if the trade filter API is available
+        if (!tradeFilters.isAvailable()) {
           console.warn("[Poe Trade Plus] Trade site filter API was not found.")
         }
 
         const rowMods = Array.from(row.querySelectorAll(mods)) as HTMLElement[]
-        const ISGs = getStatFilterGroups()
+        const groups = tradeFilters.getFilters()
 
         normalizeMutatedModHashes(row)
-        rowMods.forEach((mod) => decorateMod(mod, ISGs))
+        rowMods.forEach((mod) => decorateMod(mod, groups))
 
         row.classList.add("finer-processed")
       })
@@ -64,7 +61,7 @@ export const createFinerFilters = (): FeatureLifecycle =>
             if (node.matches?.(mods)) {
               const content = node.closest(mutatedModContainer)
               if (content) normalizeMutatedModHashes(content)
-              decorateMod(node, getStatFilterGroups())
+              decorateMod(node, tradeFilters.getFilters())
             }
             scanVisibleMods(node)
           }

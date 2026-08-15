@@ -16,10 +16,9 @@ import {
   modMutatedClass,
   mutatedModContainer
 } from "~/lib/site-adapter/selectors/poe1"
-
 import {
-  getStatFilterGroups,
-  type PoeVueFilterGroup
+  tradeFilters,
+  type TradeFilterGroup
 } from "~/lib/site-adapter/trade-filters"
 
 export const getRowId = (mod: HTMLElement) => {
@@ -126,8 +125,7 @@ export const attachButtons = (mod: HTMLElement) => {
 
   const isImplicitMod = mod.classList.contains(modImplicitClass)
   const isUniqueExplicitMod =
-    !!mod.closest(uniqueItemPopup) &&
-    mod.classList.contains(modExplicitClass)
+    !!mod.closest(uniqueItemPopup) && mod.classList.contains(modExplicitClass)
   const isSpecialMod = isImplicitMod || isUniqueExplicitMod
   const isCompactResults = !!mod.closest(compactResults)
   btns.classList.remove("finer-fixed-right")
@@ -147,7 +145,7 @@ export const attachButtons = (mod: HTMLElement) => {
   }
 }
 
-export const decorateMod = (mod: HTMLElement, ISGs: PoeVueFilterGroup[]) => {
+export const decorateMod = (mod: HTMLElement, groups: TradeFilterGroup[]) => {
   const modHash = mod.dataset.finerHashOverride || getModHashFromDom(mod)
   if (!modHash) return
 
@@ -155,8 +153,8 @@ export const decorateMod = (mod: HTMLElement, ISGs: PoeVueFilterGroup[]) => {
   const rowId = getRowId(mod)
   if (rowId) mod.dataset.rowid = rowId
 
-  const isInFilters = ISGs.some((isg) =>
-    isg.filters.some((f) => f.id === modHash)
+  const isInFilters = groups.some((group) =>
+    group.filters.some((f) => f.id === modHash)
   )
   if (isInFilters) {
     mod.classList.add("finer-filtered")
@@ -172,11 +170,11 @@ export const decorateMod = (mod: HTMLElement, ISGs: PoeVueFilterGroup[]) => {
 }
 
 export const scanVisibleMods = (root: ParentNode = document) => {
-  const ISGs = getStatFilterGroups()
+  const groups = tradeFilters.getFilters()
   normalizeMutatedModHashes(root)
   Array.from(root.querySelectorAll(mods) as NodeListOf<HTMLElement>).forEach(
     (mod) => {
-      decorateMod(mod, ISGs)
+      decorateMod(mod, groups)
     }
   )
 }

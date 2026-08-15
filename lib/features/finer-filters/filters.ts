@@ -1,13 +1,7 @@
 // Filter interactions with the Trade site's stat-filter groups.
 
 import { modsForAction } from "~/lib/site-adapter/selectors/common"
-import {
-  createFilter,
-  getStatFilterGroups,
-  pushStatGroup,
-  refreshResults,
-  saveSearch
-} from "~/lib/site-adapter/trade-filters"
+import { tradeFilters } from "~/lib/site-adapter/trade-filters"
 
 import { modMap } from "./stat-map"
 
@@ -23,26 +17,29 @@ export const applyFinerFiltersAction = (detail: {
   const hashes = (detail.types || "").split(",").filter(Boolean)
   const prefix = detail.prefix || "pseudo.pseudo_"
 
-  const ISG_AND = getStatFilterGroups("and").find((g) => g.index === 0)
+  const andGroup = tradeFilters.getFilters("and").find((g) => g.index === 0)
   let reload = false
 
   hashes.forEach((hash: string) => {
     const reHashed = `${prefix}${modMap[hash]}`
-    const current = ISG_AND?.filters.find((f) => f.id === reHashed)
-    if (current && ISG_AND) {
-      const idx = ISG_AND.filters.indexOf(current)
-      const curMin = ISG_AND.state.filters[idx].value?.min || 0
-      if (curMin || more)
-        ISG_AND.updateFilter!(idx, { min: curMin + (more ? 10 : -10) })
-      else ISG_AND.removeFilter!(idx)
+    const current = andGroup?.filters.find((f) => f.id === reHashed)
+    if (current && andGroup) {
+      const idx = andGroup.filters.indexOf(current)
+      const curMin = current.value.min || 0
+      if (curMin || more) {
+        tradeFilters.updateFilter(andGroup, idx, {
+          min: curMin + (more ? 10 : -10)
+        })
+      } else {
+        tradeFilters.removeFilter(andGroup, idx)
+      }
       reload = true
-    } else if (more && ISG_AND?.selectFilter) {
-      ISG_AND.selectFilter(createFilter(reHashed))
-      reload = true
+    } else if (more) {
+      if (tradeFilters.addFilter(reHashed, "and", andGroup)) reload = true
     }
   })
 
-  if (reload) saveSearch()
+  if (reload) tradeFilters.save()
 }
 
 export const addOrRemoveFilter = (
@@ -59,15 +56,8 @@ export const addOrRemoveFilter = (
   if (!rowId) return
 
   const statHash = btns?.dataset?.hash || modEl?.dataset?.hash
-  const newFilter = createFilter(statHash || "")
-  const group = getStatFilterGroups(filterType).find((g) => g.index !== 0)
+  tradeFilters.addFilter(statHash || "", filterType)
 
-  if (group?.selectFilter) {
-    group.selectFilter(newFilter)
-  } else {
-    pushStatGroup(filterType, [newFilter])
-  }
-
-  saveSearch()
-  refreshResults()
+  tradeFilters.save()
+  tradeFilters.refresh()
 }

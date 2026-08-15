@@ -8,7 +8,8 @@ const {
   hasTradeVueApp,
   pushStatGroup,
   refreshResults,
-  saveSearch
+  saveSearch,
+  tradeFilters
 } = await import("../lib/site-adapter/trade-filters.ts")
 
 const buildApp = () => {
@@ -24,7 +25,8 @@ const buildApp = () => {
       filters: [{ id: "life", value: {}, disabled: false }],
       state: { filters: [{ value: { min: 0 } }] },
       selectFilter: (filter) => record("and0.selectFilter", { id: filter.id }),
-      updateFilter: (index, value) => record("and0.updateFilter", { index, value }),
+      updateFilter: (index, value) =>
+        record("and0.updateFilter", { index, value }),
       removeFilter: (index) => record("and0.removeFilter", { index })
     },
     {
@@ -166,4 +168,105 @@ test("filter groups expose the mutation methods features rely on", () => {
   assert.ok(andGroup?.updateFilter)
   assert.ok(andGroup?.removeFilter)
   assert.ok(andGroup?.filters.some((filter) => filter.id === "life"))
+})
+
+test("tradeFilters.getFilters maps Vue groups into feature-facing views", () => {
+  const { app } = buildApp()
+  setWindow({ app })
+
+  const views = tradeFilters.getFilters("and")
+  assert.equal(views.length, 2)
+  assert.deepEqual(views[0], {
+    index: 0,
+    type: "and",
+    filters: [{ id: "life", value: { min: 0 } }]
+  })
+  assert.deepEqual(views[1], { index: 1, type: "and", filters: [] })
+})
+
+test("tradeFilters.isAvailable mirrors window.app presence", () => {
+  setWindow({})
+  assert.equal(tradeFilters.isAvailable(), false)
+  setWindow({ app: {} })
+  assert.equal(tradeFilters.isAvailable(), true)
+})
+
+test("tradeFilters.addFilter targets the first non-zero group by default", () => {
+  const { app, calls } = buildApp()
+  setWindow({ app })
+
+  tradeFilters.addFilter("total_fire_resistance", "and")
+  assert.deepEqual(calls.at(-1), {
+    method: "and1.selectFilter",
+    id: "total_fire_resistance"
+  })
+})
+
+test("tradeFilters.addFilter can target an explicit group", () => {
+  const { app, calls } = buildApp()
+  setWindow({ app })
+
+  const and0 = tradeFilters.getFilters("and").find((group) => group.index === 0)
+  tradeFilters.addFilter("total_fire_resistance", "and", and0)
+  assert.deepEqual(calls.at(-1), {
+    method: "and0.selectFilter",
+    id: "total_fire_resistance"
+  })
+})
+
+test("tradeFilters.addFilter falls back to pushStatGroup without a group", () => {
+  const { app, calls } = buildApp()
+  setWindow({ app })
+  app.$children[0].$children[0].$children = []
+
+  tradeFilters.addFilter("total_fire_resistance", "and")
+  assert.deepEqual(calls.at(-1), {
+    method: "store.commit",
+    mutation: "pushStatGroup",
+    payload: {
+      type: "and",
+      filters: [{ id: "total_fire_resistance", value: {}, disabled: false }]
+    }
+  })
+})
+
+test("tradeFilters.updateFilter and removeFilter act on the live group", () => {
+  const { app, calls } = buildApp()
+  setWindow({ app })
+
+  const and0 = tradeFilters.getFilters("and").find((group) => group.index === 0)
+  tradeFilters.updateFilter(and0, 0, { min: 10 })
+  assert.deepEqual(calls.at(-1), {
+    method: "and0.updateFilter",
+    index: 0,
+    value: { min: 10 }
+  })
+
+  tradeFilters.removeFilter(and0, 0)
+  assert.deepEqual(calls.at(-1), { method: "and0.removeFilter", index: 0 })
+})
+
+test("tradeFilters.updateFilter and removeFilter are safe without a live group", () => {
+  setWindow({})
+  assert.equal(
+    tradeFilters.updateFilter({ index: 0, type: "and", filters: [] }, 0, {
+      min: 1
+    }),
+    false
+  )
+  assert.equal(
+    tradeFilters.removeFilter({ index: 0, type: "and", filters: [] }, 0),
+    false
+  )
+})
+
+test("tradeFilters.save and refresh delegate to the site backend", () => {
+  const { app, calls } = buildApp()
+  setWindow({ app })
+
+  tradeFilters.save()
+  tradeFilters.refresh()
+
+  assert.deepEqual(calls.at(-2), { method: "app.save", reload: true })
+  assert.deepEqual(calls.at(-1), { method: "panel.search" })
 })
