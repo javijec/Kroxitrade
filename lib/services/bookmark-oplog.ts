@@ -3,7 +3,7 @@ import type {
   BookmarksTradeStruct
 } from "../types/bookmarks"
 import { uniqueId } from "../utilities/unique-id"
-import { storageService } from "./storage"
+import { estimateSyncStorageBytes, storageService } from "./storage"
 
 export const BOOKMARK_OPLOG_DEVICE_KEY = "bookmark-oplog-device-id"
 export const BOOKMARK_OPLOG_PREFIX = "bookmark-oplog--"
@@ -108,22 +108,29 @@ const isManifest = (value: unknown): value is BookmarkOplogManifest =>
   Array.isArray((value as BookmarkOplogManifest).chunkKeys)
 
 export const getBookmarkOplogDeviceId = async () => {
-  const existing = await storageService.getValue<string>(BOOKMARK_OPLOG_DEVICE_KEY)
+  const existing = await storageService.getValue<string>(
+    BOOKMARK_OPLOG_DEVICE_KEY
+  )
   if (existing) return existing
   const actor = uniqueId()
   const saved = await storageService.setValue(BOOKMARK_OPLOG_DEVICE_KEY, actor)
-  if (!saved) throw new Error("Could not create a local bookmark sync device id")
+  if (!saved)
+    throw new Error("Could not create a local bookmark sync device id")
   return actor
 }
 
-export const readBookmarkOplog = async (): Promise<BookmarkOplogOperation[]> => {
+export const readBookmarkOplog = async (): Promise<
+  BookmarkOplogOperation[]
+> => {
   if (typeof chrome === "undefined" || !chrome.storage?.sync) return []
   const stored = await chrome.storage.sync.get(null)
   const manifestKeys = Object.keys(stored).filter(
     (key) => key.startsWith(BOOKMARK_OPLOG_PREFIX) && key.endsWith("--manifest")
   )
   const manifests = await Promise.all(
-    manifestKeys.map(async (key) => storageService.getValue<BookmarkOplogManifest>(key, null, "sync"))
+    manifestKeys.map(async (key) =>
+      storageService.getValue<BookmarkOplogManifest>(key, null, "sync")
+    )
   )
   const operations = await Promise.all(
     manifests.filter(isManifest).map(async (manifest) => {
@@ -154,12 +161,12 @@ export const publishBookmarkOplog = async (
   }
   const stored = await chrome.storage.sync.get(null)
   const ownPrefix = `${BOOKMARK_OPLOG_PREFIX}${actor}--`
-  const otherBytes = rawStorageBytes(
-    Object.fromEntries(
-      Object.entries(stored).filter(([key]) => !key.startsWith(ownPrefix))
-    )
+  const ownKeys = Object.keys(stored).filter((key) => key.startsWith(ownPrefix))
+  const next = await createBookmarkOplogChunks(
+    actor,
+    operations,
+    await currentOtherSyncBytes(stored, ownKeys)
   )
-  const next = createBookmarkOplogChunks(actor, operations, otherBytes)
   const saved = await storageService.setValues(
     { ...next.chunks, [bookmarkOplogManifestKey(actor)]: next.manifest },
     "sync"
@@ -167,12 +174,15 @@ export const publishBookmarkOplog = async (
   if (!saved) throw new Error("Could not publish bookmark operations to Sync")
 
   const staleKeys = Object.keys(stored).filter(
-    (key) => key.startsWith(ownPrefix) &&
+    (key) =>
+      key.startsWith(ownPrefix) &&
       key !== bookmarkOplogManifestKey(actor) &&
       !(key in next.chunks)
   )
   if (staleKeys.length > 0) {
-    await Promise.all(staleKeys.map((key) => storageService.deleteValue(key, null, "sync")))
+    await Promise.all(
+      staleKeys.map((key) => storageService.deleteValue(key, null, "sync"))
+    )
   }
   return next
 }
@@ -197,15 +207,37 @@ export const compactBookmarkOplog = (
 }
 
 /**
+ * Current Sync usage charged to the browser for every key that is not part of
+ * this device's own oplog. getBytesInUse reports the real stored size, which
+ * is far smaller than the uncompressed values after StorageService's gzip.
+ */
+const currentOtherSyncBytes = async (
+  stored: Record<string, unknown>,
+  ownKeys: string[]
+): Promise<number> => {
+  if (typeof chrome.storage.sync.getBytesInUse === "function") {
+    const total = await chrome.storage.sync.getBytesInUse(null)
+    const own =
+      ownKeys.length > 0 ? await chrome.storage.sync.getBytesInUse(ownKeys) : 0
+    return Math.max(0, total - own)
+  }
+  return rawStorageBytes(
+    Object.fromEntries(
+      Object.entries(stored).filter(([key]) => !ownKeys.includes(key))
+    )
+  )
+}
+
+/**
  * Splits an actor's compacted operation set into independently valid Sync
  * items. The conservative 7 KB target also works on browsers that do not
  * compress the StorageService envelope.
  */
-export const createBookmarkOplogChunks = (
+export const createBookmarkOplogChunks = async (
   actor: string,
   operations: BookmarkOplogOperation[],
   existingBytes = 0
-): BookmarkOplogChunks => {
+): Promise<BookmarkOplogChunks> => {
   const compacted = compactBookmarkOplog(operations)
   const chunks: BookmarkOplogOperation[][] = []
   let current: BookmarkOplogOperation[] = []
@@ -223,7 +255,10 @@ export const createBookmarkOplogChunks = (
       current = candidate
     }
 
-    if (storageBytes(bookmarkOplogChunkKey(actor, chunks.length), current) > BOOKMARK_OPLOG_MAX_ITEM_BYTES) {
+    if (
+      storageBytes(bookmarkOplogChunkKey(actor, chunks.length), current) >
+      BOOKMARK_OPLOG_MAX_ITEM_BYTES
+    ) {
       throw new Error("A bookmark operation is too large to synchronize")
     }
   }
@@ -238,12 +273,10 @@ export const createBookmarkOplogChunks = (
   const storedChunks = Object.fromEntries(
     chunks.map((chunk, index) => [bookmarkOplogChunkKey(actor, index), chunk])
   )
-  const bytes =
-    storageBytes(bookmarkOplogManifestKey(actor), manifest) +
-    Object.entries(storedChunks).reduce(
-      (total, [key, chunk]) => total + storageBytes(key, chunk),
-      0
-    )
+  const bytes = await estimateSyncStorageBytes({
+    [bookmarkOplogManifestKey(actor)]: manifest,
+    ...storedChunks
+  })
   if (existingBytes + bytes > BOOKMARK_OPLOG_MAX_TOTAL_BYTES) {
     throw new Error("Bookmarks exceed the 100 KB Sync quota")
   }
@@ -292,19 +325,44 @@ export class BookmarkOplog {
   }
 
   upsertFolder(folder: BookmarksFolderStruct): BookmarkOplogOperation {
-    return { id: uniqueId(), clock: this.nextClock(), type: "upsert-folder", folder: cloneFolder(folder) }
+    return {
+      id: uniqueId(),
+      clock: this.nextClock(),
+      type: "upsert-folder",
+      folder: cloneFolder(folder)
+    }
   }
 
   deleteFolder(folderId: string): BookmarkOplogOperation {
-    return { id: uniqueId(), clock: this.nextClock(), type: "delete-folder", folderId }
+    return {
+      id: uniqueId(),
+      clock: this.nextClock(),
+      type: "delete-folder",
+      folderId
+    }
   }
 
-  upsertTrade(folderId: string, trade: BookmarksTradeStruct): BookmarkOplogOperation {
-    return { id: uniqueId(), clock: this.nextClock(), type: "upsert-trade", folderId, trade: cloneTrade(trade) }
+  upsertTrade(
+    folderId: string,
+    trade: BookmarksTradeStruct
+  ): BookmarkOplogOperation {
+    return {
+      id: uniqueId(),
+      clock: this.nextClock(),
+      type: "upsert-trade",
+      folderId,
+      trade: cloneTrade(trade)
+    }
   }
 
   deleteTrade(folderId: string, tradeId: string): BookmarkOplogOperation {
-    return { id: uniqueId(), clock: this.nextClock(), type: "delete-trade", folderId, tradeId }
+    return {
+      id: uniqueId(),
+      clock: this.nextClock(),
+      type: "delete-trade",
+      folderId,
+      tradeId
+    }
   }
 }
 
@@ -315,30 +373,49 @@ export class BookmarkOplog {
 export const replayBookmarkOplog = (
   operations: BookmarkOplogOperation[]
 ): BookmarkOplogState => {
-  const folders = new Map<string, { value?: BookmarksFolderStruct; clock: HybridClock }>()
-  const trades = new Map<string, { folderId: string; value?: BookmarksTradeStruct; clock: HybridClock }>()
+  const folders = new Map<
+    string,
+    { value?: BookmarksFolderStruct; clock: HybridClock }
+  >()
+  const trades = new Map<
+    string,
+    { folderId: string; value?: BookmarksTradeStruct; clock: HybridClock }
+  >()
 
   for (const operation of [...operations].sort(compareOperation)) {
-    if (operation.type === "upsert-folder" || operation.type === "delete-folder") {
-      const folderId = operation.type === "upsert-folder" ? operation.folder.id : operation.folderId
+    if (
+      operation.type === "upsert-folder" ||
+      operation.type === "delete-folder"
+    ) {
+      const folderId =
+        operation.type === "upsert-folder"
+          ? operation.folder.id
+          : operation.folderId
       if (!folderId) continue
       const current = folders.get(folderId)
       if (current && compareClock(current.clock, operation.clock) >= 0) continue
       folders.set(folderId, {
         clock: operation.clock,
-        value: operation.type === "upsert-folder" ? cloneFolder(operation.folder) : undefined
+        value:
+          operation.type === "upsert-folder"
+            ? cloneFolder(operation.folder)
+            : undefined
       })
       continue
     }
 
-    const tradeId = operation.type === "upsert-trade" ? operation.trade.id : operation.tradeId
+    const tradeId =
+      operation.type === "upsert-trade" ? operation.trade.id : operation.tradeId
     if (!tradeId) continue
     const current = trades.get(tradeId)
     if (current && compareClock(current.clock, operation.clock) >= 0) continue
     trades.set(tradeId, {
       clock: operation.clock,
       folderId: operation.folderId,
-      value: operation.type === "upsert-trade" ? cloneTrade(operation.trade) : undefined
+      value:
+        operation.type === "upsert-trade"
+          ? cloneTrade(operation.trade)
+          : undefined
     })
   }
 
@@ -353,7 +430,9 @@ export const replayBookmarkOplog = (
     tradesByFolder.set(trade.folderId, entries)
   }
   return {
-    folders: [...folders.values()].flatMap((entry) => entry.value ? [entry.value] : []),
+    folders: [...folders.values()].flatMap((entry) =>
+      entry.value ? [entry.value] : []
+    ),
     tradesByFolder
   }
 }

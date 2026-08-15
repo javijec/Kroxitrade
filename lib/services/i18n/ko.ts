@@ -10,6 +10,8 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.categoryTitleToggleDescription": "이제 카테고리 제목을 클릭하면 화살표 버튼처럼 해당 카테고리를 접거나 펼칠 수 있습니다.",
   "whatsNew.item.toolbarHideEarlierTitle": "북마크 도구 모음이 더 일찍 숨겨짐",
   "whatsNew.item.toolbarHideEarlierDescription": "이제 목록을 아래로 스크롤하면 북마크 도구 모음이 바로 숨겨지고 맨 위로 돌아오면 다시 표시됩니다.",
+  "whatsNew.item.lastSyncTimestampTitle": "백업 및 복원에 마지막 동기화 시각 표시",
+  "whatsNew.item.lastSyncTimestampDescription": "백업 및 복원 섹션에 가장 최근 동기화의 날짜와 시각이 표시되어 데이터가 최신 상태인지 한눈에 확인할 수 있습니다.",
   "whatsNew.item.swedishLanguageTitle": "스웨덴어 인터페이스 및 현지화된 스토어 등록",
   "whatsNew.item.swedishLanguageDescription": "이제 스웨덴어를 인터페이스 언어로 사용할 수 있으며, 확장 프로그램이 지원하는 모든 언어에 Chrome Web Store 메타데이터가 포함됩니다.",
   "whatsNew.item.syncRecoveryTitle": "실수로 삭제한 동기화 데이터를 복구",
@@ -240,6 +242,8 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "bookmarks.automaticSyncDescription":
     "확장 프로그램을 사용하는 동안 북마크와 설정이 Chrome과 자동으로 동기화됩니다.",
   "bookmarks.restoreFile": "파일에서 복원",
+  "bookmarks.lastSync": ({ date, time }) => `마지막 동기화: ${date} ${time}`,
+  "bookmarks.lastSyncNever": "마지막 동기화: 없음",
   "history.clear": "기록 지우기",
   "history.cleared": "기록을 지웠습니다!",
   "history.empty": ({ version }) => `PoE ${version}의 기록이 비어 있습니다.`,

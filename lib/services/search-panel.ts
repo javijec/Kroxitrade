@@ -1,33 +1,34 @@
 import { get } from "svelte/store";
+import {
+  categoryInput,
+  rarityInput,
+  searchInput
+} from "../site-adapter/selectors/common";
+import { tradeDom } from "../site-adapter/trade-dom";
 import { languageStore, translate } from "./i18n";
 
 export class SearchPanelService {
-  private readonly SEARCH_INPUT_SELECTOR = '.search-panel .search-bar .search-left input, .search-panel-content .search-bar input';
-  private readonly CATEGORY_INPUT_SELECTOR = '.search-advanced-items .filter-group:nth-of-type(1) .filter-property:nth-of-type(1) input';
-  private readonly RARITY_INPUT_SELECTOR = '.search-advanced-items .filter-group:nth-of-type(1) .filter-property:nth-of-type(2) input';
-  private readonly STATS_SELECTOR = '.search-advanced-pane:last-child .filter-group-body .filter:not(.disabled) .filter-title, .filter-group-body .filter .filter-title';
-
   recommendTitle() {
     return this.getName() || translate(get(languageStore), "search.tradeFallback");
   }
 
   getCategory() {
-    return this._scrapeInputValue(this.CATEGORY_INPUT_SELECTOR, 'Any');
+    return this._scrapeInputValue(categoryInput, 'Any');
   }
 
   getName() {
-    const value = this._scrapeInputValue(this.SEARCH_INPUT_SELECTOR);
+    const value = this._scrapeInputValue(searchInput);
     return this._normalizeSearchName(value);
   }
 
   getRarity() {
-    return this._scrapeInputValue(this.RARITY_INPUT_SELECTOR, 'Any');
+    return this._scrapeInputValue(rarityInput, 'Any');
   }
 
   getStats() {
     const stats: string[] = [];
 
-    document.querySelectorAll(this.STATS_SELECTOR).forEach((item: any) => {
+    tradeDom.getStatsTitles().forEach((item) => {
       let stat = item.innerText;
       stat = stat.trim().toLowerCase().replace(/^pseudo /, "");
       stats.push(stat);
@@ -37,13 +38,7 @@ export class SearchPanelService {
   }
 
   private _scrapeInputValue(selector: string, nullValue?: string): string | null {
-    const input = document.querySelector(selector) as HTMLInputElement | null;
-    if (!input) return null;
-
-    const value = input.value;
-    if (!value || (nullValue && value === nullValue)) return null;
-
-    return value;
+    return tradeDom.readInputValue(selector, nullValue);
   }
 
   private _normalizeSearchName(value: string | null): string | null {

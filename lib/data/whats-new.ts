@@ -488,10 +488,26 @@ const version1128Polish: WhatsNewItem[] = [
   }
 ];
 
+const version1129Features: WhatsNewItem[] = [
+  {
+    titleKey: "whatsNew.item.lastSyncTimestampTitle",
+    descriptionKey: "whatsNew.item.lastSyncTimestampDescription"
+  }
+];
+
 export const latestWhatsNew: WhatsNewEntry = {
-  version: "1.1.28",
-  date: "2026-08-14",
+  version: "1.1.29",
+  date: "2026-08-15",
   sections: [
+    {
+      title: "1.1.29",
+      groups: [
+        {
+          titleKey: "whatsNew.section.features",
+          items: version1129Features
+        }
+      ]
+    },
     {
       title: "1.1.28",
       groups: [

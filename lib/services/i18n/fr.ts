@@ -10,6 +10,8 @@ export const frenchTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.categoryTitleToggleDescription": "Cliquer sur le titre d’une catégorie la réduit ou la développe maintenant, comme le bouton flèche.",
   "whatsNew.item.toolbarHideEarlierTitle": "La barre de signets se masque plus tôt",
   "whatsNew.item.toolbarHideEarlierDescription": "La barre d’outils des signets se masque désormais dès que vous faites défiler la liste vers le bas et revient lorsque vous remontez en haut.",
+  "whatsNew.item.lastSyncTimestampTitle": "Horodatage de la dernière synchronisation dans Sauvegarde et restauration",
+  "whatsNew.item.lastSyncTimestampDescription": "La section Sauvegarde et restauration affiche désormais la date et l'heure de votre dernière synchronisation, pour confirmer en un coup d'œil que vos données sont à jour.",
   "whatsNew.item.swedishLanguageTitle": "Interface en suédois et fiche de boutique localisée",
   "whatsNew.item.swedishLanguageDescription": "Le suédois est désormais disponible comme langue d’interface, et les métadonnées Chrome Web Store sont incluses pour toutes les langues prises en charge par l’extension.",
   "whatsNew.item.syncRecoveryTitle": "Les données synchronisées se récupèrent après une suppression accidentelle",
@@ -238,8 +240,10 @@ export const frenchTranslations: Record<string, TranslationValue> = {
     "Enregistrez un fichier portable avec les dossiers, recherches sauvegardées, paramètres et préférences de l’extension, ou restaurez-en un précédent.",
   "bookmarks.saveFile": "Sauvegarde",
   "bookmarks.automaticSyncDescription":
-    "Vos marque-pages et paramètres se synchronisent automatiquement avec Chrome lorsque vous utilisez l’extension.",
+    "Vos favoris et paramètres se synchronisent automatiquement avec Chrome pendant que vous utilisez l'extension.",
   "bookmarks.restoreFile": "Restaurer depuis le fichier",
+  "bookmarks.lastSync": ({ date, time }) => `Dernière synchronisation : ${date} à ${time}`,
+  "bookmarks.lastSyncNever": "Dernière synchronisation : jamais",
   "history.clear": "Effacer l’historique",
   "history.cleared": "Historique effacé !",
   "history.empty": ({ version }) =>

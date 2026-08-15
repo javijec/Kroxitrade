@@ -1,8 +1,8 @@
 <script lang="ts">
   import Layout from "~components/Layout.svelte"
-  import { bulkSellersService } from "~lib/services/bulk-sellers"
-  import { pageTitleService } from "~lib/services/page-title"
-  import { itemResultsService } from "~lib/services/item-results"
+  import { pageTitle } from "~lib/services/page-title"
+  import { itemResults } from "~lib/features/item-results"
+  import { bulkSellers } from "~lib/services/bulk-sellers"
   import { settings } from "~lib/services/settings"
   import { hasValidExtensionContext, isExtensionContextInvalidatedError } from "~lib/utilities/extension-context"
   import { escapeCssAttributeValue } from "~lib/utilities/css"
@@ -15,6 +15,14 @@
     large: "1.18",
     extraLarge: "1.34"
   } as const
+
+  function ensureBulkSellers(enabled: boolean) {
+    if (enabled) {
+      bulkSellers.start()
+    } else {
+      bulkSellers.stop()
+    }
+  }
 
   function applyTextSize(textSize: keyof typeof TEXT_SIZE_SCALE) {
     document.documentElement.style.setProperty("--bt-text-scale", TEXT_SIZE_SCALE[textSize])
@@ -31,21 +39,13 @@
     document.documentElement.classList.add("bt-has-kroxitrade-sidebar")
     document.body.classList.add("bt-has-kroxitrade-sidebar")
 
-    pageTitleService.initialize()
-    void itemResultsService.initialize()
-    if (settings.getCurrent().showBulkSellers) {
-      bulkSellersService.initialize()
-    }
+    pageTitle.start()
+    void itemResults.start()
+    ensureBulkSellers(settings.getCurrent().showBulkSellers)
 
     const unsubscribeSettings = settings.subscribe((value) => {
       applyTextSize(value.textSize)
-
-      if (value.showBulkSellers) {
-        bulkSellersService.initialize()
-        return
-      }
-
-      bulkSellersService.teardown()
+      ensureBulkSellers(value.showBulkSellers)
     })
 
     const handleMessage = (request: { query?: string; itemId?: string }) => {
@@ -77,8 +77,10 @@
     }
 
     return () => {
+      bulkSellers.stop()
       unsubscribeSettings()
-      bulkSellersService.teardown()
+      itemResults.stop()
+      pageTitle.stop()
       if (hasValidExtensionContext()) {
         try {
           chrome.runtime.onMessage.removeListener(handleMessage)

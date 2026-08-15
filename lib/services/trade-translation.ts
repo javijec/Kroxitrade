@@ -1,3 +1,4 @@
+import { isNativeChineseTradeSite, isPoe2TradeSite } from "../config/trade-hosts"
 import { storageService } from "./storage"
 import { getPendingSyncValue } from "./sync-journal"
 
@@ -93,11 +94,3 @@ export const getChineseSupplementState = async (): Promise<TradeTranslationState
 
 export const isTradeTranslationEnabled = async (): Promise<boolean> =>
   (await getTradeTranslationState()).enabled
-
-function isNativeChineseTradeSite() {
-  return typeof location !== "undefined" && location.hostname === "pathofexile.tw"
-}
-
-function isPoe2TradeSite() {
-  return typeof location !== "undefined" && location.pathname.startsWith("/trade2/")
-}

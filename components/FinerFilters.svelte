@@ -1,6 +1,6 @@
 <script lang="ts">
   import { languageStore, translate } from "../lib/services/i18n";
-  import { emitFinerFiltersAction } from "../lib/utilities/finer-filters-bridge";
+  import { extensionBus } from "../lib/core/extension-bus";
   import {
     BUYOUT_CURRENCY_PRESETS,
     clearBuyoutPrice,
@@ -43,7 +43,7 @@
   let collapsed = $state(true); // start collapsed
 
   function handleAction(action: 'global-plus' | 'global-minus', types: string[], prefix: string) {
-    emitFinerFiltersAction({
+    extensionBus.send("finer-filters:action", {
       action,
       types: types.join(','),
       prefix

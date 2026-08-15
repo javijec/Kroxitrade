@@ -253,7 +253,7 @@ import About from "./pages/About.svelte";
   onMount(async () => {
     await settings.load();
     await hydrateActiveBookmarkFromTab();
-    tradeLocationService.startPolling();
+    tradeLocationService.start();
     const unsubscribeLocation = tradeLocationService.locationStore.subscribe((location) => {
       currentTradeVersion = location.version;
       void settings.useVersion(location.version);
@@ -289,7 +289,7 @@ import About from "./pages/About.svelte";
 
     return () => {
       unsubscribeLocation();
-      tradeLocationService.stopPolling();
+      tradeLocationService.stop();
     };
   });
 

@@ -1,5 +1,7 @@
 import { writable } from "svelte/store";
 import type { TradeSiteVersion } from "../types/trade-location";
+import { extensionBus } from "../core/extension-bus";
+import { tradeDom } from "../site-adapter/trade-dom";
 import { settings } from "./settings";
 
 const BODY_CLASS = "bt-dev-result-actions-visible";
@@ -42,7 +44,7 @@ function applyPoe2CopyVisibility(value: boolean) {
   document.body?.classList.toggle(POE2_COPY_BODY_CLASS, isPoe2CopyVisible);
 
   if (activeVersion === "2") {
-    document.querySelectorAll<HTMLButtonElement>(".row > .left > button.copy").forEach((button) => {
+    tradeDom.getPoe2CopyButtons().forEach((button) => {
       experimentalSettings.applyPoe2CopyButton(button);
     });
   }
@@ -52,7 +54,7 @@ function applyCoeVisibility(value: boolean) {
   isCoeVisible = value;
   setCoe(isCoeVisible);
   document.body?.classList.toggle(COE_BODY_CLASS, isCoeVisible);
-  document.dispatchEvent(new CustomEvent("poe-trade-plus:experimental-change"));
+  extensionBus.send("item-results:experimental-change");
 }
 
 function applyCoeDesecratedModsEnabled(value: boolean) {
@@ -64,7 +66,7 @@ function applyWikiVisibility(value: boolean) {
   isWikiVisible = value;
   setWiki(isWikiVisible);
   document.body?.classList.toggle(WIKI_BODY_CLASS, isWikiVisible);
-  document.dispatchEvent(new CustomEvent("poe-trade-plus:experimental-change"));
+  extensionBus.send("item-results:experimental-change");
 }
 
 function applyCurrentSettings() {

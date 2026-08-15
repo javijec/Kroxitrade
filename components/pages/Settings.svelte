@@ -10,16 +10,18 @@
     wikiButtonSetting
   } from "../../lib/services/experimental";
   import { flashMessages } from "../../lib/services/flash";
-  import { itemResultsService } from "../../lib/services/item-results";
+  import { itemResults } from "../../lib/features/item-results";
   import {
     chineseTradeMessage,
     chineseTradePageStorageFor,
     chineseTradeStorageFor,
     type ChineseTradeVersion
   } from "../../lib/services/chinese-trade/contract";
+  import { storageService } from "../../lib/services/storage";
   import { DEFAULT_SIDEBAR_WIDTH, settings, type BookmarkLayout, type BookmarkTradeActionId, type QuickFiltersPlacement, type SidebarSide, type TextSizePreference } from "../../lib/services/settings";
   import { tradeLocationService } from "../../lib/services/trade-location";
   import { isNativeChineseTradeSite } from "../../lib/config/trade-hosts";
+  import { tradeContext } from "../../lib/core/trade-context";
   import type { BookmarksFolderStruct, BookmarksTradeStruct } from "../../lib/types/bookmarks";
   import BookmarkFolder from "../BookmarkFolder.svelte";
   import Button from "../Button.svelte";
@@ -57,6 +59,25 @@
 
   type SettingsTab = "interface" | "sidebar" | "results" | "bookmarks";
   let activeTab = $state<SettingsTab>("interface");
+  let lastSyncAt = $state<number | null>(storageService.getLastSyncAt());
+
+  const formatLastSync = (timestamp: number | null) => {
+    if (timestamp === null) return null;
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return null;
+    return {
+      date: date.toLocaleDateString($languageStore, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      }),
+      time: date.toLocaleTimeString($languageStore, {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    };
+  };
+  const lastSyncDisplay = $derived(formatLastSync(lastSyncAt));
 
   const tabs: Array<{ id: SettingsTab; labelKey: string }> = [
     { id: "interface", labelKey: "settings.tabs.interface" },
@@ -159,7 +180,7 @@
       window.location.hostname !== "pathofexile.tw"
   );
   const currentChineseTradeVersion = (): ChineseTradeVersion =>
-    window.location.pathname.startsWith("/trade2/") ? "poe2" : "poe1";
+    tradeContext.get().game === "poe2" ? "poe2" : "poe1";
 
   const localizedLanguageNames: Record<AppLanguage, Record<AppLanguage, string>> = {
     en: { en: "English", es: "Spanish", pt: "Portuguese", ru: "Russian", sv: "Swedish", th: "Thai", de: "German", fr: "French", ja: "Japanese", ko: "Korean", "zh-tw": "Traditional Chinese", "zh-cn": "Simplified Chinese" },
@@ -244,7 +265,7 @@
 
     isRefreshingEquivalentRatios = true;
     try {
-      await itemResultsService.forceRefreshEquivalentPricing();
+      await itemResults.forceRefreshEquivalentPricing();
       flashMessages.success(
         translate($languageStore, "settings.equivalentRefreshSuccess", { league })
       );
@@ -830,6 +851,18 @@
           fileAccept=".json,.txt"
         />
       </div>
+      {#if lastSyncDisplay}
+        <p class="section-description settings-last-sync">
+          {translate($languageStore, "bookmarks.lastSync", {
+            date: lastSyncDisplay.date,
+            time: lastSyncDisplay.time
+          })}
+        </p>
+      {:else}
+        <p class="section-description settings-last-sync">
+          {translate($languageStore, "bookmarks.lastSyncNever")}
+        </p>
+      {/if}
       </section>
 
     {:else if activeTab === "sidebar"}

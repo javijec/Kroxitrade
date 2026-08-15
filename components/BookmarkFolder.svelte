@@ -23,7 +23,10 @@
     openUrlInNewTab,
     openUrlInNewWindow
   } from "../lib/services/active-trade-tab"
-  import { saveBookmarkScroll } from "../lib/services/bookmark-scroll"
+  import {
+    consumeBookmarkScroll,
+    saveBookmarkScroll
+  } from "../lib/services/bookmark-scroll"
   import { bookmarksService } from "../lib/services/bookmarks"
   import {
     bookmarkFolderIconOptions,
@@ -165,8 +168,20 @@
   }
 
   const refreshTrades = async () => {
+    const top = scrollContainer?.scrollTop
+    if (typeof top === "number") {
+      await saveBookmarkScroll(top)
+    }
     hasLoadedTrades = false
     await loadTrades(true)
+    await tick()
+    // `consumeBookmarkScroll` is fire-once: if a second refresh started before
+    // we consumed, the latest save wins and our local `top` becomes the
+    // fallback if the consume returns null.
+    const savedTop = (await consumeBookmarkScroll()) ?? top
+    if (scrollContainer && typeof savedTop === "number") {
+      scrollContainer.scrollTop = savedTop
+    }
   }
 
   const syncTradesFromCache = () => {
@@ -740,6 +755,11 @@
 
   const createTradeFromCurrent = async () => {
     if (!folder.id) return
+    if (draftTrade) {
+      tradeEditInputEl?.focus()
+      tradeEditInputEl?.select()
+      return
+    }
     const current = tradeLocationService.current
     if (!current.slug) {
       flashMessages.alert(translate($languageStore, "folder.invalidTradePage"))
@@ -762,11 +782,14 @@
         .replace(" - Path of Exile", "")
         .replace(/⚡ /g, "") ||
       translate($languageStore, "folder.tradeFallback")
-    await bookmarksService.persistTrade(trade, folder.id)
-    await refreshTrades()
-    flashMessages.success(
-      translate($languageStore, "folder.addedToFolder", { title: trade.title })
-    )
+
+    editingTradeId = null
+    draftTrade = trade
+    tradeEditTitle = trade.title
+
+    await tick()
+    tradeEditInputEl?.focus()
+    tradeEditInputEl?.select()
   }
 
   type TradeOpenTarget = "active" | "tab" | "window"
@@ -950,9 +973,12 @@
   let tradeEditTitle = $state("")
   let tradeEditInputEl: HTMLInputElement | null = $state(null)
   let savingTradeId: string | null = null
+  let draftTrade: BookmarksTradeStruct | null = $state(null)
+  let isCommittingDraft = false
 
   const startEditingTrade = async (trade: BookmarksTradeStruct) => {
     if (!trade.id) return
+    draftTrade = null
     editingTradeId = trade.id
     tradeEditTitle = trade.title
     await tick()
@@ -980,6 +1006,44 @@
 
   const cancelTradeEdit = () => {
     editingTradeId = null
+  }
+
+  const cancelDraftTrade = () => {
+    draftTrade = null
+  }
+
+  // Blur keeps the draft when the user typed a title; otherwise it cancels
+  // silently. This avoids losing typed input when the user clicks away from
+  // the input by accident.
+  const handleDraftBlur = () => {
+    if (tradeEditTitle.trim().length > 0) {
+      void commitDraftTrade()
+    } else {
+      cancelDraftTrade()
+    }
+  }
+
+  const commitDraftTrade = async () => {
+    if (!draftTrade || !folder.id || isCommittingDraft) return
+    const pendingTrade = draftTrade
+    const title = tradeEditTitle.trim() || pendingTrade.title
+
+    isCommittingDraft = true
+    try {
+      // `persistTrade` only appends when the trade has no id, so the draft must
+      // stay id-less until the service assigns one.
+      await bookmarksService.persistTrade(
+        { ...pendingTrade, id: undefined, title },
+        folder.id
+      )
+      cancelDraftTrade()
+      await refreshTrades()
+      flashMessages.success(
+        translate($languageStore, "folder.addedToFolder", { title })
+      )
+    } finally {
+      isCommittingDraft = false
+    }
   }
 
   const openTradeFromCard = (
@@ -1065,6 +1129,7 @@
       trades = []
       hasLoadedTrades = false
       isLoading = false
+      cancelDraftTrade()
     }
   });
   $effect(() => {
@@ -1516,6 +1581,28 @@
               </li>
             {/if}
           {/each}
+          {#if draftTrade}
+            <li>
+              <div class="trade-item">
+                <div class="trade-content">
+                  <div class="trade-top">
+                    <input
+                      type="text"
+                      class="inline-edit-input trade-edit"
+                      aria-label={translate($languageStore, "folder.saveCurrentSearch")}
+                      bind:this={tradeEditInputEl}
+                      bind:value={tradeEditTitle}
+                      onblur={handleDraftBlur}
+                      onkeydown={(event) => {
+                        event.stopPropagation()
+                        if (event.key === "Enter") void commitDraftTrade()
+                        if (event.key === "Escape") cancelDraftTrade()
+                      }} />
+                  </div>
+                </div>
+              </div>
+            </li>
+          {/if}
         </ul>
         {#if !previewTrades}
           <div class="footer-actions">

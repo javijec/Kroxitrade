@@ -19,6 +19,7 @@ const COMPRESSED_SYNC_VALUE_FORMAT = 2
 const PAGE_LOCAL_STORAGE_NAMESPACE = "poe-trade-plus:"
 const SYNC_RECOVERY_SNAPSHOT_KEY = "poe-trade-plus-sync-recovery"
 const SYNC_RECOVERY_DELAY_MS = 750
+const LAST_SYNC_TIMESTAMP_KEY = "poe-trade-plus:last-sync-at"
 const MANAGED_SYNC_KEYS = new Set([
   "app-settings",
   "app-settings-poe1",
@@ -199,8 +200,32 @@ const decodeSyncValue = async (value: unknown): Promise<unknown> => {
   return isEncodedSyncValue(value) ? expandSyncValue(value[1]) : value
 }
 
+const encodedBytes = (value: unknown) =>
+  new TextEncoder().encode(JSON.stringify(value)).length
+
+/**
+ * Measures the bytes Chrome charges for a batch of Sync writes using the same
+ * compact/compress encoding setValues applies. Quota guards must compare real
+ * storage usage, not the much larger uncompressed representation.
+ */
+export const estimateSyncStorageBytes = async (
+  values: Record<string, unknown>
+): Promise<number> => {
+  const entries = await Promise.all(
+    Object.entries(values).map(async ([key, value]) => {
+      const encoded = await encodeSyncValue(value)
+      return (
+        encodedBytes(key.toLowerCase()) +
+        encodedBytes({ expiresAt: null, value: encoded })
+      )
+    })
+  )
+  return entries.reduce((total, bytes) => total + bytes, 0)
+}
+
 export class StorageService {
   private static instance: StorageService
+  private warnedStorageLoss = false
   private syncRecoveryTimer: ReturnType<typeof setTimeout> | null = null
   private syncRecoveryInitialized = false
   private syncOperationQueue: Promise<void> = Promise.resolve()
@@ -221,12 +246,14 @@ export class StorageService {
       !chrome.storage?.sync ||
       !chrome.storage?.local ||
       !chrome.storage?.onChanged
-    ) return
+    )
+      return
 
     this.syncRecoveryInitialized = true
     void this.snapshotManagedSyncData()
     chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName !== "sync" || !Object.keys(changes).some(isManagedSyncKey)) return
+      if (areaName !== "sync" || !Object.keys(changes).some(isManagedSyncKey))
+        return
 
       if (this.syncRecoveryTimer) clearTimeout(this.syncRecoveryTimer)
       this.syncRecoveryTimer = setTimeout(() => {
@@ -237,20 +264,34 @@ export class StorageService {
   }
 
   private async snapshotManagedSyncData() {
-    if (!hasValidExtensionContext() || !chrome.storage?.sync || !chrome.storage?.local) return
+    if (
+      !hasValidExtensionContext() ||
+      !chrome.storage?.sync ||
+      !chrome.storage?.local
+    )
+      return
 
     try {
       const data = getManagedSyncValues(await chrome.storage.sync.get(null))
       if (Object.keys(data).length === 0) return
-      const snapshot: SyncRecoverySnapshot = { capturedAt: new Date().toISOString(), data }
+      const snapshot: SyncRecoverySnapshot = {
+        capturedAt: new Date().toISOString(),
+        data
+      }
       await chrome.storage.local.set({ [SYNC_RECOVERY_SNAPSHOT_KEY]: snapshot })
     } catch (error) {
-      if (!isExtensionContextInvalidatedError(error)) console.warn("Sync recovery snapshot failed", error)
+      if (!isExtensionContextInvalidatedError(error))
+        console.warn("Sync recovery snapshot failed", error)
     }
   }
 
   private async recoverOrSnapshotManagedSyncData() {
-    if (!hasValidExtensionContext() || !chrome.storage?.sync || !chrome.storage?.local) return
+    if (
+      !hasValidExtensionContext() ||
+      !chrome.storage?.sync ||
+      !chrome.storage?.local
+    )
+      return
 
     try {
       const current = getManagedSyncValues(await chrome.storage.sync.get(null))
@@ -260,13 +301,17 @@ export class StorageService {
       }
 
       const stored = await chrome.storage.local.get(SYNC_RECOVERY_SNAPSHOT_KEY)
-      const snapshot = stored[SYNC_RECOVERY_SNAPSHOT_KEY] as SyncRecoverySnapshot | undefined
+      const snapshot = stored[SYNC_RECOVERY_SNAPSHOT_KEY] as
+        SyncRecoverySnapshot | undefined
       if (!snapshot?.data || Object.keys(snapshot.data).length === 0) return
 
       await chrome.storage.sync.set(snapshot.data)
-      console.warn("[Poe Trade Plus] Restored an empty Sync store from the local recovery copy")
+      console.warn(
+        "[Poe Trade Plus] Restored an empty Sync store from the local recovery copy"
+      )
     } catch (error) {
-      if (!isExtensionContextInvalidatedError(error)) console.warn("Sync recovery failed", error)
+      if (!isExtensionContextInvalidatedError(error))
+        console.warn("Sync recovery failed", error)
     }
   }
 
@@ -277,10 +322,15 @@ export class StorageService {
     area: StorageArea = "local",
     options?: SyncWriteOptions
   ): Promise<boolean> {
-    return this.write(this.formatKey(key, league), {
-      expiresAt: null,
-      value
-    }, area, options)
+    return this.write(
+      this.formatKey(key, league),
+      {
+        expiresAt: null,
+        value
+      },
+      area,
+      options
+    )
   }
 
   /**
@@ -313,15 +363,18 @@ export class StorageService {
           void this.snapshotManagedSyncData()
         })
         if (options?.awaitSync !== false) await queued
-        else void queued.catch((error) => {
-          if (!isExtensionContextInvalidatedError(error)) console.warn("Deferred Sync write failed", error)
-        })
+        else
+          void queued.catch((error) => {
+            if (!isExtensionContextInvalidatedError(error))
+              console.warn("Deferred Sync write failed", error)
+          })
       } else {
         await storageArea.set(payload)
       }
       return true
     } catch (error) {
-      if (!isExtensionContextInvalidatedError(error)) console.warn("Storage batch write failed", error)
+      if (!isExtensionContextInvalidatedError(error))
+        console.warn("Storage batch write failed", error)
       return false
     }
   }
@@ -366,8 +419,16 @@ export class StorageService {
   }
 
   private getStorageArea(area: StorageArea): chrome.storage.StorageArea | null {
-    if (!hasValidExtensionContext() || !chrome.storage?.[area]) {
-      console.warn("Storage not available")
+    if (!chrome.storage?.[area]) {
+      // No API access in this context (e.g. MAIN-world content scripts).
+      // Silent on purpose: callers already handle `null` as "no value".
+      return null
+    }
+    if (!hasValidExtensionContext()) {
+      if (!this.warnedStorageLoss) {
+        this.warnedStorageLoss = true
+        console.warn("Storage not available: extension context invalidated")
+      }
       return null
     }
     return chrome.storage[area]
@@ -537,7 +598,10 @@ export class StorageService {
     return queued
   }
 
-  private enqueueSyncMutation(key: string, value?: StoragePayload): Promise<void> {
+  private enqueueSyncMutation(
+    key: string,
+    value?: StoragePayload
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       this.pendingSyncMutations.push({ key, value, resolve, reject })
       if (this.syncBatchTimer !== null) clearTimeout(this.syncBatchTimer)
@@ -579,6 +643,39 @@ export class StorageService {
       mutations.forEach((mutation) => mutation.reject(error))
     }
   }
+
+  getLastSyncAt(): number | null {
+    if (typeof window === "undefined") return null
+    const raw = window.localStorage.getItem(LAST_SYNC_TIMESTAMP_KEY)
+    if (!raw) return null
+    const parsed = Number(raw)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+  }
 }
 
 export const storageService = StorageService.getInstance()
+
+const recordLastSyncAt = () => {
+  if (typeof window === "undefined") return
+  try {
+    window.localStorage.setItem(LAST_SYNC_TIMESTAMP_KEY, String(Date.now()))
+  } catch {
+    // Storage failures (private mode, quota) are non-fatal for the timestamp.
+  }
+}
+
+const installLastSyncTracker = () => {
+  if (
+    typeof window === "undefined" ||
+    !hasValidExtensionContext() ||
+    !chrome.storage?.onChanged
+  )
+    return
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "sync") return
+    if (Object.keys(changes).length === 0) return
+    recordLastSyncAt()
+  })
+}
+
+installLastSyncTracker()
