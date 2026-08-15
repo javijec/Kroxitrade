@@ -383,8 +383,10 @@ export const simplifiedChineseTranslations: Record<string, TranslationValue> = {
     "保存一个含文件夹、已保存搜索、设置与扩充功能偏好的可携文件，或还原你先前导出的文件。",
   "bookmarks.saveFile": "备份",
   "bookmarks.automaticSyncDescription":
-    "使用扩充功能时，你的书签和设置会自动与 Chrome 同步。",
+    "使用扩展时，收藏与设置会自动通过 Chrome 同步。",
   "bookmarks.restoreFile": "从文件还原",
+  "bookmarks.lastSync": ({ date, time }) => `上次同步：${date} ${time}`,
+  "bookmarks.lastSyncNever": "上次同步：从未",
   "bookmarks.folderCopyTitle": ({ title }) => `${title}（复本）`,
   "confirm.cancel": "取消",
   "confirm.delete": "删除",

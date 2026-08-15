@@ -238,8 +238,10 @@ export const frenchTranslations: Record<string, TranslationValue> = {
     "Enregistrez un fichier portable avec les dossiers, recherches sauvegardées, paramètres et préférences de l’extension, ou restaurez-en un précédent.",
   "bookmarks.saveFile": "Sauvegarde",
   "bookmarks.automaticSyncDescription":
-    "Vos marque-pages et paramètres se synchronisent automatiquement avec Chrome lorsque vous utilisez l’extension.",
+    "Vos favoris et paramètres se synchronisent automatiquement avec Chrome pendant que vous utilisez l'extension.",
   "bookmarks.restoreFile": "Restaurer depuis le fichier",
+  "bookmarks.lastSync": ({ date, time }) => `Dernière synchronisation : ${date} à ${time}`,
+  "bookmarks.lastSyncNever": "Dernière synchronisation : jamais",
   "history.clear": "Effacer l’historique",
   "history.cleared": "Historique effacé !",
   "history.empty": ({ version }) =>

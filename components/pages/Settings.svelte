@@ -17,6 +17,7 @@
     chineseTradeStorageFor,
     type ChineseTradeVersion
   } from "../../lib/services/chinese-trade/contract";
+  import { storageService } from "../../lib/services/storage";
   import { DEFAULT_SIDEBAR_WIDTH, settings, type BookmarkLayout, type BookmarkTradeActionId, type QuickFiltersPlacement, type SidebarSide, type TextSizePreference } from "../../lib/services/settings";
   import { tradeLocationService } from "../../lib/services/trade-location";
   import { isNativeChineseTradeSite } from "../../lib/config/trade-hosts";
@@ -58,6 +59,25 @@
 
   type SettingsTab = "interface" | "sidebar" | "results" | "bookmarks";
   let activeTab = $state<SettingsTab>("interface");
+  let lastSyncAt = $state<number | null>(storageService.getLastSyncAt());
+
+  const formatLastSync = (timestamp: number | null) => {
+    if (timestamp === null) return null;
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return null;
+    return {
+      date: date.toLocaleDateString($languageStore, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      }),
+      time: date.toLocaleTimeString($languageStore, {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    };
+  };
+  const lastSyncDisplay = $derived(formatLastSync(lastSyncAt));
 
   const tabs: Array<{ id: SettingsTab; labelKey: string }> = [
     { id: "interface", labelKey: "settings.tabs.interface" },
@@ -831,6 +851,18 @@
           fileAccept=".json,.txt"
         />
       </div>
+      {#if lastSyncDisplay}
+        <p class="section-description settings-last-sync">
+          {translate($languageStore, "bookmarks.lastSync", {
+            date: lastSyncDisplay.date,
+            time: lastSyncDisplay.time
+          })}
+        </p>
+      {:else}
+        <p class="section-description settings-last-sync">
+          {translate($languageStore, "bookmarks.lastSyncNever")}
+        </p>
+      {/if}
       </section>
 
     {:else if activeTab === "sidebar"}

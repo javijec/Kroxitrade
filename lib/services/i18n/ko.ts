@@ -240,6 +240,8 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "bookmarks.automaticSyncDescription":
     "확장 프로그램을 사용하는 동안 북마크와 설정이 Chrome과 자동으로 동기화됩니다.",
   "bookmarks.restoreFile": "파일에서 복원",
+  "bookmarks.lastSync": ({ date, time }) => `마지막 동기화: ${date} ${time}`,
+  "bookmarks.lastSyncNever": "마지막 동기화: 없음",
   "history.clear": "기록 지우기",
   "history.cleared": "기록을 지웠습니다!",
   "history.empty": ({ version }) => `PoE ${version}의 기록이 비어 있습니다.`,

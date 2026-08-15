@@ -233,8 +233,10 @@ export const russianTranslations: Record<string, TranslationValue> = {
     "Сохраните переносимый файл с папками, сохранёнными поисками, настройками и параметрами расширения или восстановите прежний файл.",
   "bookmarks.saveFile": "Резервная копия",
   "bookmarks.automaticSyncDescription":
-    "Ваши закладки и настройки автоматически синхронизируются с Chrome во время использования расширения.",
+    "Закладки и настройки автоматически синхронизируются с Chrome, пока вы используете расширение.",
   "bookmarks.restoreFile": "Восстановить из файла",
+  "bookmarks.lastSync": ({ date, time }) => `Последняя синхронизация: ${date} в ${time}`,
+  "bookmarks.lastSyncNever": "Последняя синхронизация: никогда",
   "history.clear": "Очистить историю",
   "history.cleared": "История очищена!",
   "history.empty": ({ version }) => `История пуста для PoE ${version}.`,

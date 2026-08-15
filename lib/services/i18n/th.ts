@@ -232,8 +232,10 @@ export const thaiTranslations: Record<string, TranslationValue> = {
     "บันทึกไฟล์พกพาที่มีโฟลเดอร์ การค้นหาที่บันทึกไว้ การตั้งค่า และค่ากำหนดของส่วนขยาย หรือกู้คืนจากไฟล์เดิม",
   "bookmarks.saveFile": "สำรองข้อมูล",
   "bookmarks.automaticSyncDescription":
-    "บุ๊กมาร์กและการตั้งค่าของคุณจะซิงก์กับ Chrome โดยอัตโนมัติขณะใช้ส่วนขยาย",
+    "บุ๊กมาร์กและการตั้งค่าของคุณซิงค์กับ Chrome โดยอัตโนมัติขณะใช้งานส่วนขยาย",
   "bookmarks.restoreFile": "กู้คืนจากไฟล์",
+  "bookmarks.lastSync": ({ date, time }) => `ซิงค์ล่าสุด: ${date} เวลา ${time}`,
+  "bookmarks.lastSyncNever": "ซิงค์ล่าสุด: ไม่เคย",
   "history.clear": "ล้างประวัติ",
   "history.cleared": "ล้างประวัติแล้ว!",
   "history.empty": ({ version }) => `ไม่มีประวัติสำหรับ PoE ${version}`,

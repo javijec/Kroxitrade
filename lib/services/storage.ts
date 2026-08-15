@@ -19,6 +19,7 @@ const COMPRESSED_SYNC_VALUE_FORMAT = 2
 const PAGE_LOCAL_STORAGE_NAMESPACE = "poe-trade-plus:"
 const SYNC_RECOVERY_SNAPSHOT_KEY = "poe-trade-plus-sync-recovery"
 const SYNC_RECOVERY_DELAY_MS = 750
+const LAST_SYNC_TIMESTAMP_KEY = "poe-trade-plus:last-sync-at"
 const MANAGED_SYNC_KEYS = new Set([
   "app-settings",
   "app-settings-poe1",
@@ -645,3 +646,36 @@ export class StorageService {
 }
 
 export const storageService = StorageService.getInstance()
+
+const recordLastSyncAt = () => {
+  if (typeof window === "undefined") return
+  try {
+    window.localStorage.setItem(LAST_SYNC_TIMESTAMP_KEY, String(Date.now()))
+  } catch {
+    // Storage failures (private mode, quota) are non-fatal for the timestamp.
+  }
+}
+
+const installLastSyncTracker = () => {
+  if (
+    typeof window === "undefined" ||
+    !hasValidExtensionContext() ||
+    !chrome.storage?.onChanged
+  )
+    return
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "sync") return
+    if (Object.keys(changes).length === 0) return
+    recordLastSyncAt()
+  })
+}
+
+installLastSyncTracker()
+
+export const getLastSyncAt = (): number | null => {
+  if (typeof window === "undefined") return null
+  const raw = window.localStorage.getItem(LAST_SYNC_TIMESTAMP_KEY)
+  if (!raw) return null
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}

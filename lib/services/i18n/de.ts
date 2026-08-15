@@ -236,8 +236,10 @@ export const germanTranslations: Record<string, TranslationValue> = {
     "Speichere eine portable Datei mit Ordnern, gespeicherten Suchen, Einstellungen und Erweiterungsoptionen oder stelle eine frühere Datei wieder her.",
   "bookmarks.saveFile": "Sicherung",
   "bookmarks.automaticSyncDescription":
-    "Deine Lesezeichen und Einstellungen werden während der Nutzung der Erweiterung automatisch mit Chrome synchronisiert.",
+    "Lesezeichen und Einstellungen werden automatisch mit Chrome synchronisiert, während du die Erweiterung nutzt.",
   "bookmarks.restoreFile": "Aus Datei wiederherstellen",
+  "bookmarks.lastSync": ({ date, time }) => `Letzte Synchronisierung: ${date} um ${time}`,
+  "bookmarks.lastSyncNever": "Letzte Synchronisierung: nie",
   "history.clear": "Verlauf löschen",
   "history.cleared": "Verlauf gelöscht!",
   "history.empty": ({ version }) => `Der Verlauf für PoE ${version} ist leer.`,

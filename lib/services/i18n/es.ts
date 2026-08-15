@@ -439,8 +439,10 @@ export const spanishTranslations: Record<string, TranslationValue> = {
     "Guardá un archivo portable con carpetas, búsquedas, settings y preferencias de la extensión, o restaurá uno exportado antes.",
   "bookmarks.saveFile": "Respaldo",
   "bookmarks.automaticSyncDescription":
-    "Tus marcadores y settings se sincronizan automáticamente con Chrome mientras usás la extensión.",
+    "Tus marcadores y ajustes se sincronizan automáticamente con Chrome mientras usas la extensión.",
   "bookmarks.restoreFile": "Restaurar desde archivo",
+  "bookmarks.lastSync": ({ date, time }) => `Última sincronización: ${date} a las ${time}`,
+  "bookmarks.lastSyncNever": "Última sincronización: nunca",
   "bookmarks.folderCopyTitle": ({ title }) => `${title} (copia)`,
   "confirm.cancel": "Cancelar",
   "confirm.delete": "Eliminar",
