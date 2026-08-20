@@ -565,5 +565,7 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
     "whatsNew.item.settingsBackupReliabilityTitle": "設定與備份可可靠還原",
     "whatsNew.item.settingsBackupReliabilityDescription": "同步設定或還原可攜備份時，會保留你的版面、書籤分類與偏好設定。",
     "whatsNew.item.cancelNewFolderTitle": "取消新資料夾不會留下空資料夾",
-    "whatsNew.item.cancelNewFolderDescription": "為新書籤資料夾命名時取消或按 Escape，會將其移除而不留下空資料夾。"
+    "whatsNew.item.cancelNewFolderDescription": "為新書籤資料夾命名時取消或按 Escape，會將其移除而不留下空資料夾。",
+    "whatsNew.item.bookmarkSyncOrderTitle": "書籤同步會保留你的排序",
+    "whatsNew.item.bookmarkSyncOrderDescription": "已儲存搜尋和資料夾的排序現在會在分頁、重新載入和已同步裝置之間保持一致。即使背景更新被中斷，同步也能安全復原。"
   } as Record<string, TranslationValue>

@@ -583,5 +583,8 @@ export const englishTranslations: Record<string, TranslationValue> = {
     "Your layout, bookmark categories, and preferences are preserved when settings sync or a portable backup is restored.",
   "whatsNew.item.cancelNewFolderTitle": "Canceling a new folder leaves no extra folder",
   "whatsNew.item.cancelNewFolderDescription":
-    "Cancel or press Escape while naming a new bookmark folder to remove it instead of keeping an empty folder."
+    "Cancel or press Escape while naming a new bookmark folder to remove it instead of keeping an empty folder.",
+  "whatsNew.item.bookmarkSyncOrderTitle": "Bookmark sync preserves your order",
+  "whatsNew.item.bookmarkSyncOrderDescription":
+    "Saved-search and folder order now stays consistent across tabs, reloads, and synced devices. Synchronization also recovers safely if a background update is interrupted."
 } as Record<string, TranslationValue>

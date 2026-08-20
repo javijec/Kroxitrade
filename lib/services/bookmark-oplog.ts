@@ -46,6 +46,19 @@ export type BookmarkOplogOperation =
       folderId: string
       tradeId: string
     }
+  | {
+      id: string
+      clock: HybridClock
+      type: "set-folder-order"
+      folderIds: string[]
+    }
+  | {
+      id: string
+      clock: HybridClock
+      type: "set-trade-order"
+      folderId: string
+      tradeIds: string[]
+    }
 
 export type BookmarkOplogState = {
   folders: BookmarksFolderStruct[]
@@ -53,7 +66,7 @@ export type BookmarkOplogState = {
 }
 
 export type BookmarkOplogManifest = {
-  version: 1
+  version: 1 | 2
   actor: string
   chunkKeys: string[]
   updatedAt: number
@@ -79,7 +92,9 @@ const operationEntityKey = (operation: BookmarkOplogOperation) => {
   if (operation.type === "upsert-folder") return `folder:${operation.folder.id}`
   if (operation.type === "delete-folder") return `folder:${operation.folderId}`
   if (operation.type === "upsert-trade") return `trade:${operation.trade.id}`
-  return `trade:${operation.tradeId}`
+  if (operation.type === "delete-trade") return `trade:${operation.tradeId}`
+  if (operation.type === "set-folder-order") return "folder-order"
+  return `trade-order:${operation.folderId}`
 }
 
 const encodedBytes = (value: unknown) =>
@@ -103,7 +118,8 @@ export const bookmarkOplogChunkKey = (actor: string, index: number) =>
 const isManifest = (value: unknown): value is BookmarkOplogManifest =>
   typeof value === "object" &&
   value !== null &&
-  (value as BookmarkOplogManifest).version === 1 &&
+  ((value as BookmarkOplogManifest).version === 1 ||
+    (value as BookmarkOplogManifest).version === 2) &&
   typeof (value as BookmarkOplogManifest).actor === "string" &&
   Array.isArray((value as BookmarkOplogManifest).chunkKeys)
 
@@ -265,7 +281,9 @@ export const createBookmarkOplogChunks = async (
   if (current.length > 0) chunks.push(current)
 
   const manifest: BookmarkOplogManifest = {
-    version: 1,
+    // Version 2 adds explicit collection-order operations. Older builds only
+    // accept v1 manifests, so they safely ignore this stream during upgrades.
+    version: 2,
     actor,
     chunkKeys: chunks.map((_, index) => bookmarkOplogChunkKey(actor, index)),
     updatedAt: Date.now()
@@ -364,6 +382,28 @@ export class BookmarkOplog {
       tradeId
     }
   }
+
+  setFolderOrder(folderIds: string[]): BookmarkOplogOperation {
+    return {
+      id: uniqueId(),
+      clock: this.nextClock(),
+      type: "set-folder-order",
+      folderIds: [...folderIds]
+    }
+  }
+
+  setTradeOrder(
+    folderId: string,
+    tradeIds: string[]
+  ): BookmarkOplogOperation {
+    return {
+      id: uniqueId(),
+      clock: this.nextClock(),
+      type: "set-trade-order",
+      folderId,
+      tradeIds: [...tradeIds]
+    }
+  }
 }
 
 /**
@@ -381,8 +421,29 @@ export const replayBookmarkOplog = (
     string,
     { folderId: string; value?: BookmarksTradeStruct; clock: HybridClock }
   >()
+  let folderOrder: Extract<
+    BookmarkOplogOperation,
+    { type: "set-folder-order" }
+  > | null = null
+  const tradeOrders = new Map<
+    string,
+    Extract<BookmarkOplogOperation, { type: "set-trade-order" }>
+  >()
 
   for (const operation of [...operations].sort(compareOperation)) {
+    if (operation.type === "set-folder-order") {
+      if (!folderOrder || compareOperation(folderOrder, operation) < 0) {
+        folderOrder = operation
+      }
+      continue
+    }
+    if (operation.type === "set-trade-order") {
+      const current = tradeOrders.get(operation.folderId)
+      if (!current || compareOperation(current, operation) < 0) {
+        tradeOrders.set(operation.folderId, operation)
+      }
+      continue
+    }
     if (
       operation.type === "upsert-folder" ||
       operation.type === "delete-folder"
@@ -429,10 +490,37 @@ export const replayBookmarkOplog = (
     entries.push(trade.value)
     tradesByFolder.set(trade.folderId, entries)
   }
+
+  const sortByExplicitOrder = <T extends { id?: string }>(
+    values: T[],
+    orderIds: string[] | undefined
+  ) => {
+    if (!orderIds) return values
+    const positions = new Map(orderIds.map((id, index) => [id, index]))
+    return [...values].sort((left, right) => {
+      const leftPosition = positions.get(left.id || "")
+      const rightPosition = positions.get(right.id || "")
+      if (leftPosition !== undefined || rightPosition !== undefined) {
+        if (leftPosition === undefined) return 1
+        if (rightPosition === undefined) return -1
+        return leftPosition - rightPosition
+      }
+      return (left.id || "").localeCompare(right.id || "")
+    })
+  }
+
+  const orderedTradesByFolder = new Map<string, BookmarksTradeStruct[]>()
+  for (const [folderId, entries] of tradesByFolder) {
+    orderedTradesByFolder.set(
+      folderId,
+      sortByExplicitOrder(entries, tradeOrders.get(folderId)?.tradeIds)
+    )
+  }
   return {
-    folders: [...folders.values()].flatMap((entry) =>
-      entry.value ? [entry.value] : []
+    folders: sortByExplicitOrder(
+      [...folders.values()].flatMap((entry) => (entry.value ? [entry.value] : [])),
+      folderOrder?.folderIds
     ),
-    tradesByFolder
+    tradesByFolder: orderedTradesByFolder
   }
 }

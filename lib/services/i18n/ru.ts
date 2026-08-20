@@ -389,5 +389,7 @@ export const russianTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.settingsBackupReliabilityTitle": "Настройки и резервные копии восстанавливаются надежно",
   "whatsNew.item.settingsBackupReliabilityDescription": "Ваш макет, категории закладок и предпочтения сохраняются при синхронизации настроек или восстановлении переносимой резервной копии.",
   "whatsNew.item.cancelNewFolderTitle": "Отмена новой папки не оставляет пустую папку",
-  "whatsNew.item.cancelNewFolderDescription": "Отмените действие или нажмите Escape при именовании новой папки закладок, чтобы удалить ее, а не сохранять пустой папкой."
+  "whatsNew.item.cancelNewFolderDescription": "Отмените действие или нажмите Escape при именовании новой папки закладок, чтобы удалить ее, а не сохранять пустой папкой.",
+  "whatsNew.item.bookmarkSyncOrderTitle": "Синхронизация закладок сохраняет порядок",
+  "whatsNew.item.bookmarkSyncOrderDescription": "Порядок сохраненных поисков и папок теперь остается одинаковым между вкладками, перезагрузками и синхронизированными устройствами. Синхронизация также безопасно восстанавливается, если фоновое обновление прервано."
 }

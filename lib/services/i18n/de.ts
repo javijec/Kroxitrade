@@ -392,5 +392,7 @@ export const germanTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.settingsBackupReliabilityTitle": "Einstellungen und Backups werden zuverlässig wiederhergestellt",
   "whatsNew.item.settingsBackupReliabilityDescription": "Dein Layout, Lesezeichenkategorien und Einstellungen bleiben beim Synchronisieren oder Wiederherstellen eines portablen Backups erhalten.",
   "whatsNew.item.cancelNewFolderTitle": "Abbrechen eines neuen Ordners hinterlässt keinen leeren Ordner",
-  "whatsNew.item.cancelNewFolderDescription": "Brich beim Benennen eines neuen Lesezeichenordners ab oder drücke Escape, um ihn zu entfernen statt einen leeren Ordner zu behalten."
+  "whatsNew.item.cancelNewFolderDescription": "Brich beim Benennen eines neuen Lesezeichenordners ab oder drücke Escape, um ihn zu entfernen statt einen leeren Ordner zu behalten.",
+  "whatsNew.item.bookmarkSyncOrderTitle": "Die Lesezeichensynchronisierung behält deine Reihenfolge bei",
+  "whatsNew.item.bookmarkSyncOrderDescription": "Die Reihenfolge gespeicherter Suchen und Ordner bleibt jetzt über Tabs, Neuladen und synchronisierte Geräte hinweg konsistent. Die Synchronisierung stellt sich auch sicher wieder her, wenn ein Hintergrundupdate unterbrochen wird."
 }

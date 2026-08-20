@@ -386,5 +386,7 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.settingsBackupReliabilityTitle": "กู้คืนการตั้งค่าและข้อมูลสำรองได้อย่างน่าเชื่อถือ",
   "whatsNew.item.settingsBackupReliabilityDescription": "เลย์เอาต์ หมวดหมู่บุ๊กมาร์ก และการตั้งค่าของคุณจะคงอยู่เมื่อซิงก์การตั้งค่าหรือกู้คืนข้อมูลสำรองแบบพกพา",
   "whatsNew.item.cancelNewFolderTitle": "การยกเลิกโฟลเดอร์ใหม่จะไม่ทิ้งโฟลเดอร์ว่างไว้",
-  "whatsNew.item.cancelNewFolderDescription": "ยกเลิกหรือกด Escape ขณะตั้งชื่อโฟลเดอร์บุ๊กมาร์กใหม่เพื่อลบออก แทนที่จะเก็บโฟลเดอร์ว่างไว้"
+  "whatsNew.item.cancelNewFolderDescription": "ยกเลิกหรือกด Escape ขณะตั้งชื่อโฟลเดอร์บุ๊กมาร์กใหม่เพื่อลบออก แทนที่จะเก็บโฟลเดอร์ว่างไว้",
+  "whatsNew.item.bookmarkSyncOrderTitle": "การซิงก์บุ๊กมาร์กคงลำดับของคุณไว้",
+  "whatsNew.item.bookmarkSyncOrderDescription": "ลำดับของการค้นหาที่บันทึกไว้และโฟลเดอร์จะสอดคล้องกันระหว่างแท็บ การรีโหลด และอุปกรณ์ที่ซิงก์แล้ว การซิงก์ยังกู้คืนได้อย่างปลอดภัยหากการอัปเดตเบื้องหลังถูกขัดจังหวะ"
 }

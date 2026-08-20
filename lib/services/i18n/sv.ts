@@ -158,5 +158,7 @@ export const swedishTranslations: Record<string, TranslationValue> = {
   "finer.clearBuyoutPrice": "Rensa",
   "pinned.scrollTo": "Rulla till",
   "pinned.unpin": "Ta bort nål",
-  "pinned.clear": "Rensa alla"
+  "pinned.clear": "Rensa alla",
+  "whatsNew.item.bookmarkSyncOrderTitle": "Bokmärkessynkronisering behåller din ordning",
+  "whatsNew.item.bookmarkSyncOrderDescription": "Ordningen för sparade sökningar och mappar förblir nu konsekvent mellan flikar, omladdningar och synkroniserade enheter. Synkroniseringen återhämtar sig också säkert om en bakgrundsuppdatering avbryts."
 }

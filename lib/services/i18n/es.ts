@@ -590,5 +590,8 @@ export const spanishTranslations: Record<string, TranslationValue> = {
     "Tu layout, las categorías de bookmarks y las preferencias se conservan al sincronizar settings o restaurar un respaldo portátil.",
   "whatsNew.item.cancelNewFolderTitle": "Cancelar una carpeta nueva no deja carpetas extra",
   "whatsNew.item.cancelNewFolderDescription":
-    "Cancelá o presioná Escape mientras nombrás una carpeta nueva para eliminarla en lugar de conservar una carpeta vacía."
+    "Cancelá o presioná Escape mientras nombrás una carpeta nueva para eliminarla en lugar de conservar una carpeta vacía.",
+  "whatsNew.item.bookmarkSyncOrderTitle": "La sincronización de bookmarks conserva el orden",
+  "whatsNew.item.bookmarkSyncOrderDescription":
+    "El orden de las búsquedas guardadas y las carpetas ahora se mantiene entre pestañas, recargas y dispositivos sincronizados. La sincronización también se recupera de forma segura si se interrumpe una actualización en segundo plano."
 } as Record<string, TranslationValue>

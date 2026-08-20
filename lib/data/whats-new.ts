@@ -495,10 +495,26 @@ const version1129Features: WhatsNewItem[] = [
   }
 ];
 
+const version1130Fixes: WhatsNewItem[] = [
+  {
+    titleKey: "whatsNew.item.bookmarkSyncOrderTitle",
+    descriptionKey: "whatsNew.item.bookmarkSyncOrderDescription"
+  }
+];
+
 export const latestWhatsNew: WhatsNewEntry = {
-  version: "1.1.29",
-  date: "2026-08-15",
+  version: "1.1.31",
+  date: "2026-08-20",
   sections: [
+    {
+      title: "1.1.31",
+      groups: [
+        {
+          titleKey: "whatsNew.section.fixes",
+          items: version1130Fixes
+        }
+      ]
+    },
     {
       title: "1.1.29",
       groups: [

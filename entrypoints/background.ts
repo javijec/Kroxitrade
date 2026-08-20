@@ -62,14 +62,17 @@ const BOOKMARK_REPOSITORY_FLUSH_ALARM = "bookmark-repository-flush"
 const BOOKMARK_REPOSITORY_RECOVERY_DELAY_MS = 30_000
 let bookmarkFlushTimer: ReturnType<typeof setTimeout> | null = null
 
+const flushPendingLocalChanges = () =>
+  Promise.all([
+    bookmarksService.flushPendingOperations({ reloadJournal: true }),
+    flushSyncJournal()
+  ]).then(() => undefined)
+
 const scheduleBookmarkFlush = (delayMs = 500) => {
   if (bookmarkFlushTimer) clearTimeout(bookmarkFlushTimer)
   bookmarkFlushTimer = setTimeout(() => {
     bookmarkFlushTimer = null
-    void Promise.all([
-      bookmarksService.flushPendingOperations(),
-      flushSyncJournal()
-    ]).catch((error) => {
+    void flushPendingLocalChanges().catch((error) => {
       console.warn("[PoeTradePlus] Could not flush pending local changes", error)
     })
   }, Math.max(0, delayMs))
@@ -160,10 +163,7 @@ export default defineBackground({
     scheduleBookmarkFlush()
     chrome.alarms.onAlarm.addListener((alarm) => {
       if (alarm.name !== BOOKMARK_REPOSITORY_FLUSH_ALARM) return
-      void Promise.all([
-        bookmarksService.flushPendingOperations(),
-        flushSyncJournal()
-      ]).catch((error) => {
+      void flushPendingLocalChanges().catch((error) => {
         console.warn("[PoeTradePlus] Could not flush pending local changes", error)
       })
     })
@@ -203,6 +203,14 @@ export default defineBackground({
       }
 
       if (request?.type === "bookmark-repository-flush") {
+        if (request.awaitCompletion === true) {
+          flushPendingLocalChanges()
+            .then(() => sendResponse({ ok: true }))
+            .catch((error) =>
+              sendResponse({ ok: false, error: getErrorMessage(error) })
+            )
+          return true
+        }
         scheduleBookmarkFlush(
           typeof request.delayMs === "number" ? request.delayMs : 500
         )

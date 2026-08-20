@@ -403,5 +403,7 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.settingsBackupReliabilityTitle": "Configurações e backups são restaurados com segurança",
   "whatsNew.item.settingsBackupReliabilityDescription": "Seu layout, categorias de favoritos e preferências são preservados ao sincronizar configurações ou restaurar um backup portátil.",
   "whatsNew.item.cancelNewFolderTitle": "Cancelar uma nova pasta não deixa pastas extras",
-  "whatsNew.item.cancelNewFolderDescription": "Cancele ou pressione Escape ao nomear uma nova pasta de favoritos para removê-la em vez de manter uma pasta vazia."
+  "whatsNew.item.cancelNewFolderDescription": "Cancele ou pressione Escape ao nomear uma nova pasta de favoritos para removê-la em vez de manter uma pasta vazia.",
+  "whatsNew.item.bookmarkSyncOrderTitle": "A sincronização de favoritos preserva a ordem",
+  "whatsNew.item.bookmarkSyncOrderDescription": "A ordem das buscas salvas e das pastas agora permanece consistente entre abas, recarregamentos e dispositivos sincronizados. A sincronização também se recupera com segurança se uma atualização em segundo plano for interrompida."
 }

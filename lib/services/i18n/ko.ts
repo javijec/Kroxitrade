@@ -395,5 +395,7 @@ export const koreanTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.settingsBackupReliabilityTitle": "설정과 백업을 안정적으로 복원",
   "whatsNew.item.settingsBackupReliabilityDescription": "설정을 동기화하거나 휴대용 백업을 복원할 때 레이아웃, 북마크 카테고리 및 환경설정이 유지됩니다.",
   "whatsNew.item.cancelNewFolderTitle": "새 폴더를 취소해도 빈 폴더가 남지 않음",
-  "whatsNew.item.cancelNewFolderDescription": "새 북마크 폴더의 이름을 지정하는 동안 취소하거나 Escape를 누르면 빈 폴더를 남기지 않고 제거합니다."
+  "whatsNew.item.cancelNewFolderDescription": "새 북마크 폴더의 이름을 지정하는 동안 취소하거나 Escape를 누르면 빈 폴더를 남기지 않고 제거합니다.",
+  "whatsNew.item.bookmarkSyncOrderTitle": "북마크 동기화가 순서를 유지합니다",
+  "whatsNew.item.bookmarkSyncOrderDescription": "저장된 검색과 폴더의 순서가 탭, 새로고침 및 동기화된 기기 전반에서 일관되게 유지됩니다. 백그라운드 업데이트가 중단되어도 동기화는 안전하게 복구됩니다."
 }

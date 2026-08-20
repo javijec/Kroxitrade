@@ -558,5 +558,7 @@ export const simplifiedChineseTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.settingsBackupReliabilityTitle": "设置和备份可可靠还原",
   "whatsNew.item.settingsBackupReliabilityDescription": "同步设置或还原可携备份时，你的布局、书签分类和偏好会被保留。",
   "whatsNew.item.cancelNewFolderTitle": "取消新文件夹不会留下空文件夹",
-  "whatsNew.item.cancelNewFolderDescription": "为新书签文件夹命名时取消或按 Escape 会将其移除，而不会留下空文件夹。"
+  "whatsNew.item.cancelNewFolderDescription": "为新书签文件夹命名时取消或按 Escape 会将其移除，而不会留下空文件夹。",
+  "whatsNew.item.bookmarkSyncOrderTitle": "书签同步会保留你的排序",
+  "whatsNew.item.bookmarkSyncOrderDescription": "已保存搜索和文件夹的排序现在会在标签页、重新加载和已同步设备之间保持一致。即使后台更新被中断，同步也能安全恢复。"
 } as Record<string, TranslationValue>

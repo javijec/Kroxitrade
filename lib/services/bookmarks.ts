@@ -172,13 +172,26 @@ export class BookmarksService {
       return this.flushPendingOperations()
     }
     return chrome.runtime
-      .sendMessage({ type: "bookmark-repository-flush", delayMs: 500 })
-      .then(() => undefined)
-      .catch(() => undefined)
+      .sendMessage({ type: "bookmark-repository-flush", awaitCompletion: true })
+      .then((response: { ok?: unknown; error?: unknown } | undefined) => {
+        if (response?.ok === true) return
+        throw new Error(
+          typeof response?.error === "string"
+            ? response.error
+            : "Could not save bookmarks to browser sync storage"
+        )
+      })
   }
 
-  async flushPendingOperations() {
+  async flushPendingOperations(options?: { reloadJournal?: boolean }) {
     await this.journalReady
+    if (options?.reloadJournal) {
+      // A background worker and a page run in separate JS contexts. Rehydrate
+      // the durable journal so a worker that started before a page mutation
+      // still sees the operation it was asked to flush. Page instances retain
+      // their own queue to avoid racing one another over shared acknowledgments.
+      await this.hydrateJournal()
+    }
     for (const operation of this.repository.pendingOperations()) {
       await this.publishPendingOperationToOplog(operation)
       if (operation.type === "folders") {
@@ -197,6 +210,18 @@ export class BookmarksService {
     return JSON.stringify(left) === JSON.stringify(right)
   }
 
+  private sameBookmarkOrder(
+    left: Array<{ id?: string }>,
+    right: Array<{ id?: string }>
+  ) {
+    const leftIds = left.flatMap(({ id }) => (id ? [id] : []))
+    const rightIds = right.flatMap(({ id }) => (id ? [id] : []))
+    return (
+      leftIds.length === rightIds.length &&
+      leftIds.every((id, index) => id === rightIds[index])
+    )
+  }
+
   private async getOplogSeed(oplog: BookmarkOplog) {
     const folders = this.repository.getFolders()
     const operations: BookmarkOplogOperation[] = folders.map((folder) =>
@@ -206,8 +231,66 @@ export class BookmarksService {
       if (!folder.id) continue
       const trades = await this.fetchTradesByFolderId(folder.id, { force: true })
       operations.push(...trades.map((trade) => oplog.upsertTrade(folder.id!, trade)))
+      operations.push(
+        oplog.setTradeOrder(
+          folder.id,
+          trades.flatMap((trade) => (trade.id ? [trade.id] : []))
+        )
+      )
+    }
+    const folderIds = folders.flatMap((folder) =>
+      folder.id ? [folder.id] : []
+    )
+    if (folderIds.length > 0) {
+      operations.push(oplog.setFolderOrder(folderIds))
     }
     return operations
+  }
+
+  private async migrateMissingOplogOrders(
+    operations: BookmarkOplogOperation[]
+  ) {
+    const hasFolderOrder = operations.some(
+      (operation) => operation.type === "set-folder-order"
+    )
+    const folders = this.normalizeFolders(
+      (await this.fetchChunkedFolders()) ??
+        (await this.fetchSynced<Partial<BookmarksFolderStruct>[]>(FOLDERS_KEY))
+    )
+    const folderIds = folders.flatMap((folder) =>
+      folder.id ? [folder.id] : []
+    )
+    const actor = await getBookmarkOplogDeviceId()
+    const oplog = new BookmarkOplog(actor)
+    operations.forEach((operation) => oplog.observe(operation.clock))
+    const changes: BookmarkOplogOperation[] = []
+
+    if (!hasFolderOrder && folderIds.length > 0) {
+      changes.push(oplog.setFolderOrder(folderIds))
+    }
+
+    for (const folderId of folderIds) {
+      const hasTradeOrder = operations.some(
+        (operation) =>
+          operation.type === "set-trade-order" &&
+          operation.folderId === folderId
+      )
+      if (hasTradeOrder) continue
+      const trades = await this.fetchChunkedTrades(folderId)
+      if (!trades || trades.length === 0) continue
+      changes.push(
+        oplog.setTradeOrder(
+          folderId,
+          this.normalizeTrades(trades).flatMap((trade) =>
+            trade.id ? [trade.id] : []
+          )
+        )
+      )
+    }
+
+    if (changes.length === 0) return
+    const own = operations.filter((operation) => operation.clock.actor === actor)
+    await publishBookmarkOplog(actor, [...own, ...changes])
   }
 
   /**
@@ -243,6 +326,13 @@ export class BookmarksService {
       for (const folder of baseline.folders) {
         if (folder.id && !next.has(folder.id)) changes.push(oplog.deleteFolder(folder.id))
       }
+      if (!this.sameBookmarkOrder(baseline.folders, operation.folders)) {
+        changes.push(
+          oplog.setFolderOrder(
+            operation.folders.flatMap((folder) => (folder.id ? [folder.id] : []))
+          )
+        )
+      }
     } else if (operation.type === "trades") {
       const current = baseline.tradesByFolder.get(operation.folderId) || []
       const next = new Map(operation.trades.filter((trade) => trade.id).map((trade) => [trade.id!, trade]))
@@ -252,6 +342,14 @@ export class BookmarksService {
       }
       for (const trade of current) {
         if (trade.id && !next.has(trade.id)) changes.push(oplog.deleteTrade(operation.folderId, trade.id))
+      }
+      if (!this.sameBookmarkOrder(current, operation.trades)) {
+        changes.push(
+          oplog.setTradeOrder(
+            operation.folderId,
+            operation.trades.flatMap((trade) => (trade.id ? [trade.id] : []))
+          )
+        )
       }
     } else {
       changes.push(oplog.deleteFolder(operation.folderId))
@@ -296,8 +394,14 @@ export class BookmarksService {
 
   async fetchFolders(): Promise<BookmarksFolderStruct[]> {
     if (!this.journalHydrated) await this.journalReady
-    const operations = await readBookmarkOplog()
+    let operations = await readBookmarkOplog()
     if (operations.length > 0) {
+      try {
+        await this.migrateMissingOplogOrders(operations)
+        operations = await readBookmarkOplog()
+      } catch (error) {
+        console.warn("Could not migrate bookmark order from Sync", error)
+      }
       this.repository.replaceFolders(this.normalizeFolders(replayBookmarkOplog(operations).folders))
       return this.repository.getFolders()
     }

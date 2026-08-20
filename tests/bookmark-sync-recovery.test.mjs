@@ -87,6 +87,7 @@ const {
   BOOKMARK_OPLOG_MAX_ITEM_BYTES,
   BOOKMARK_OPLOG_MAX_TOTAL_BYTES,
   bookmarkOplogChunkKey,
+  bookmarkOplogManifestKey,
   createBookmarkOplogChunks,
   compactBookmarkOplog,
   publishBookmarkOplog,
@@ -255,6 +256,49 @@ test("rehydrates a pending local bookmark journal before Sync is flushed", async
   }
 })
 
+test("surfaces a failed background bookmark flush to the caller", async () => {
+  reset()
+  const previousSendMessage = chrome.runtime.sendMessage
+  chrome.runtime.sendMessage = async () => ({
+    ok: false,
+    error: "Bookmarks exceed the 100 KB Sync quota"
+  })
+  try {
+    const bookmarks = new BookmarksService()
+    await assert.rejects(
+      bookmarks.persistFolders([folder("too-large")]),
+      /Bookmarks exceed the 100 KB Sync quota/
+    )
+    assert.ok(
+      (await storageService.getValue("bookmark-repository-journal"))
+        .operations.length > 0
+    )
+  } finally {
+    chrome.runtime.sendMessage = previousSendMessage
+  }
+})
+
+test("a background worker flushes journal changes staged after it started", async () => {
+  reset()
+  const previousSendMessage = chrome.runtime.sendMessage
+  chrome.runtime.sendMessage = async () => ({ ok: true })
+  try {
+    const worker = new BookmarksService()
+    await worker.fetchFolders()
+
+    const page = new BookmarksService()
+    await page.persistFolders([folder("from-page")])
+    await worker.flushPendingOperations({ reloadJournal: true })
+
+    assert.deepEqual(
+      (await worker.fetchFolders()).map(({ id }) => id),
+      ["from-page"]
+    )
+  } finally {
+    chrome.runtime.sendMessage = previousSendMessage
+  }
+})
+
 test("keeps the latest generic Sync mutation locally until the worker flushes it", async () => {
   reset()
   await stageSyncValue("app-settings-poe1", { language: "es" })
@@ -307,6 +351,162 @@ test("merges independent offline bookmark operations from two devices", () => {
       .map(({ id }) => id)
       .sort(),
     ["from-a", "from-b"]
+  )
+})
+
+test("preserves folder and bookmark reorders after oplog compaction and replay", () => {
+  const oplog = new BookmarkOplog("device-a")
+  const firstFolder = folder("first")
+  const secondFolder = folder("second")
+  const firstTrade = trade("first-trade")
+  const secondTrade = trade("second-trade")
+
+  const compacted = compactBookmarkOplog([
+    oplog.upsertFolder(firstFolder),
+    oplog.upsertFolder(secondFolder),
+    oplog.upsertTrade("first", firstTrade),
+    oplog.upsertTrade("first", secondTrade),
+    oplog.setFolderOrder(["first", "second"]),
+    oplog.setTradeOrder("first", ["first-trade", "second-trade"]),
+    // Reordering does not mutate either entity, so order needs its own record.
+    oplog.setFolderOrder(["second", "first"]),
+    oplog.setTradeOrder("first", ["second-trade", "first-trade"])
+  ])
+
+  const restored = replayBookmarkOplog(compacted)
+  assert.deepEqual(
+    restored.folders.map(({ id }) => id),
+    ["second", "first"]
+  )
+  assert.deepEqual(
+    restored.tradesByFolder.get("first").map(({ id }) => id),
+    ["second-trade", "first-trade"]
+  )
+})
+
+test("publishes reorders through BookmarksService so they survive a reload", async () => {
+  reset()
+  const bookmarks = new BookmarksService()
+  const firstFolder = folder("first")
+  const secondFolder = folder("second")
+  const firstTrade = trade("first-trade")
+  const secondTrade = trade("second-trade")
+
+  await bookmarks.persistFolders([firstFolder, secondFolder])
+  await bookmarks.persistTrades([firstTrade, secondTrade], "first")
+  await bookmarks.flushPendingOperations()
+
+  await bookmarks.persistFolders([secondFolder, firstFolder])
+  await bookmarks.persistTrades([secondTrade, firstTrade], "first")
+  await bookmarks.flushPendingOperations()
+
+  const reloaded = new BookmarksService()
+  assert.deepEqual(
+    (await reloaded.fetchFolders()).map(({ id }) => id),
+    ["second", "first"]
+  )
+  assert.deepEqual(
+    (await reloaded.fetchTradesByFolderId("first", { force: true })).map(
+      ({ id }) => id
+    ),
+    ["second-trade", "first-trade"]
+  )
+})
+
+test("migrates order from chunk snapshots when an older oplog has no order records", async () => {
+  reset()
+  const firstFolder = folder("first")
+  const secondFolder = folder("second")
+  const firstTrade = trade("first-trade")
+  const secondTrade = trade("second-trade")
+
+  await storageService.setValue(
+    "bookmark-folders-chunk--legacy-order-0",
+    [secondFolder, firstFolder],
+    null,
+    "sync"
+  )
+  await storageService.setValue(
+    "bookmark-folders-manifest",
+    { version: 1, chunkKeys: ["bookmark-folders-chunk--legacy-order-0"] },
+    null,
+    "sync"
+  )
+  await storageService.setValue(
+    "bookmark-trades-chunk--first--legacy-order-0",
+    [secondTrade, firstTrade],
+    null,
+    "sync"
+  )
+  await storageService.setValue(
+    "bookmark-trades-manifest--first",
+    {
+      version: 1,
+      chunkKeys: ["bookmark-trades-chunk--first--legacy-order-0"]
+    },
+    null,
+    "sync"
+  )
+
+  const legacy = new BookmarkOplog("legacy-device")
+  await publishBookmarkOplog("legacy-device", [
+    legacy.upsertFolder(firstFolder),
+    legacy.upsertFolder(secondFolder),
+    legacy.upsertTrade("first", firstTrade),
+    legacy.upsertTrade("first", secondTrade)
+  ])
+
+  const bookmarks = new BookmarksService()
+  assert.deepEqual(
+    (await bookmarks.fetchFolders()).map(({ id }) => id),
+    ["second", "first"]
+  )
+  assert.deepEqual(
+    (await bookmarks.fetchTradesByFolderId("first", { force: true })).map(
+      ({ id }) => id
+    ),
+    ["second-trade", "first-trade"]
+  )
+  assert.ok(
+    (await readBookmarkOplog()).some(
+      (operation) => operation.type === "set-folder-order"
+    )
+  )
+})
+
+test("resolves concurrent reorders with the latest order operation", () => {
+  const left = new BookmarkOplog("device-a")
+  const right = new BookmarkOplog("device-b")
+  const firstFolder = folder("first")
+  const secondFolder = folder("second")
+  const firstTrade = trade("first-trade")
+  const secondTrade = trade("second-trade")
+
+  const leftOperations = [
+    left.upsertFolder(firstFolder),
+    left.upsertFolder(secondFolder),
+    left.upsertTrade("first", firstTrade),
+    left.upsertTrade("first", secondTrade),
+    left.setFolderOrder(["second", "first"]),
+    left.setTradeOrder("first", ["second-trade", "first-trade"])
+  ]
+  // Publishing observes remote clocks first, ensuring a subsequent write wins.
+  leftOperations.forEach(({ clock }) => right.observe(clock))
+  const merged = replayBookmarkOplog(
+    compactBookmarkOplog([
+      ...leftOperations,
+      right.setFolderOrder(["first", "second"]),
+      right.setTradeOrder("first", ["first-trade", "second-trade"])
+    ])
+  )
+
+  assert.deepEqual(
+    merged.folders.map(({ id }) => id),
+    ["first", "second"]
+  )
+  assert.deepEqual(
+    merged.tradesByFolder.get("first").map(({ id }) => id),
+    ["first-trade", "second-trade"]
   )
 })
 
@@ -364,6 +564,18 @@ test("segments oplog records below 8 KB and rejects the 100 KB budget", async ()
   )
 })
 
+test("rejects an oversized order record before it can exceed Sync item quota", async () => {
+  const oplog = new BookmarkOplog("device-a")
+  const folderIds = Array.from({ length: 1_000 }, (_, index) =>
+    `folder-${index.toString().padStart(4, "0")}`
+  )
+
+  await assert.rejects(
+    () => createBookmarkOplogChunks("device-a", [oplog.setFolderOrder(folderIds)]),
+    /operation is too large to synchronize/
+  )
+})
+
 test("oplog guard measures the compressed payload, not the logical JSON", async () => {
   const oplog = new BookmarkOplog("device-a")
   const operations = Array.from({ length: 50 }, (_, index) =>
@@ -413,6 +625,52 @@ test("publishes independent actor streams atomically and reads their merged oper
   )
   assert.ok(stores.sync.has("bookmark-oplog--device-a--manifest"))
   assert.ok(stores.sync.has("bookmark-oplog--device-b--manifest"))
+})
+
+test("reads v1 oplog streams alongside the current v2 order protocol", async () => {
+  reset()
+  const legacy = new BookmarkOplog("legacy-device")
+  const legacyOperation = legacy.upsertFolder(folder("legacy-folder"))
+  await storageService.setValue(
+    bookmarkOplogChunkKey("legacy-device", 0),
+    [legacyOperation],
+    null,
+    "sync"
+  )
+  await storageService.setValue(
+    bookmarkOplogManifestKey("legacy-device"),
+    {
+      version: 1,
+      actor: "legacy-device",
+      chunkKeys: [bookmarkOplogChunkKey("legacy-device", 0)],
+      updatedAt: Date.now()
+    },
+    null,
+    "sync"
+  )
+
+  const current = new BookmarkOplog("current-device")
+  await publishBookmarkOplog("current-device", [
+    current.upsertFolder(folder("current-folder")),
+    current.setFolderOrder(["current-folder"])
+  ])
+
+  assert.equal(
+    (
+      await storageService.getValue(
+        bookmarkOplogManifestKey("current-device"),
+        null,
+        "sync"
+      )
+    ).version,
+    2
+  )
+  assert.deepEqual(
+    replayBookmarkOplog(await readBookmarkOplog()).folders
+      .map(({ id }) => id)
+      .sort(),
+    ["current-folder", "legacy-folder"]
+  )
 })
 
 test("does not publish staged chunks when manifest publication fails", async () => {
