@@ -2040,7 +2040,7 @@
   gap: 8px;
   min-height: 28px;
   padding: 2px 4px;
-  color: rgba(196, 177, 140, 0.82);
+  color: #eeeeee;
   cursor: pointer;
   font-family: "FontinSmallcaps", serif;
   font-size: calc(11px * var(--bt-text-scale, 1));
@@ -2236,7 +2236,7 @@
 
 .trade-link {
   flex: 1;
-  color: #eeeeee;
+  color: rgba(196, 177, 140, 0.82);
   text-decoration: none;
   font-size: calc(13px * var(--bt-text-scale, 1));
   line-height: 1.2;

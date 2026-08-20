@@ -27,6 +27,10 @@ ALWAYS prefer MCP graph tools over grep/glob/file-search for code discovery.
 ## Package Manager
 - Always use `pnpm` for package management and script execution. Do not use `npm` or `npm.cmd`.
 
+## Verification
+- Always run the relevant automated tests and type checks after code changes, before reporting completion.
+- When a change fixes a bug, add or update a regression test that would have failed before the fix.
+
 ## Subagent Collaboration
 - Use subagents for independent, bounded work that can proceed in parallel, such as investigating separate areas, implementing isolated components, or performing an independent review/test pass.
 - Keep small, tightly coupled changes with the primary agent; do not delegate merely to add process overhead.

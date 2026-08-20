@@ -419,9 +419,11 @@ export class StorageService {
   }
 
   private getStorageArea(area: StorageArea): chrome.storage.StorageArea | null {
-    if (!chrome.storage?.[area]) {
-      // No API access in this context (e.g. MAIN-world content scripts).
-      // Silent on purpose: callers already handle `null` as "no value".
+    if (typeof chrome === "undefined" || !chrome.storage?.[area]) {
+      // No API access in this context (e.g. MAIN-world content scripts in
+      // Firefox, where `chrome` itself is undefined rather than just lacking
+      // the storage namespace). Silent on purpose: callers already handle
+      // `null` as "no value".
       return null
     }
     if (!hasValidExtensionContext()) {
