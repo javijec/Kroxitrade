@@ -502,6 +502,13 @@ const version1130Fixes: WhatsNewItem[] = [
   }
 ];
 
+const version1130Features: WhatsNewItem[] = [
+  {
+    titleKey: "whatsNew.item.refreshedDefaultsTitle",
+    descriptionKey: "whatsNew.item.refreshedDefaultsDescription"
+  }
+];
+
 export const latestWhatsNew: WhatsNewEntry = {
   version: "1.1.31",
   date: "2026-08-20",
@@ -509,6 +516,10 @@ export const latestWhatsNew: WhatsNewEntry = {
     {
       title: "1.1.31",
       groups: [
+        {
+          titleKey: "whatsNew.section.features",
+          items: version1130Features
+        },
         {
           titleKey: "whatsNew.section.fixes",
           items: version1130Fixes

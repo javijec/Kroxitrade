@@ -399,5 +399,7 @@ export const frenchTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.cancelNewFolderTitle": "Annuler un nouveau dossier ne laisse pas de dossier vide",
   "whatsNew.item.cancelNewFolderDescription": "Annulez ou appuyez sur Échap pendant que vous nommez un nouveau dossier de marque-pages pour le supprimer au lieu de conserver un dossier vide.",
   "whatsNew.item.bookmarkSyncOrderTitle": "La synchronisation des marque-pages préserve votre ordre",
-  "whatsNew.item.bookmarkSyncOrderDescription": "L’ordre des recherches enregistrées et des dossiers reste désormais cohérent entre les onglets, les rechargements et les appareils synchronisés. La synchronisation se rétablit aussi de façon sûre si une mise à jour en arrière-plan est interrompue."
+  "whatsNew.item.bookmarkSyncOrderDescription": "L’ordre des recherches enregistrées et des dossiers reste désormais cohérent entre les onglets, les rechargements et les appareils synchronisés. La synchronisation se rétablit aussi de façon sûre si une mise à jour en arrière-plan est interrompue.",
+  "whatsNew.item.refreshedDefaultsTitle": "Des réglages par défaut renouvelés pour une interface initiale plus épurée",
+  "whatsNew.item.refreshedDefaultsDescription": "Les nouvelles installations démarrent avec des dispositions de marque-pages compactes et des contrôles plus ciblés. Toutes les options restent disponibles dans les paramètres pour personnaliser votre flux de travail."
 }

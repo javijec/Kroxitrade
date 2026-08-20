@@ -593,5 +593,7 @@ export const spanishTranslations: Record<string, TranslationValue> = {
     "Cancelá o presioná Escape mientras nombrás una carpeta nueva para eliminarla en lugar de conservar una carpeta vacía.",
   "whatsNew.item.bookmarkSyncOrderTitle": "La sincronización de bookmarks conserva el orden",
   "whatsNew.item.bookmarkSyncOrderDescription":
-    "El orden de las búsquedas guardadas y las carpetas ahora se mantiene entre pestañas, recargas y dispositivos sincronizados. La sincronización también se recupera de forma segura si se interrumpe una actualización en segundo plano."
+    "El orden de las búsquedas guardadas y las carpetas ahora se mantiene entre pestañas, recargas y dispositivos sincronizados. La sincronización también se recupera de forma segura si se interrumpe una actualización en segundo plano.",
+  "whatsNew.item.refreshedDefaultsTitle": "Valores predeterminados renovados para un diseño inicial más limpio",
+  "whatsNew.item.refreshedDefaultsDescription": "Las instalaciones nuevas empiezan con diseños de bookmarks compactos y controles más enfocados. Todas las opciones siguen disponibles en Settings para personalizar tu flujo de trabajo."
 } as Record<string, TranslationValue>

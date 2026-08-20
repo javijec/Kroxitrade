@@ -405,5 +405,7 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.cancelNewFolderTitle": "Cancelar uma nova pasta não deixa pastas extras",
   "whatsNew.item.cancelNewFolderDescription": "Cancele ou pressione Escape ao nomear uma nova pasta de favoritos para removê-la em vez de manter uma pasta vazia.",
   "whatsNew.item.bookmarkSyncOrderTitle": "A sincronização de favoritos preserva a ordem",
-  "whatsNew.item.bookmarkSyncOrderDescription": "A ordem das buscas salvas e das pastas agora permanece consistente entre abas, recarregamentos e dispositivos sincronizados. A sincronização também se recupera com segurança se uma atualização em segundo plano for interrompida."
+  "whatsNew.item.bookmarkSyncOrderDescription": "A ordem das buscas salvas e das pastas agora permanece consistente entre abas, recarregamentos e dispositivos sincronizados. A sincronização também se recupera com segurança se uma atualização em segundo plano for interrompida.",
+  "whatsNew.item.refreshedDefaultsTitle": "Padrões renovados para um layout inicial mais limpo",
+  "whatsNew.item.refreshedDefaultsDescription": "Novas instalações começam com layouts compactos de favoritos e controles mais objetivos. Todas as opções continuam disponíveis nas Configurações para personalizar seu fluxo de trabalho."
 }
