@@ -403,5 +403,7 @@ export const japaneseTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.bookmarkSyncOrderTitle": "ブックマーク同期で並び順を保持",
   "whatsNew.item.bookmarkSyncOrderDescription": "保存した検索とフォルダーの並び順が、タブ、再読み込み、同期済みデバイス間で一貫して維持されます。バックグラウンド更新が中断されても、同期は安全に復旧します。",
   "whatsNew.item.refreshedDefaultsTitle": "よりすっきりした初期レイアウトのための既定値を更新",
-  "whatsNew.item.refreshedDefaultsDescription": "新規インストールでは、コンパクトなブックマークレイアウトと必要な操作に絞ったコントロールから始まります。ワークフローを調整したい場合は、すべてのオプションを Settings から利用できます。"
+  "whatsNew.item.refreshedDefaultsDescription": "新規インストールでは、コンパクトなブックマークレイアウトと必要な操作に絞ったコントロールから始まります。ワークフローを調整したい場合は、すべてのオプションを Settings から利用できます。",
+  "whatsNew.item.quickFiltersPageInitTitle": "クイックフィルターがトレードページに戻ります",
+  "whatsNew.item.quickFiltersPageInitDescription": "同期設定の読み込み後にクイックフィルターが確実に初期化されるようになり、PoE1 と PoE2 でページ配置が機能します。"
 }

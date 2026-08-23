@@ -1,4 +1,5 @@
 import type { FeatureLifecycle } from "~/lib/core/feature-lifecycle"
+import { extensionBus } from "~/lib/core/extension-bus"
 import { settings } from "~/lib/services/settings"
 
 const loadFinerFilters = () =>
@@ -44,13 +45,14 @@ export const startFilterPanel = async (): Promise<() => void> => {
     throw error
   }
 
-  // Finer Filters is always on; the other features follow their settings.
+  // Finer Filters and Quick Filters stay active on the page; Auto Fuzzy follows
+  // its setting.
   void ensure("finer-filters", true, loadFinerFilters)
-  void ensure(
-    "quick-filters",
-    settings.getCurrent().showQuickFilters,
-    loadQuickFilters
-  )
+  // Keep the page feature alive independently of the synced setting. It owns
+  // the local page-side visibility/placement keys and removes its own UI when
+  // disabled. Gating it here can leave the page without an injector after a
+  // sync update races the MAIN-world startup.
+  void ensure("quick-filters", true, loadQuickFilters)
   void ensure(
     "auto-fuzzy",
     settings.getCurrent().autoFuzzySearch,
@@ -58,7 +60,7 @@ export const startFilterPanel = async (): Promise<() => void> => {
   )
 
   const unsubscribe = settings.subscribe((value) => {
-    void ensure("quick-filters", value.showQuickFilters, loadQuickFilters)
+    extensionBus.send("quick-filters:change")
     void ensure("auto-fuzzy", value.autoFuzzySearch, loadAutoFuzzy)
   })
 

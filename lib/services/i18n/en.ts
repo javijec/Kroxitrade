@@ -588,5 +588,7 @@ export const englishTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.bookmarkSyncOrderDescription":
     "Saved-search and folder order now stays consistent across tabs, reloads, and synced devices. Synchronization also recovers safely if a background update is interrupted.",
   "whatsNew.item.refreshedDefaultsTitle": "Refreshed defaults for a cleaner starting layout",
-  "whatsNew.item.refreshedDefaultsDescription": "New installs start with compact bookmark layouts and focused controls. Every option remains available in Settings when you want to customize your workflow."
+  "whatsNew.item.refreshedDefaultsDescription": "New installs start with compact bookmark layouts and focused controls. Every option remains available in Settings when you want to customize your workflow.",
+  "whatsNew.item.quickFiltersPageInitTitle": "Quick Filters return to the trade page",
+  "whatsNew.item.quickFiltersPageInitDescription": "Quick Filters now initialize reliably after synced settings load, so the Page placement works on PoE1 and PoE2."
 } as Record<string, TranslationValue>

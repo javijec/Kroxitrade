@@ -396,5 +396,7 @@ export const germanTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.bookmarkSyncOrderTitle": "Die Lesezeichensynchronisierung behält deine Reihenfolge bei",
   "whatsNew.item.bookmarkSyncOrderDescription": "Die Reihenfolge gespeicherter Suchen und Ordner bleibt jetzt über Tabs, Neuladen und synchronisierte Geräte hinweg konsistent. Die Synchronisierung stellt sich auch sicher wieder her, wenn ein Hintergrundupdate unterbrochen wird.",
   "whatsNew.item.refreshedDefaultsTitle": "Überarbeitete Standardwerte für ein klareres Startlayout",
-  "whatsNew.item.refreshedDefaultsDescription": "Neue Installationen starten mit kompakten Lesezeichenlayouts und fokussierten Bedienelementen. Alle Optionen bleiben in den Einstellungen verfügbar, wenn du deinen Arbeitsablauf anpassen möchtest."
+  "whatsNew.item.refreshedDefaultsDescription": "Neue Installationen starten mit kompakten Lesezeichenlayouts und fokussierten Bedienelementen. Alle Optionen bleiben in den Einstellungen verfügbar, wenn du deinen Arbeitsablauf anpassen möchtest.",
+  "whatsNew.item.quickFiltersPageInitTitle": "Schnellfilter kehren zur Handelsseite zurück",
+  "whatsNew.item.quickFiltersPageInitDescription": "Schnellfilter werden nach dem Laden synchronisierter Einstellungen jetzt zuverlässig initialisiert, sodass die Platzierung auf der Seite in PoE1 und PoE2 funktioniert."
 }

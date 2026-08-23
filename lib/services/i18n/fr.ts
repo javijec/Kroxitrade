@@ -401,5 +401,7 @@ export const frenchTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.bookmarkSyncOrderTitle": "La synchronisation des marque-pages préserve votre ordre",
   "whatsNew.item.bookmarkSyncOrderDescription": "L’ordre des recherches enregistrées et des dossiers reste désormais cohérent entre les onglets, les rechargements et les appareils synchronisés. La synchronisation se rétablit aussi de façon sûre si une mise à jour en arrière-plan est interrompue.",
   "whatsNew.item.refreshedDefaultsTitle": "Des réglages par défaut renouvelés pour une interface initiale plus épurée",
-  "whatsNew.item.refreshedDefaultsDescription": "Les nouvelles installations démarrent avec des dispositions de marque-pages compactes et des contrôles plus ciblés. Toutes les options restent disponibles dans les paramètres pour personnaliser votre flux de travail."
+  "whatsNew.item.refreshedDefaultsDescription": "Les nouvelles installations démarrent avec des dispositions de marque-pages compactes et des contrôles plus ciblés. Toutes les options restent disponibles dans les paramètres pour personnaliser votre flux de travail.",
+  "whatsNew.item.quickFiltersPageInitTitle": "Les filtres rapides reviennent sur la page de trade",
+  "whatsNew.item.quickFiltersPageInitDescription": "Les filtres rapides s’initialisent désormais de manière fiable après le chargement des paramètres synchronisés, afin que l’emplacement Page fonctionne dans PoE1 et PoE2."
 }

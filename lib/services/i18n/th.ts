@@ -390,5 +390,7 @@ export const thaiTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.bookmarkSyncOrderTitle": "การซิงก์บุ๊กมาร์กคงลำดับของคุณไว้",
   "whatsNew.item.bookmarkSyncOrderDescription": "ลำดับของการค้นหาที่บันทึกไว้และโฟลเดอร์จะสอดคล้องกันระหว่างแท็บ การรีโหลด และอุปกรณ์ที่ซิงก์แล้ว การซิงก์ยังกู้คืนได้อย่างปลอดภัยหากการอัปเดตเบื้องหลังถูกขัดจังหวะ",
   "whatsNew.item.refreshedDefaultsTitle": "ค่าเริ่มต้นใหม่เพื่อเลย์เอาต์เริ่มต้นที่สะอาดตาขึ้น",
-  "whatsNew.item.refreshedDefaultsDescription": "การติดตั้งใหม่เริ่มต้นด้วยเลย์เอาต์บุ๊กมาร์กแบบกะทัดรัดและการควบคุมที่เน้นมากขึ้น ทุกตัวเลือกยังคงมีให้ใน Settings เมื่อคุณต้องการปรับแต่งขั้นตอนการใช้งาน"
+  "whatsNew.item.refreshedDefaultsDescription": "การติดตั้งใหม่เริ่มต้นด้วยเลย์เอาต์บุ๊กมาร์กแบบกะทัดรัดและการควบคุมที่เน้นมากขึ้น ทุกตัวเลือกยังคงมีให้ใน Settings เมื่อคุณต้องการปรับแต่งขั้นตอนการใช้งาน",
+  "whatsNew.item.quickFiltersPageInitTitle": "Quick Filters กลับมาที่หน้าการค้า",
+  "whatsNew.item.quickFiltersPageInitDescription": "Quick Filters เริ่มทำงานได้อย่างเชื่อถือได้หลังจากโหลดการตั้งค่าที่ซิงก์แล้ว เพื่อให้ตำแหน่งบนหน้าทำงานได้ทั้ง PoE1 และ PoE2"
 }

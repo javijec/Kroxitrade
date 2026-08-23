@@ -27,19 +27,22 @@ const languages = [
 ]
 
 const run = (command, args, options = {}) => {
-  const useNpmCli = command === "npm" && !!process.env.npm_execpath
-  const useWindowsNpmShell =
-    command === "npm" && !useNpmCli && process.platform === "win32"
+  const usePackageManagerCli =
+    (command === "npm" || command === "pnpm") && !!process.env.npm_execpath
+  const useWindowsPackageManagerShell =
+    (command === "npm" || command === "pnpm") &&
+    !usePackageManagerCli &&
+    process.platform === "win32"
   const quoteCommandArg = (value) =>
     /[\s"]/u.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value
-  const executable = useNpmCli
+  const executable = usePackageManagerCli
     ? process.execPath
-    : useWindowsNpmShell
+    : useWindowsPackageManagerShell
       ? process.env.ComSpec || "cmd.exe"
       : command
-  const commandArgs = useNpmCli
+  const commandArgs = usePackageManagerCli
     ? [process.env.npm_execpath, ...args]
-    : useWindowsNpmShell
+    : useWindowsPackageManagerShell
       ? ["/d", "/s", "/c", [command, ...args].map(quoteCommandArg).join(" ")]
       : args
   const result = childProcess.spawnSync(executable, commandArgs, {

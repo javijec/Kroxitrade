@@ -595,5 +595,7 @@ export const spanishTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.bookmarkSyncOrderDescription":
     "El orden de las búsquedas guardadas y las carpetas ahora se mantiene entre pestañas, recargas y dispositivos sincronizados. La sincronización también se recupera de forma segura si se interrumpe una actualización en segundo plano.",
   "whatsNew.item.refreshedDefaultsTitle": "Valores predeterminados renovados para un diseño inicial más limpio",
-  "whatsNew.item.refreshedDefaultsDescription": "Las instalaciones nuevas empiezan con diseños de bookmarks compactos y controles más enfocados. Todas las opciones siguen disponibles en Settings para personalizar tu flujo de trabajo."
+  "whatsNew.item.refreshedDefaultsDescription": "Las instalaciones nuevas empiezan con diseños de bookmarks compactos y controles más enfocados. Todas las opciones siguen disponibles en Settings para personalizar tu flujo de trabajo.",
+  "whatsNew.item.quickFiltersPageInitTitle": "Quick Filters vuelve a la página de trade",
+  "whatsNew.item.quickFiltersPageInitDescription": "Quick Filters ahora se inicia de forma confiable después de cargar los settings sincronizados, para que la ubicación Página funcione en PoE1 y PoE2."
 } as Record<string, TranslationValue>
