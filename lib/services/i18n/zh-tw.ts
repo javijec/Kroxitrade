@@ -569,5 +569,7 @@ export const traditionalChineseTranslations: Record<string, TranslationValue> =
     "whatsNew.item.bookmarkSyncOrderTitle": "書籤同步會保留你的排序",
     "whatsNew.item.bookmarkSyncOrderDescription": "已儲存搜尋和資料夾的排序現在會在分頁、重新載入和已同步裝置之間保持一致。即使背景更新被中斷，同步也能安全復原。",
     "whatsNew.item.refreshedDefaultsTitle": "更新預設值，帶來更簡潔的初始版面",
-    "whatsNew.item.refreshedDefaultsDescription": "新安裝會以精簡的書籤版面和更聚焦的控制項開始。需要自訂工作流程時，所有選項仍可在 Settings 中使用。"
+    "whatsNew.item.refreshedDefaultsDescription": "新安裝會以精簡的書籤版面和更聚焦的控制項開始。需要自訂工作流程時，所有選項仍可在 Settings 中使用。",
+    "whatsNew.item.quickFiltersPageInitTitle": "快速篩選回到交易頁面",
+    "whatsNew.item.quickFiltersPageInitDescription": "快速篩選現在會在同步設定載入後可靠初始化，因此頁面位置可在 PoE1 和 PoE2 中正常運作。"
   } as Record<string, TranslationValue>

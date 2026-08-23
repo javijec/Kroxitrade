@@ -509,10 +509,26 @@ const version1130Features: WhatsNewItem[] = [
   }
 ];
 
+const version1132Fixes: WhatsNewItem[] = [
+  {
+    titleKey: "whatsNew.item.quickFiltersPageInitTitle",
+    descriptionKey: "whatsNew.item.quickFiltersPageInitDescription"
+  }
+];
+
 export const latestWhatsNew: WhatsNewEntry = {
-  version: "1.1.31",
-  date: "2026-08-20",
+  version: "1.1.32",
+  date: "2026-08-23",
   sections: [
+    {
+      title: "1.1.32",
+      groups: [
+        {
+          titleKey: "whatsNew.section.fixes",
+          items: version1132Fixes
+        }
+      ]
+    },
     {
       title: "1.1.31",
       groups: [

@@ -407,5 +407,7 @@ export const portugueseTranslations: Record<string, TranslationValue> = {
   "whatsNew.item.bookmarkSyncOrderTitle": "A sincronização de favoritos preserva a ordem",
   "whatsNew.item.bookmarkSyncOrderDescription": "A ordem das buscas salvas e das pastas agora permanece consistente entre abas, recarregamentos e dispositivos sincronizados. A sincronização também se recupera com segurança se uma atualização em segundo plano for interrompida.",
   "whatsNew.item.refreshedDefaultsTitle": "Padrões renovados para um layout inicial mais limpo",
-  "whatsNew.item.refreshedDefaultsDescription": "Novas instalações começam com layouts compactos de favoritos e controles mais objetivos. Todas as opções continuam disponíveis nas Configurações para personalizar seu fluxo de trabalho."
+  "whatsNew.item.refreshedDefaultsDescription": "Novas instalações começam com layouts compactos de favoritos e controles mais objetivos. Todas as opções continuam disponíveis nas Configurações para personalizar seu fluxo de trabalho.",
+  "whatsNew.item.quickFiltersPageInitTitle": "Filtros rápidos voltam à página de trade",
+  "whatsNew.item.quickFiltersPageInitDescription": "Os filtros rápidos agora são inicializados de forma confiável após o carregamento das configurações sincronizadas, para que a opção Página funcione no PoE1 e no PoE2."
 }
