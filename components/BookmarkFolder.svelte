@@ -27,6 +27,8 @@
     consumeBookmarkScroll,
     saveBookmarkScroll
   } from "../lib/services/bookmark-scroll"
+  import { canCancelDraftSave } from "../lib/services/bookmark-draft-save"
+  import { decideTradeSync } from "../lib/services/bookmark-trade-sync"
   import { bookmarksService } from "../lib/services/bookmarks"
   import {
     bookmarkFolderIconOptions,
@@ -204,15 +206,16 @@
   }
 
   const unsubscribeBookmarksChange = bookmarksService.onChange((event) => {
-    if (!folder.id || !event?.tradesChanged || event.folderId !== folder.id) {
-      return
-    }
+    const outcome = decideTradeSync({
+      folderId: folder.id,
+      eventFolderId: event?.folderId,
+      tradesChanged: !!event?.tradesChanged,
+      isExpanded,
+      isCommittingDraft
+    })
 
-    if (isExpanded) {
-      syncTradesFromCache()
-    } else {
-      hasLoadedTrades = false
-    }
+    if (outcome === "sync") syncTradesFromCache()
+    else if (outcome === "invalidate") hasLoadedTrades = false
   })
 
   onDestroy(() => {
@@ -972,9 +975,9 @@
   let editingTradeId: string | null = $state(null)
   let tradeEditTitle = $state("")
   let tradeEditInputEl: HTMLInputElement | null = $state(null)
-  let savingTradeId: string | null = null
+  let savingTradeId: string | null = $state(null)
   let draftTrade: BookmarksTradeStruct | null = $state(null)
-  let isCommittingDraft = false
+  let isCommittingDraft = $state(false)
 
   const startEditingTrade = async (trade: BookmarksTradeStruct) => {
     if (!trade.id) return
@@ -1037,7 +1040,7 @@
         folder.id
       )
       cancelDraftTrade()
-      await refreshTrades()
+      syncTradesFromCache()
       flashMessages.success(
         translate($languageStore, "folder.addedToFolder", { title })
       )
@@ -1493,6 +1496,7 @@
                   class:is-drag-over={dragOverIndex === i}
                   role="group"
                   aria-current={isActiveTrade ? "page" : undefined}
+                  aria-busy={savingTradeId === trade.id}
                   aria-label={trade.title}
                   onpointerdown={handleTradeCardPointerDown}
                   onpointerup={(event) => handleTradeCardClick(event, trade)}>
@@ -1528,6 +1532,9 @@
                               title={trade.title}>
                               {trade.title}
                             </span>
+                            {#if savingTradeId === trade.id}
+                              <span class="trade-saving" aria-hidden="true">↻</span>
+                            {/if}
                             {#if trade.archivedAt}
                               <span class="archive-status">{translate($languageStore, "bookmarks.toolbar.archive")}</span>
                             {/if}
@@ -1583,7 +1590,7 @@
           {/each}
           {#if draftTrade}
             <li>
-              <div class="trade-item">
+              <div class="trade-item" aria-busy={isCommittingDraft}>
                 <div class="trade-content">
                   <div class="trade-top">
                     <input
@@ -1592,12 +1599,21 @@
                       aria-label={translate($languageStore, "folder.saveCurrentSearch")}
                       bind:this={tradeEditInputEl}
                       bind:value={tradeEditTitle}
+                      readonly={isCommittingDraft}
                       onblur={handleDraftBlur}
                       onkeydown={(event) => {
                         event.stopPropagation()
                         if (event.key === "Enter") void commitDraftTrade()
-                        if (event.key === "Escape") cancelDraftTrade()
+                        if (
+                          event.key === "Escape" &&
+                          canCancelDraftSave(isCommittingDraft)
+                        ) {
+                          cancelDraftTrade()
+                        }
                       }} />
+                    {#if isCommittingDraft}
+                      <span class="trade-saving" aria-hidden="true">↻</span>
+                    {/if}
                   </div>
                 </div>
               </div>
@@ -2253,6 +2269,30 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
+}
+
+.trade-saving {
+  flex: 0 0 auto;
+  display: inline-block;
+  color: rgba(205, 180, 137, 0.95);
+  font-size: calc(12px * var(--bt-text-scale, 1));
+  line-height: 1;
+  animation: trade-saving-spin 1s linear infinite;
+}
+
+@keyframes trade-saving-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trade-saving {
+    animation: none;
+  }
 }
 
 .archive-status {
