@@ -1,6 +1,8 @@
 import type { TranslationValue } from "./types"
 
 export const spanishTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.manualBookmarkScrollTitle": "El desplazamiento manual de marcadores funciona de forma fiable",
+  "whatsNew.item.manualBookmarkScrollDescription": "La posición guardada de los marcadores solo se restaura mientras carga la lista. Al desplazarte con el ratón, toque, teclado o puntero, tomas el control de inmediato y la lista deja de volver atrás.",
   "whatsNew.item.activeBookmarkHighlightTitle": "Resalta el marcador que tienes abierto",
   "whatsNew.item.activeBookmarkHighlightDescription": "La búsqueda guardada abierta en la pestaña activa ahora se resalta en la lista de marcadores, para que sea fácil ver qué búsqueda estás viendo.",
   "whatsNew.item.bookmarkScrollPreserveTitle": "La lista de marcadores mantiene su posición al abrir en una pestaña nueva",

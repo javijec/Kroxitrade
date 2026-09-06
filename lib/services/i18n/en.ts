@@ -1,6 +1,8 @@
 import type { TranslationValue } from "./types"
 
 export const englishTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.manualBookmarkScrollTitle": "Manual bookmark scrolling works reliably",
+  "whatsNew.item.manualBookmarkScrollDescription": "The saved bookmark position restores only while the list is loading. Scrolling with the mouse, touch, keyboard, or pointer immediately takes over, so the list no longer jumps back.",
   "whatsNew.item.activeBookmarkHighlightTitle": "Highlight the bookmark you have open",
   "whatsNew.item.activeBookmarkHighlightDescription": "The saved search currently open in the active tab is now highlighted in the bookmark list, making it easy to see which search you are viewing.",
   "whatsNew.item.bookmarkScrollPreserveTitle": "Bookmark list keeps its place when opening in a new tab",

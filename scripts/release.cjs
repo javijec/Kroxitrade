@@ -1,6 +1,7 @@
 const childProcess = require("child_process")
 const fs = require("fs")
 const path = require("path")
+const { resolveReleaseCommand } = require("./release-command.cjs")
 
 const root = path.join(__dirname, "..")
 const buildDir = path.join(root, "build")
@@ -27,24 +28,14 @@ const languages = [
 ]
 
 const run = (command, args, options = {}) => {
-  const usePackageManagerCli =
-    (command === "npm" || command === "pnpm") && !!process.env.npm_execpath
-  const useWindowsPackageManagerShell =
-    (command === "npm" || command === "pnpm") &&
-    !usePackageManagerCli &&
-    process.platform === "win32"
-  const quoteCommandArg = (value) =>
-    /[\s"]/u.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value
-  const executable = usePackageManagerCli
-    ? process.execPath
-    : useWindowsPackageManagerShell
-      ? process.env.ComSpec || "cmd.exe"
-      : command
-  const commandArgs = usePackageManagerCli
-    ? [process.env.npm_execpath, ...args]
-    : useWindowsPackageManagerShell
-      ? ["/d", "/s", "/c", [command, ...args].map(quoteCommandArg).join(" ")]
-      : args
+  const { executable, args: commandArgs } = resolveReleaseCommand({
+    command,
+    args,
+    npmExecPath: process.env.npm_execpath,
+    platform: process.platform,
+    comSpec: process.env.ComSpec,
+    nodePath: process.execPath
+  })
   const result = childProcess.spawnSync(executable, commandArgs, {
     cwd: root,
     encoding: "utf8",

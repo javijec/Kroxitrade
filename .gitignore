@@ -36,6 +36,7 @@ build-e2e/
 dist/
 .agents/
 .codebase-memory/
+.codegraph/
 .codex/
 
 # wxt

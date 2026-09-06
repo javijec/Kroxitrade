@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { resolve } from "node:path"
+import { writeFileWithRetry } from "./file-write-retry.mjs"
 
 const OUTPUT_DIRS = {
   poe1: resolve("data/trade-locales"),
@@ -40,10 +41,12 @@ const writeSnapshot = async (outputDir, locale, origin, data, sourceLocale = loc
     generatedAt: new Date().toISOString(),
     data
   }
-  await writeFile(
-    resolve(outputDir, `${locale}.json`),
-    `${JSON.stringify(snapshot)}\n`,
-    "utf8"
+  await writeFileWithRetry(() =>
+    writeFile(
+      resolve(outputDir, `${locale}.json`),
+      `${JSON.stringify(snapshot)}\n`,
+      "utf8"
+    )
   )
 }
 

@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const thaiTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.manualBookmarkScrollTitle": "การเลื่อนบุ๊กมาร์กด้วยตนเองทำงานได้อย่างเสถียร",
+  "whatsNew.item.manualBookmarkScrollDescription": "ตำแหน่งบุ๊กมาร์กที่บันทึกไว้จะถูกกู้คืนเฉพาะขณะที่รายการกำลังโหลดเท่านั้น เมื่อเลื่อนด้วยเมาส์ การสัมผัส แป้นพิมพ์ หรือตัวชี้ คุณจะควบคุมได้ทันทีและรายการจะไม่กระโดดกลับอีกต่อไป",
   "whatsNew.item.activeBookmarkHighlightTitle": "ไฮไลต์บุ๊กมาร์กที่คุณเปิดอยู่",
   "whatsNew.item.activeBookmarkHighlightDescription": "การค้นหาที่บันทึกไว้ซึ่งเปิดอยู่ในแท็บปัจจุบันจะถูกไฮไลต์ในรายการบุ๊กมาร์ก ทำให้เห็นได้ง่ายว่าคุณกำลังดูการค้นหาใดอยู่",
   "whatsNew.item.bookmarkScrollPreserveTitle": "รายการบุ๊กมาร์กคงตำแหน่งไว้เมื่อเปิดในแท็บใหม่",

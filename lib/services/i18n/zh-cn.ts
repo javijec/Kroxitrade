@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const simplifiedChineseTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.manualBookmarkScrollTitle": "手动滚动书签现已稳定可靠",
+  "whatsNew.item.manualBookmarkScrollDescription": "保存的书签位置仅会在列表加载时恢复。使用鼠标、触控、键盘或指针滚动会立即由你接管，列表不会再跳回原来的位置。",
   "whatsNew.item.activeBookmarkHighlightTitle": "突出显示当前打开的书签",
   "whatsNew.item.activeBookmarkHighlightDescription": "在当前标签页中打开的已保存搜索现在会高亮显示在书签列表中，让你轻松看出正在查看哪个搜索。",
   "whatsNew.item.bookmarkScrollPreserveTitle": "在新标签页打开时保持书签列表位置",

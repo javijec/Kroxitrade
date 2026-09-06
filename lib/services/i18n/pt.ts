@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const portugueseTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.manualBookmarkScrollTitle": "A rolagem manual dos favoritos funciona de forma confiável",
+  "whatsNew.item.manualBookmarkScrollDescription": "A posição salva dos favoritos é restaurada apenas enquanto a lista carrega. Ao rolar com o mouse, toque, teclado ou ponteiro, você assume o controle imediatamente e a lista deixa de voltar.",
   "whatsNew.item.activeBookmarkHighlightTitle": "Destaque o marcador que você tem aberto",
   "whatsNew.item.activeBookmarkHighlightDescription": "A pesquisa salva aberta na aba ativa agora é destacada na lista de marcadores, facilitando ver qual pesquisa você está vendo.",
   "whatsNew.item.bookmarkScrollPreserveTitle": "A lista de marcadores mantém sua posição ao abrir em uma nova aba",

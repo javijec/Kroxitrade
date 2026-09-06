@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const koreanTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.manualBookmarkScrollTitle": "북마크 수동 스크롤이 안정적으로 작동합니다",
+  "whatsNew.item.manualBookmarkScrollDescription": "저장된 북마크 위치는 목록을 불러오는 동안에만 복원됩니다. 마우스, 터치, 키보드 또는 포인터로 스크롤하면 즉시 직접 제어되며 목록이 더 이상 이전 위치로 돌아가지 않습니다.",
   "whatsNew.item.activeBookmarkHighlightTitle": "열려 있는 북마크 강조 표시",
   "whatsNew.item.activeBookmarkHighlightDescription": "활성 탭에서 연 저장된 검색이 이제 북마크 목록에 강조 표시되어 어떤 검색을 보고 있는지 쉽게 확인할 수 있습니다.",
   "whatsNew.item.bookmarkScrollPreserveTitle": "새 탭에서 열어도 북마크 목록의 위치 유지",
