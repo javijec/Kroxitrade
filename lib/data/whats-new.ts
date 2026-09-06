@@ -523,10 +523,26 @@ const version1133Fixes: WhatsNewItem[] = [
   }
 ];
 
+const version1134Fixes: WhatsNewItem[] = [
+  {
+    titleKey: "whatsNew.item.bookmarkSaveProgressTitle",
+    descriptionKey: "whatsNew.item.bookmarkSaveProgressDescription"
+  }
+];
+
 export const latestWhatsNew: WhatsNewEntry = {
-  version: "1.1.33",
+  version: "1.1.34",
   date: "2026-09-06",
   sections: [
+    {
+      title: "1.1.34",
+      groups: [
+        {
+          titleKey: "whatsNew.section.fixes",
+          items: version1134Fixes
+        }
+      ]
+    },
     {
       title: "1.1.33",
       groups: [

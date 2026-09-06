@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const russianTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.bookmarkSaveProgressTitle": "Сохранение закладок теперь показывает ход выполнения",
+  "whatsNew.item.bookmarkSaveProgressDescription": "При сохранении или переименовании закладки теперь отображается индикатор выполнения, а сохранённый поиск больше не появляется рядом со строкой черновика.",
   "whatsNew.item.manualBookmarkScrollTitle": "Ручная прокрутка закладок работает надёжно",
   "whatsNew.item.manualBookmarkScrollDescription": "Сохранённая позиция закладок восстанавливается только во время загрузки списка. Прокрутка мышью, касанием, клавиатурой или указателем сразу передаёт управление вам, поэтому список больше не возвращается назад.",
   "whatsNew.item.activeBookmarkHighlightTitle": "Выделение открытой закладки",

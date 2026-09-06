@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const germanTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.bookmarkSaveProgressTitle": "Das Speichern von Lesezeichen zeigt jetzt den Fortschritt",
+  "whatsNew.item.bookmarkSaveProgressDescription": "Beim Speichern oder Umbenennen eines Lesezeichens wird jetzt ein Fortschrittsindikator angezeigt, und die gespeicherte Suche erscheint nicht mehr kurz neben ihrer Entwurfszeile.",
   "whatsNew.item.manualBookmarkScrollTitle": "Manuelles Scrollen von Lesezeichen funktioniert zuverlässig",
   "whatsNew.item.manualBookmarkScrollDescription": "Die gespeicherte Lesezeichenposition wird nur wiederhergestellt, während die Liste lädt. Beim Scrollen mit Maus, Touch, Tastatur oder Zeiger übernimmst du sofort die Kontrolle und die Liste springt nicht mehr zurück.",
   "whatsNew.item.activeBookmarkHighlightTitle": "Das geöffnete Lesezeichen hervorheben",

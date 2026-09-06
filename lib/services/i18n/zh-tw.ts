@@ -3,6 +3,8 @@ import type { TranslationValue } from "./types"
 
 export const traditionalChineseTranslations: Record<string, TranslationValue> =
   {
+    "whatsNew.item.bookmarkSaveProgressTitle": "儲存書籤時現在會顯示進度",
+    "whatsNew.item.bookmarkSaveProgressDescription": "儲存或重新命名書籤時現在會顯示進度指示器，已儲存的搜尋也不會再短暫顯示在草稿列旁邊。",
     "whatsNew.item.manualBookmarkScrollTitle": "手動捲動書籤現在能穩定運作",
     "whatsNew.item.manualBookmarkScrollDescription": "儲存的書籤位置只會在清單載入時還原。使用滑鼠、觸控、鍵盤或指標捲動時，您會立即接管控制，清單不會再跳回原來的位置。",
     "whatsNew.item.activeBookmarkHighlightTitle": "突顯目前開啟的書籤",

@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const japaneseTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.bookmarkSaveProgressTitle": "ブックマークの保存進行状況を表示",
+  "whatsNew.item.bookmarkSaveProgressDescription": "ブックマークの保存または名前変更時に進行状況が表示され、保存済みの検索が下書き行の横に一時的に表示されなくなりました。",
   "whatsNew.item.manualBookmarkScrollTitle": "ブックマークの手動スクロールが安定して動作",
   "whatsNew.item.manualBookmarkScrollDescription": "保存されたブックマーク位置は、リストの読み込み中にのみ復元されます。マウス、タッチ、キーボード、またはポインターでスクロールするとすぐに操作が優先され、リストが元の位置へ戻らなくなります。",
   "whatsNew.item.activeBookmarkHighlightTitle": "開いているブックマークを強調表示",

@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const thaiTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.bookmarkSaveProgressTitle": "การบันทึกบุ๊กมาร์กจะแสดงความคืบหน้าแล้ว",
+  "whatsNew.item.bookmarkSaveProgressDescription": "เมื่อบันทึกหรือเปลี่ยนชื่อบุ๊กมาร์ก จะแสดงตัวบ่งชี้ความคืบหน้า และการค้นหาที่บันทึกไว้จะไม่ปรากฏชั่วครู่ข้างแถวฉบับร่างอีกต่อไป",
   "whatsNew.item.manualBookmarkScrollTitle": "การเลื่อนบุ๊กมาร์กด้วยตนเองทำงานได้อย่างเสถียร",
   "whatsNew.item.manualBookmarkScrollDescription": "ตำแหน่งบุ๊กมาร์กที่บันทึกไว้จะถูกกู้คืนเฉพาะขณะที่รายการกำลังโหลดเท่านั้น เมื่อเลื่อนด้วยเมาส์ การสัมผัส แป้นพิมพ์ หรือตัวชี้ คุณจะควบคุมได้ทันทีและรายการจะไม่กระโดดกลับอีกต่อไป",
   "whatsNew.item.activeBookmarkHighlightTitle": "ไฮไลต์บุ๊กมาร์กที่คุณเปิดอยู่",

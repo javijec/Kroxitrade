@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const frenchTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.bookmarkSaveProgressTitle": "L'enregistrement des favoris affiche désormais sa progression",
+  "whatsNew.item.bookmarkSaveProgressDescription": "Enregistrer ou renommer un favori affiche désormais un indicateur de progression, et la recherche enregistrée n'apparaît plus brièvement à côté de sa ligne de brouillon.",
   "whatsNew.item.manualBookmarkScrollTitle": "Le défilement manuel des favoris fonctionne de manière fiable",
   "whatsNew.item.manualBookmarkScrollDescription": "La position enregistrée des favoris est restaurée uniquement pendant le chargement de la liste. Faire défiler avec la souris, le tactile, le clavier ou le pointeur vous redonne immédiatement le contrôle, et la liste ne revient plus en arrière.",
   "whatsNew.item.activeBookmarkHighlightTitle": "Mettre en évidence le signet que vous avez ouvert",

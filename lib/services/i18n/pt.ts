@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const portugueseTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.bookmarkSaveProgressTitle": "Os salvamentos de favoritos agora mostram o progresso",
+  "whatsNew.item.bookmarkSaveProgressDescription": "Salvar ou renomear um favorito agora mostra um indicador de progresso, e a busca salva não aparece mais brevemente ao lado da linha de rascunho.",
   "whatsNew.item.manualBookmarkScrollTitle": "A rolagem manual dos favoritos funciona de forma confiável",
   "whatsNew.item.manualBookmarkScrollDescription": "A posição salva dos favoritos é restaurada apenas enquanto a lista carrega. Ao rolar com o mouse, toque, teclado ou ponteiro, você assume o controle imediatamente e a lista deixa de voltar.",
   "whatsNew.item.activeBookmarkHighlightTitle": "Destaque o marcador que você tem aberto",
