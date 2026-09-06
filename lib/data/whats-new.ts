@@ -516,10 +516,26 @@ const version1132Fixes: WhatsNewItem[] = [
   }
 ];
 
+const version1133Fixes: WhatsNewItem[] = [
+  {
+    titleKey: "whatsNew.item.manualBookmarkScrollTitle",
+    descriptionKey: "whatsNew.item.manualBookmarkScrollDescription"
+  }
+];
+
 export const latestWhatsNew: WhatsNewEntry = {
-  version: "1.1.32",
-  date: "2026-08-23",
+  version: "1.1.33",
+  date: "2026-09-06",
   sections: [
+    {
+      title: "1.1.33",
+      groups: [
+        {
+          titleKey: "whatsNew.section.fixes",
+          items: version1133Fixes
+        }
+      ]
+    },
     {
       title: "1.1.32",
       groups: [

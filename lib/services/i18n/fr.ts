@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const frenchTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.manualBookmarkScrollTitle": "Le défilement manuel des favoris fonctionne de manière fiable",
+  "whatsNew.item.manualBookmarkScrollDescription": "La position enregistrée des favoris est restaurée uniquement pendant le chargement de la liste. Faire défiler avec la souris, le tactile, le clavier ou le pointeur vous redonne immédiatement le contrôle, et la liste ne revient plus en arrière.",
   "whatsNew.item.activeBookmarkHighlightTitle": "Mettre en évidence le signet que vous avez ouvert",
   "whatsNew.item.activeBookmarkHighlightDescription": "La recherche enregistrée ouverte dans l’onglet actif est maintenant mise en évidence dans la liste des signets, pour voir facilement quelle recherche vous consultez.",
   "whatsNew.item.bookmarkScrollPreserveTitle": "La liste de signets garde sa position lors d’une ouverture dans un nouvel onglet",

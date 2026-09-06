@@ -2,6 +2,8 @@ import { englishTranslations } from "./en"
 import type { TranslationValue } from "./types"
 
 export const germanTranslations: Record<string, TranslationValue> = {
+  "whatsNew.item.manualBookmarkScrollTitle": "Manuelles Scrollen von Lesezeichen funktioniert zuverlässig",
+  "whatsNew.item.manualBookmarkScrollDescription": "Die gespeicherte Lesezeichenposition wird nur wiederhergestellt, während die Liste lädt. Beim Scrollen mit Maus, Touch, Tastatur oder Zeiger übernimmst du sofort die Kontrolle und die Liste springt nicht mehr zurück.",
   "whatsNew.item.activeBookmarkHighlightTitle": "Das geöffnete Lesezeichen hervorheben",
   "whatsNew.item.activeBookmarkHighlightDescription": "Die im aktiven Tab geöffnete gespeicherte Suche wird jetzt in der Lesezeichenliste hervorgehoben, sodass leicht zu sehen ist, welche Suche du gerade ansiehst.",
   "whatsNew.item.bookmarkScrollPreserveTitle": "Die Lesezeichenliste behält ihre Position beim Öffnen in einem neuen Tab",

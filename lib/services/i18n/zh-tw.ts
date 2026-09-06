@@ -3,6 +3,8 @@ import type { TranslationValue } from "./types"
 
 export const traditionalChineseTranslations: Record<string, TranslationValue> =
   {
+    "whatsNew.item.manualBookmarkScrollTitle": "手動捲動書籤現在能穩定運作",
+    "whatsNew.item.manualBookmarkScrollDescription": "儲存的書籤位置只會在清單載入時還原。使用滑鼠、觸控、鍵盤或指標捲動時，您會立即接管控制，清單不會再跳回原來的位置。",
     "whatsNew.item.activeBookmarkHighlightTitle": "突顯目前開啟的書籤",
     "whatsNew.item.activeBookmarkHighlightDescription": "目前在目前分頁開啟的已儲存搜尋，現在會在書籤清單中突顯顯示，方便你看出正在查看哪個搜尋。",
     "whatsNew.item.bookmarkScrollPreserveTitle": "在新分頁開啟時保持書籤清單位置",

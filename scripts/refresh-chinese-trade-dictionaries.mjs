@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { resolve } from "node:path"
+import { writeFileWithRetry } from "./file-write-retry.mjs"
 
 const SOURCE =
   "https://raw.githubusercontent.com/MooHuiDev/poe-zh-trade-tools-pro/main/data"
@@ -28,6 +29,8 @@ for (const file of FILES) {
 
   const value = await response.json()
   validate(file, value)
-  await writeFile(resolve(OUTPUT_DIR, file), `${JSON.stringify(value)}\n`, "utf8")
+  await writeFileWithRetry(() =>
+    writeFile(resolve(OUTPUT_DIR, file), `${JSON.stringify(value)}\n`, "utf8")
+  )
   console.log(`Updated local Poe Chinese dictionary: ${file}`)
 }
