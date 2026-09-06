@@ -363,6 +363,8 @@ export default defineBackground({
               sendResponse({ top: null })
               return
             }
+            // Read-once: the caller caches the offset and retries locally.
+            await storageService.deleteValue(bookmarkScrollKey)
             sendResponse({ top: saved.top })
           })
           .catch(() => sendResponse({ top: null }))

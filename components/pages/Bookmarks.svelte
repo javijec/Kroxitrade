@@ -13,6 +13,7 @@
     clearBookmarkScroll,
     consumeBookmarkScroll
   } from "../../lib/services/bookmark-scroll";
+  import { decideScrollRestore } from "../../lib/services/bookmark-scroll-restore";
   import { tradeLocationService } from "../../lib/services/trade-location";
   import { flashMessages } from "../../lib/services/flash";
   import { storageService } from "../../lib/services/storage";
@@ -332,19 +333,6 @@
     isAtBookmarkTop = !scrollContainer || scrollContainer.scrollTop <= 0;
   };
 
-  const restoreBookmarkScroll = async () => {
-    if (!scrollContainer) return true;
-
-    const top = await consumeBookmarkScroll();
-    if (top === null) return true;
-
-    scrollContainer.scrollTop = top;
-    syncBookmarkTop();
-    const canReachSavedPosition =
-      scrollContainer.scrollHeight - scrollContainer.clientHeight >= top;
-    if (canReachSavedPosition) await clearBookmarkScroll();
-    return canReachSavedPosition;
-  };
 
   const clearToolbarRepairTimers = () => {
     if (toolbarRepairFrame) {
@@ -467,26 +455,79 @@
   $effect(() => {
     if (!scrollContainer) return;
 
-    const observer = new ResizeObserver(() => void restoreBookmarkScroll());
-    observer.observe(scrollContainer);
-    const restoreTimer = window.setInterval(() => {
-      void restoreBookmarkScroll().then((restored) => {
-        if (restored) window.clearInterval(restoreTimer);
-      });
-    }, 80);
-    const restoreTimeout = window.setTimeout(() => {
-      window.clearInterval(restoreTimer);
-      void clearBookmarkScroll();
-      observer.disconnect();
-    }, 3000);
+    const el = scrollContainer;
+    // Taking over must cancel the restore, or the retry ticks fight the wheel.
+    const userInputEvents = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
 
-    void tick().then(() => restoreBookmarkScroll());
+    let savedTop: number | null = null;
+    let hasConsumed = false;
+    let userInteracted = false;
+    let stopped = false;
+    let restoreTimer = 0;
+    let restoreTimeout = 0;
 
-    return () => {
+    function onUserInput() {
+      userInteracted = true;
+      stop(true);
+    }
+
+    function stop(clearStored: boolean) {
+      if (stopped) return;
+      stopped = true;
       window.clearInterval(restoreTimer);
       window.clearTimeout(restoreTimeout);
       observer.disconnect();
+      for (const type of userInputEvents) {
+        el.removeEventListener(type, onUserInput);
+      }
+      if (clearStored) void clearBookmarkScroll();
+    }
+
+    const runRestore = async () => {
+      if (stopped) return;
+
+      // Read once per cycle; retries reuse the cached offset.
+      if (!hasConsumed) {
+        hasConsumed = true;
+        savedTop = await consumeBookmarkScroll();
+      }
+      // A gesture can land while the read is in flight.
+      if (stopped || userInteracted) return;
+
+      const outcome = decideScrollRestore({
+        savedTop,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+        userInteracted
+      });
+
+      if (outcome === "abort") {
+        stop(true);
+        return;
+      }
+      if (outcome === "idle" || savedTop === null) {
+        stop(false);
+        return;
+      }
+
+      el.scrollTop = savedTop;
+      syncBookmarkTop();
+      if (outcome === "settle") stop(true);
     };
+
+    const observer = new ResizeObserver(() => void runRestore());
+
+    for (const type of userInputEvents) {
+      el.addEventListener(type, onUserInput, { passive: true, once: true });
+    }
+
+    observer.observe(el);
+    restoreTimer = window.setInterval(() => void runRestore(), 80);
+    restoreTimeout = window.setTimeout(() => stop(true), 3000);
+
+    void tick().then(() => runRestore());
+
+    return () => stop(false);
   });
 
   $effect(() => {
